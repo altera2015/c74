@@ -403,7 +403,8 @@ CONFIG PROHIBIT = P1,L3;
 NET "u_lpddr3/memc3_infrastructure_inst/sys_clk_ibufg" TNM_NET = "SYS_CLK3";
 TIMESPEC TS_SYS_CLK3 = PERIOD "SYS_CLK3" 10 ns HIGH 50 %;
 ############################################################################
-
+#NET "user_clk" TNM_NET = "USER_CLK";
+#TIMESPEC TS_USER_CLK = PERIOD "USER_CLK" 5 ns HIGH 50 %;
 # PlanAhead Generated physical constraints 
 
 #INST "control_logic0/instr_read_enable1" BEL = B6LUT;

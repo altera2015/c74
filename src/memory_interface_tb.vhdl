@@ -254,7 +254,8 @@ ARCHITECTURE behavior OF memory_interface_tb IS
        c3_p3_rd_empty                          : out std_logic;
        c3_p3_rd_count                          : out std_logic_vector(6 downto 0);
        c3_p3_rd_overflow                       : out std_logic;
-       c3_p3_rd_error                          : out std_logic
+       c3_p3_rd_error                          : out std_logic;
+       user_clk                                : out std_logic
     );
     end component;
 
@@ -262,6 +263,7 @@ ARCHITECTURE behavior OF memory_interface_tb IS
 
    --Inputs
    signal clk : std_logic := '0';
+   signal user_clk : std_logic;
    signal reset : std_logic := '0';
    signal a_address_load : std_logic := '0';
    signal a_address : std_logic_vector(31 downto 0) := (others => '0');
@@ -472,14 +474,15 @@ BEGIN
             c3_rst0		=>           c3_rst0,
             c3_calib_done      =>    c3_calib_done,
             mcb3_rzq         =>            mcb3_rzq,
-            c3_p0_cmd_clk                           =>  clk,
+            user_clk => user_clk,
+            c3_p0_cmd_clk                           =>  user_clk,
             c3_p0_cmd_en                            =>  lpddr_pA_cmd_en,
             c3_p0_cmd_instr                         =>  lpddr_pA_cmd_instr,
             c3_p0_cmd_bl                            =>  lpddr_pA_cmd_bl,
             c3_p0_cmd_byte_addr                     =>  lpddr_pA_cmd_byte_addr,
             c3_p0_cmd_empty                         =>  lpddr_pA_cmd_empty,
             c3_p0_cmd_full                          =>  lpddr_pA_cmd_full,
-            c3_p0_wr_clk                            =>  clk,
+            c3_p0_wr_clk                            =>  user_clk,
             c3_p0_wr_en                             =>  lpddr_pA_wr_en,
             c3_p0_wr_mask                           =>  lpddr_pA_wr_mask,
             c3_p0_wr_data                           =>  lpddr_pA_wr_data,
@@ -488,7 +491,7 @@ BEGIN
             c3_p0_wr_count                          =>  lpddr_pA_wr_count,
             c3_p0_wr_underrun                       =>  lpddr_pA_wr_underrun,
             c3_p0_wr_error                          =>  lpddr_pA_wr_error,
-            c3_p0_rd_clk                            =>  clk,
+            c3_p0_rd_clk                            =>  user_clk,
             c3_p0_rd_en                             =>  lpddr_pA_rd_en,
             c3_p0_rd_data                           =>  lpddr_pA_rd_data,
             c3_p0_rd_full                           =>  lpddr_pA_rd_full,
@@ -496,14 +499,14 @@ BEGIN
             c3_p0_rd_count                          =>  lpddr_pA_rd_count,
             c3_p0_rd_overflow                       =>  lpddr_pA_rd_overflow,
             c3_p0_rd_error                          =>  lpddr_pA_rd_error,
-            c3_p1_cmd_clk                           =>  clk,
+            c3_p1_cmd_clk                           =>  user_clk,
             c3_p1_cmd_en                            =>  lpddr_pB_cmd_en,
             c3_p1_cmd_instr                         =>  lpddr_pB_cmd_instr,
             c3_p1_cmd_bl                            =>  lpddr_pB_cmd_bl,
             c3_p1_cmd_byte_addr                     =>  lpddr_pB_cmd_byte_addr,
             c3_p1_cmd_empty                         =>  lpddr_pB_cmd_empty,
             c3_p1_cmd_full                          =>  lpddr_pB_cmd_full,
-            c3_p1_wr_clk                            =>  clk,
+            c3_p1_wr_clk                            =>  user_clk,
             c3_p1_wr_en                             =>  lpddr_pB_wr_en,
             c3_p1_wr_mask                           =>  lpddr_pB_wr_mask,
             c3_p1_wr_data                           =>  lpddr_pB_wr_data,
@@ -512,7 +515,7 @@ BEGIN
             c3_p1_wr_count                          =>  lpddr_pB_wr_count,
             c3_p1_wr_underrun                       =>  lpddr_pB_wr_underrun,
             c3_p1_wr_error                          =>  lpddr_pB_wr_error,
-            c3_p1_rd_clk                            =>  clk,
+            c3_p1_rd_clk                            =>  user_clk,
             c3_p1_rd_en                             =>  lpddr_pB_rd_en,
             c3_p1_rd_data                           =>  lpddr_pB_rd_data,
             c3_p1_rd_full                           =>  lpddr_pB_rd_full,
@@ -520,7 +523,7 @@ BEGIN
             c3_p1_rd_count                          =>  lpddr_pB_rd_count,
             c3_p1_rd_overflow                       =>  lpddr_pB_rd_overflow,
             c3_p1_rd_error                          =>  lpddr_pB_rd_error,
-            c3_p2_cmd_clk                           =>  clk,
+            c3_p2_cmd_clk                           =>  user_clk,
             c3_p2_cmd_en                            =>  '0',
             c3_p2_cmd_instr                         =>  (others=>'0'),
             c3_p2_cmd_bl                            =>  (others=>'0'),
@@ -555,7 +558,7 @@ BEGIN
  
 	-- Instantiate the Unit Under Test (UUT)
    uut: memory_interface PORT MAP (
-          clk => clk,
+          clk => user_clk,
           reset => reset,
 
           a_address => a_address,
@@ -655,14 +658,14 @@ BEGIN
     -- Write Values
     for i in test_vectors'range loop
                 
-        wait until clk = '1';    
+        wait until user_clk = '1';    
         a_address <= test_vectors(i).address;
         a_WE <= "1111";
         a_D <= test_vectors(i).data;
-        wait until clk = '1';
+        wait until user_clk = '1';
         a_WE <= "0000";        
         while a_ready = '0' loop
-        wait until clk = '1';
+        wait until user_clk = '1';
         end loop;
         wait for clk_period * 25;              
     
@@ -673,13 +676,13 @@ BEGIN
     -- Read back to see if values are correct.
     for i in test_vectors'range loop
                 
-        wait until clk = '1';        
+        wait until user_clk = '1';        
         a_address <= test_vectors(i).address;
         a_RE <= '1';      
-        wait until clk = '1';
+        wait until user_clk = '1';
         a_RE <= '0';        
         while a_ready = '0' loop
-        wait until clk = '1';
+        wait until user_clk = '1';
         end loop;
         assert a_Q = test_vectors(i).data report "Memory read failed " & integer'image(i) severity failure;
                               

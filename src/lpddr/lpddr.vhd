@@ -198,7 +198,8 @@ generic
    c3_p3_rd_empty                          : out std_logic;
    c3_p3_rd_count                          : out std_logic_vector(6 downto 0);
    c3_p3_rd_overflow                       : out std_logic;
-   c3_p3_rd_error                          : out std_logic
+   c3_p3_rd_error                          : out std_logic;
+   user_clk                                : out std_logic
   );
 end lpddr;
 
@@ -214,6 +215,7 @@ component memc3_infrastructure is
       C_CLKOUT1_DIVIDE     : integer;
       C_CLKOUT2_DIVIDE     : integer;
       C_CLKOUT3_DIVIDE     : integer;
+      C_CLKOUT4_DIVIDE     : integer;
       C_CLKFBOUT_MULT      : integer;
       C_DIVCLK_DIVIDE      : integer;
       C_INCLK_PERIOD       : integer
@@ -232,7 +234,8 @@ component memc3_infrastructure is
       pll_ce_0                               : out   std_logic;
       pll_ce_90                              : out   std_logic;
       pll_lock                               : out   std_logic;
-      mcb_drp_clk                            : out   std_logic
+      mcb_drp_clk                            : out   std_logic;
+      user_clk                               : out   std_logic
 
       );
   end component;
@@ -439,6 +442,7 @@ component memc3_wrapper is
    constant C3_CLKOUT1_DIVIDE       : integer := 3; -- 333 O2
    constant C3_CLKOUT2_DIVIDE       : integer := 10; -- 100 USER 30 passes timing checks
    constant C3_CLKOUT3_DIVIDE       : integer := 10;  -- 100 CALIB
+   constant C3_CLKOUT4_DIVIDE       : integer := 10;  -- 100 User_clk
    constant C3_CLKFBOUT_MULT        : integer := 10; --1000
    constant C3_DIVCLK_DIVIDE        : integer := 1; --100   
    
@@ -531,7 +535,6 @@ component memc3_wrapper is
   signal  c3_selfrefresh_mode                      : std_logic;
 
 
-
 begin
  
 
@@ -548,6 +551,7 @@ generic map
    C_CLKOUT1_DIVIDE                  => C3_CLKOUT1_DIVIDE,
    C_CLKOUT2_DIVIDE                  => C3_CLKOUT2_DIVIDE,
    C_CLKOUT3_DIVIDE                  => C3_CLKOUT3_DIVIDE,
+   C_CLKOUT4_DIVIDE                  => C3_CLKOUT4_DIVIDE,
    C_CLKFBOUT_MULT                   => C3_CLKFBOUT_MULT,
    C_DIVCLK_DIVIDE                   => C3_DIVCLK_DIVIDE,
    C_INCLK_PERIOD                    => C3_INCLK_PERIOD
@@ -566,7 +570,8 @@ port map
    pll_ce_0                        => c3_pll_ce_0,
    pll_ce_90                       => c3_pll_ce_90,
    pll_lock                        => c3_pll_lock,
-   mcb_drp_clk                     => c3_mcb_drp_clk
+   mcb_drp_clk                     => c3_mcb_drp_clk,
+   user_clk                        => user_clk
    );
 
 

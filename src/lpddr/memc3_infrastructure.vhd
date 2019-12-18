@@ -77,6 +77,7 @@ generic
     C_CLKOUT1_DIVIDE   : integer := 2;
     C_CLKOUT2_DIVIDE   : integer := 16;
     C_CLKOUT3_DIVIDE   : integer := 8;
+    C_CLKOUT4_DIVIDE   : integer := 8;
     C_CLKFBOUT_MULT   : integer := 4;
     C_DIVCLK_DIVIDE   : integer := 1
 
@@ -95,7 +96,8 @@ port
     mcb_drp_clk     : out std_logic;
     pll_ce_0        : out std_logic;
     pll_ce_90       : out std_logic;
-    pll_lock        : out std_logic
+    pll_lock        : out std_logic;
+    user_clk        : out std_logic
   
 );
 end entity;
@@ -130,6 +132,7 @@ architecture syn of memc3_infrastructure is
   signal   locked              : std_logic;
   signal   bufpll_mcb_locked   : std_logic;
   signal   mcb_drp_clk_sig     : std_logic;
+  signal   mcb_user_clk_sig    : std_logic;
 
   attribute max_fanout : string;
   attribute syn_maxfan : integer;
@@ -186,7 +189,7 @@ begin
          CLKOUT1_DIVIDE     => C_CLKOUT1_DIVIDE,
          CLKOUT2_DIVIDE     => C_CLKOUT2_DIVIDE,
          CLKOUT3_DIVIDE     => C_CLKOUT3_DIVIDE,
-         CLKOUT4_DIVIDE     => 1,
+         CLKOUT4_DIVIDE     => C_CLKOUT4_DIVIDE,
          CLKOUT5_DIVIDE     => 1,
          CLKOUT0_PHASE      => 0.000,
          CLKOUT1_PHASE      => 180.000,
@@ -232,7 +235,7 @@ begin
            CLKOUT1          => clk_2x_180,
            CLKOUT2          => clk0_bufg_in,
            CLKOUT3          => mcb_drp_clk_bufg_in,
-           CLKOUT4          => open,
+           CLKOUT4          => mcb_user_clk_sig,
            CLKOUT5          => open,
            DO               => open,
            DRDY             => open,
@@ -256,6 +259,14 @@ begin
     port map (  
      O => mcb_drp_clk_sig,
      I => mcb_drp_clk_bufg_in,
+     CE => locked
+     );
+
+
+   U_BUFG_USER_CLK : BUFGCE 
+    port map (  
+     O => user_clk,
+     I => mcb_user_clk_sig,
      CE => locked
      );
 

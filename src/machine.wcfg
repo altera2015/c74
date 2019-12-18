@@ -21,7 +21,7 @@
          </top_modules>
       </db_ref>
    </db_ref_list>
-   <WVObjectSize size="5" />
+   <WVObjectSize size="7" />
    <wvobject fp_name="/machine_tb/machine0/clk" type="logic" db_ref_id="1">
       <obj_property name="ElementShortName">clk</obj_property>
       <obj_property name="ObjectShortName">clk</obj_property>
@@ -41,5 +41,36 @@
    <wvobject fp_name="/machine_tb/machine0/control_logic0/pc_inc" type="logic" db_ref_id="1">
       <obj_property name="ElementShortName">pc_inc</obj_property>
       <obj_property name="ObjectShortName">pc_inc</obj_property>
+   </wvobject>
+   <wvobject fp_name="/machine_tb/machine0/control_logic0/a_q" type="array" db_ref_id="1">
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="ElementShortName">a_q[31:0]</obj_property>
+      <obj_property name="ObjectShortName">a_q[31:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+      <obj_property name="label">Instruction</obj_property>
+   </wvobject>
+   <wvobject fp_name="group41" type="group">
+      <obj_property name="label">Instruction Ram</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/a_d" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">a_d[31:0]</obj_property>
+         <obj_property name="ObjectShortName">a_d[31:0]</obj_property>
+      </wvobject>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/a_re" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">a_re</obj_property>
+         <obj_property name="ObjectShortName">a_re</obj_property>
+      </wvobject>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/a_we" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">a_we[3:0]</obj_property>
+         <obj_property name="ObjectShortName">a_we[3:0]</obj_property>
+      </wvobject>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/a_ready" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">a_ready</obj_property>
+         <obj_property name="ObjectShortName">a_ready</obj_property>
+      </wvobject>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/a_address" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">a_address[31:0]</obj_property>
+         <obj_property name="ObjectShortName">a_address[31:0]</obj_property>
+      </wvobject>
    </wvobject>
 </wave_config>
