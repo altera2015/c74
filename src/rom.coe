@@ -1,0 +1,19 @@
+; Zero page ram contents
+
+memory_initialization_radix = 16;
+memory_initialization_vector =
+00000000,
+0610AAAA,
+0A100038,
+00000000,
+08000038,
+01000002,
+02000004,
+06101ABC,
+07310000,
+08100034,
+06200002,
+09210002,
+03001000,
+FFFFAAAA,
+00000000;

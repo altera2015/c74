@@ -1,0 +1,397 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wave_config>
+   <wave_state>
+   </wave_state>
+   <db_ref_list>
+      <db_ref path="/home/ise/devel/c74.000/src/wrk/memory_interface_tb_isim_beh.wdb" id="1" type="auto">
+         <top_modules>
+            <top_module name="glbl" />
+            <top_module name="memory_interface_tb" />
+            <top_module name="numeric_std" />
+            <top_module name="std_logic_1164" />
+            <top_module name="std_logic_arith" />
+            <top_module name="std_logic_textio" />
+            <top_module name="std_logic_unsigned" />
+            <top_module name="textio" />
+            <top_module name="vcomponents" />
+            <top_module name="vital_primitives" />
+            <top_module name="vital_timing" />
+            <top_module name="vl_types" />
+            <top_module name="vpkg" />
+         </top_modules>
+      </db_ref>
+   </db_ref_list>
+   <WVObjectSize size="86" />
+   <wvobject fp_name="/memory_interface_tb/clk" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">clk</obj_property>
+      <obj_property name="ObjectShortName">clk</obj_property>
+   </wvobject>
+   <wvobject fp_name="/memory_interface_tb/c3_calib_done" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">c3_calib_done</obj_property>
+      <obj_property name="ObjectShortName">c3_calib_done</obj_property>
+   </wvobject>
+   <wvobject fp_name="/memory_interface_tb/reset" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">reset</obj_property>
+      <obj_property name="ObjectShortName">reset</obj_property>
+   </wvobject>
+   <wvobject fp_name="divider102" type="divider">
+      <obj_property name="label">PORT A</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="BkColor">128 128 255</obj_property>
+      <obj_property name="TextColor">230 230 230</obj_property>
+   </wvobject>
+   <wvobject fp_name="/memory_interface_tb/a_address" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">a_address[31:0]</obj_property>
+      <obj_property name="ObjectShortName">a_address[31:0]</obj_property>
+      <obj_property name="Radix">BINARYRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/memory_interface_tb/a_d" type="array" db_ref_id="1">
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="ElementShortName">a_d[31:0]</obj_property>
+      <obj_property name="ObjectShortName">a_d[31:0]</obj_property>
+      <obj_property name="label">a_input</obj_property>
+      <obj_property name="Radix">BINARYRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/memory_interface_tb/a_q" type="array" db_ref_id="1">
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="ElementShortName">a_q[31:0]</obj_property>
+      <obj_property name="ObjectShortName">a_q[31:0]</obj_property>
+      <obj_property name="label">a_output</obj_property>
+      <obj_property name="Radix">BINARYRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/memory_interface_tb/a_re" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">a_re</obj_property>
+      <obj_property name="ObjectShortName">a_re</obj_property>
+   </wvobject>
+   <wvobject fp_name="/memory_interface_tb/a_ready" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">a_ready</obj_property>
+      <obj_property name="ObjectShortName">a_ready</obj_property>
+   </wvobject>
+   <wvobject fp_name="/memory_interface_tb/a_we" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">a_we[3:0]</obj_property>
+      <obj_property name="ObjectShortName">a_we[3:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/memory_interface_tb/uut/mip_port_a/bank" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">bank</obj_property>
+      <obj_property name="ObjectShortName">bank</obj_property>
+   </wvobject>
+   <wvobject fp_name="/memory_interface_tb/uut/mip_port_a/state_sig" type="other" db_ref_id="1">
+      <obj_property name="ElementShortName">state_sig</obj_property>
+      <obj_property name="ObjectShortName">state_sig</obj_property>
+   </wvobject>
+   <wvobject fp_name="divider152" type="divider">
+      <obj_property name="label">Block Ram A</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="BkColor">128 128 255</obj_property>
+      <obj_property name="TextColor">230 230 230</obj_property>
+   </wvobject>
+   <wvobject fp_name="/memory_interface_tb/uut/mip_port_a/fr_en" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">fr_en</obj_property>
+      <obj_property name="ObjectShortName">fr_en</obj_property>
+   </wvobject>
+   <wvobject fp_name="/memory_interface_tb/uut/mip_port_a/fr_we" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">fr_we[3:0]</obj_property>
+      <obj_property name="ObjectShortName">fr_we[3:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/memory_interface_tb/uut/mip_port_a/fr_addr" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">fr_addr[8:0]</obj_property>
+      <obj_property name="ObjectShortName">fr_addr[8:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/memory_interface_tb/uut/mip_port_a/fr_din" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">fr_din[31:0]</obj_property>
+      <obj_property name="ObjectShortName">fr_din[31:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/memory_interface_tb/uut/mip_port_a/fr_dout" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">fr_dout[31:0]</obj_property>
+      <obj_property name="ObjectShortName">fr_dout[31:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="divider103" type="divider">
+      <obj_property name="label">PORT B</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="BkColor">128 128 255</obj_property>
+      <obj_property name="TextColor">230 230 230</obj_property>
+   </wvobject>
+   <wvobject fp_name="/memory_interface_tb/b_address" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">b_address[31:0]</obj_property>
+      <obj_property name="ObjectShortName">b_address[31:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/memory_interface_tb/b_d" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">b_d[31:0]</obj_property>
+      <obj_property name="ObjectShortName">b_d[31:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/memory_interface_tb/b_re" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">b_re</obj_property>
+      <obj_property name="ObjectShortName">b_re</obj_property>
+   </wvobject>
+   <wvobject fp_name="/memory_interface_tb/b_we" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">b_we[3:0]</obj_property>
+      <obj_property name="ObjectShortName">b_we[3:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/memory_interface_tb/b_ready" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">b_ready</obj_property>
+      <obj_property name="ObjectShortName">b_ready</obj_property>
+   </wvobject>
+   <wvobject fp_name="/memory_interface_tb/b_q" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">b_q[31:0]</obj_property>
+      <obj_property name="ObjectShortName">b_q[31:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="divider112" type="divider">
+      <obj_property name="label">LPDDR</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="BkColor">128 128 255</obj_property>
+      <obj_property name="TextColor">230 230 230</obj_property>
+   </wvobject>
+   <wvobject fp_name="/memory_interface_tb/uut/mip_port_a/lpddr_cmd_en" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">lpddr_cmd_en</obj_property>
+      <obj_property name="ObjectShortName">lpddr_cmd_en</obj_property>
+   </wvobject>
+   <wvobject fp_name="/memory_interface_tb/uut/mip_port_a/lpddr_cmd_instr" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">lpddr_cmd_instr[2:0]</obj_property>
+      <obj_property name="ObjectShortName">lpddr_cmd_instr[2:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/memory_interface_tb/uut/mip_port_a/lpddr_cmd_bl" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">lpddr_cmd_bl[5:0]</obj_property>
+      <obj_property name="ObjectShortName">lpddr_cmd_bl[5:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/memory_interface_tb/uut/mip_port_a/lpddr_cmd_byte_addr" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">lpddr_cmd_byte_addr[29:0]</obj_property>
+      <obj_property name="ObjectShortName">lpddr_cmd_byte_addr[29:0]</obj_property>
+      <obj_property name="Radix">BINARYRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/memory_interface_tb/uut/mip_port_a/lpddr_cmd_empty" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">lpddr_cmd_empty</obj_property>
+      <obj_property name="ObjectShortName">lpddr_cmd_empty</obj_property>
+   </wvobject>
+   <wvobject fp_name="/memory_interface_tb/uut/mip_port_a/lpddr_cmd_full" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">lpddr_cmd_full</obj_property>
+      <obj_property name="ObjectShortName">lpddr_cmd_full</obj_property>
+   </wvobject>
+   <wvobject fp_name="/memory_interface_tb/uut/mip_port_a/lpddr_wr_en" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">lpddr_wr_en</obj_property>
+      <obj_property name="ObjectShortName">lpddr_wr_en</obj_property>
+   </wvobject>
+   <wvobject fp_name="/memory_interface_tb/uut/mip_port_a/lpddr_wr_mask" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">lpddr_wr_mask[3:0]</obj_property>
+      <obj_property name="ObjectShortName">lpddr_wr_mask[3:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/memory_interface_tb/uut/mip_port_a/lpddr_wr_data" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">lpddr_wr_data[31:0]</obj_property>
+      <obj_property name="ObjectShortName">lpddr_wr_data[31:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/memory_interface_tb/uut/mip_port_a/lpddr_wr_full" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">lpddr_wr_full</obj_property>
+      <obj_property name="ObjectShortName">lpddr_wr_full</obj_property>
+   </wvobject>
+   <wvobject fp_name="/memory_interface_tb/uut/mip_port_a/lpddr_wr_empty" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">lpddr_wr_empty</obj_property>
+      <obj_property name="ObjectShortName">lpddr_wr_empty</obj_property>
+   </wvobject>
+   <wvobject fp_name="/memory_interface_tb/uut/mip_port_a/lpddr_wr_count" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">lpddr_wr_count[6:0]</obj_property>
+      <obj_property name="ObjectShortName">lpddr_wr_count[6:0]</obj_property>
+      <obj_property name="UseCustomSignalColor">true</obj_property>
+      <obj_property name="CustomSignalColor">#ffff00</obj_property>
+   </wvobject>
+   <wvobject fp_name="/memory_interface_tb/uut/mip_port_a/lpddr_wr_underrun" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">lpddr_wr_underrun</obj_property>
+      <obj_property name="ObjectShortName">lpddr_wr_underrun</obj_property>
+   </wvobject>
+   <wvobject fp_name="/memory_interface_tb/uut/mip_port_a/lpddr_wr_error" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">lpddr_wr_error</obj_property>
+      <obj_property name="ObjectShortName">lpddr_wr_error</obj_property>
+   </wvobject>
+   <wvobject fp_name="/memory_interface_tb/uut/mip_port_a/lpddr_rd_en" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">lpddr_rd_en</obj_property>
+      <obj_property name="ObjectShortName">lpddr_rd_en</obj_property>
+   </wvobject>
+   <wvobject fp_name="/memory_interface_tb/uut/mip_port_a/lpddr_rd_data" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">lpddr_rd_data[31:0]</obj_property>
+      <obj_property name="ObjectShortName">lpddr_rd_data[31:0]</obj_property>
+      <obj_property name="Radix">BINARYRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/memory_interface_tb/uut/mip_port_a/lpddr_rd_full" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">lpddr_rd_full</obj_property>
+      <obj_property name="ObjectShortName">lpddr_rd_full</obj_property>
+   </wvobject>
+   <wvobject fp_name="/memory_interface_tb/uut/mip_port_a/lpddr_rd_empty" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">lpddr_rd_empty</obj_property>
+      <obj_property name="ObjectShortName">lpddr_rd_empty</obj_property>
+   </wvobject>
+   <wvobject fp_name="/memory_interface_tb/uut/mip_port_a/lpddr_rd_count" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">lpddr_rd_count[6:0]</obj_property>
+      <obj_property name="ObjectShortName">lpddr_rd_count[6:0]</obj_property>
+      <obj_property name="UseCustomSignalColor">true</obj_property>
+      <obj_property name="CustomSignalColor">#00ffff</obj_property>
+   </wvobject>
+   <wvobject fp_name="/memory_interface_tb/uut/mip_port_a/lpddr_rd_overflow" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">lpddr_rd_overflow</obj_property>
+      <obj_property name="ObjectShortName">lpddr_rd_overflow</obj_property>
+   </wvobject>
+   <wvobject fp_name="/memory_interface_tb/uut/mip_port_a/lpddr_rd_error" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">lpddr_rd_error</obj_property>
+      <obj_property name="ObjectShortName">lpddr_rd_error</obj_property>
+   </wvobject>
+   <wvobject fp_name="divider169" type="divider">
+      <obj_property name="label">LPDDR</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="BkColor">128 128 255</obj_property>
+      <obj_property name="TextColor">230 230 230</obj_property>
+   </wvobject>
+   <wvobject fp_name="/memory_interface_tb/u_lpddr3/c3_p0_cmd_en" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">c3_p0_cmd_en</obj_property>
+      <obj_property name="ObjectShortName">c3_p0_cmd_en</obj_property>
+   </wvobject>
+   <wvobject fp_name="/memory_interface_tb/u_lpddr3/c3_p0_cmd_instr" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">c3_p0_cmd_instr[2:0]</obj_property>
+      <obj_property name="ObjectShortName">c3_p0_cmd_instr[2:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/memory_interface_tb/u_lpddr3/c3_p0_cmd_bl" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">c3_p0_cmd_bl[5:0]</obj_property>
+      <obj_property name="ObjectShortName">c3_p0_cmd_bl[5:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/memory_interface_tb/u_lpddr3/c3_p0_cmd_byte_addr" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">c3_p0_cmd_byte_addr[29:0]</obj_property>
+      <obj_property name="ObjectShortName">c3_p0_cmd_byte_addr[29:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/memory_interface_tb/u_lpddr3/c3_p0_cmd_empty" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">c3_p0_cmd_empty</obj_property>
+      <obj_property name="ObjectShortName">c3_p0_cmd_empty</obj_property>
+   </wvobject>
+   <wvobject fp_name="/memory_interface_tb/u_lpddr3/c3_p0_cmd_full" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">c3_p0_cmd_full</obj_property>
+      <obj_property name="ObjectShortName">c3_p0_cmd_full</obj_property>
+   </wvobject>
+   <wvobject fp_name="/memory_interface_tb/u_lpddr3/c3_p0_wr_clk" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">c3_p0_wr_clk</obj_property>
+      <obj_property name="ObjectShortName">c3_p0_wr_clk</obj_property>
+   </wvobject>
+   <wvobject fp_name="/memory_interface_tb/u_lpddr3/c3_p0_wr_en" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">c3_p0_wr_en</obj_property>
+      <obj_property name="ObjectShortName">c3_p0_wr_en</obj_property>
+   </wvobject>
+   <wvobject fp_name="/memory_interface_tb/u_lpddr3/c3_p0_wr_mask" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">c3_p0_wr_mask[3:0]</obj_property>
+      <obj_property name="ObjectShortName">c3_p0_wr_mask[3:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/memory_interface_tb/u_lpddr3/c3_p0_wr_data" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">c3_p0_wr_data[31:0]</obj_property>
+      <obj_property name="ObjectShortName">c3_p0_wr_data[31:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/memory_interface_tb/u_lpddr3/c3_p0_wr_full" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">c3_p0_wr_full</obj_property>
+      <obj_property name="ObjectShortName">c3_p0_wr_full</obj_property>
+   </wvobject>
+   <wvobject fp_name="/memory_interface_tb/u_lpddr3/c3_p0_wr_empty" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">c3_p0_wr_empty</obj_property>
+      <obj_property name="ObjectShortName">c3_p0_wr_empty</obj_property>
+   </wvobject>
+   <wvobject fp_name="/memory_interface_tb/u_lpddr3/c3_p0_wr_count" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">c3_p0_wr_count[6:0]</obj_property>
+      <obj_property name="ObjectShortName">c3_p0_wr_count[6:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/memory_interface_tb/u_lpddr3/c3_p0_wr_underrun" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">c3_p0_wr_underrun</obj_property>
+      <obj_property name="ObjectShortName">c3_p0_wr_underrun</obj_property>
+   </wvobject>
+   <wvobject fp_name="/memory_interface_tb/u_lpddr3/c3_p0_wr_error" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">c3_p0_wr_error</obj_property>
+      <obj_property name="ObjectShortName">c3_p0_wr_error</obj_property>
+   </wvobject>
+   <wvobject fp_name="/memory_interface_tb/u_lpddr3/c3_p0_rd_clk" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">c3_p0_rd_clk</obj_property>
+      <obj_property name="ObjectShortName">c3_p0_rd_clk</obj_property>
+   </wvobject>
+   <wvobject fp_name="/memory_interface_tb/u_lpddr3/c3_p0_rd_en" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">c3_p0_rd_en</obj_property>
+      <obj_property name="ObjectShortName">c3_p0_rd_en</obj_property>
+   </wvobject>
+   <wvobject fp_name="/memory_interface_tb/u_lpddr3/c3_p0_rd_data" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">c3_p0_rd_data[31:0]</obj_property>
+      <obj_property name="ObjectShortName">c3_p0_rd_data[31:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/memory_interface_tb/u_lpddr3/c3_p0_rd_full" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">c3_p0_rd_full</obj_property>
+      <obj_property name="ObjectShortName">c3_p0_rd_full</obj_property>
+   </wvobject>
+   <wvobject fp_name="/memory_interface_tb/u_lpddr3/c3_p0_rd_empty" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">c3_p0_rd_empty</obj_property>
+      <obj_property name="ObjectShortName">c3_p0_rd_empty</obj_property>
+   </wvobject>
+   <wvobject fp_name="/memory_interface_tb/u_lpddr3/c3_p0_rd_count" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">c3_p0_rd_count[6:0]</obj_property>
+      <obj_property name="ObjectShortName">c3_p0_rd_count[6:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/memory_interface_tb/u_lpddr3/c3_p0_rd_overflow" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">c3_p0_rd_overflow</obj_property>
+      <obj_property name="ObjectShortName">c3_p0_rd_overflow</obj_property>
+   </wvobject>
+   <wvobject fp_name="/memory_interface_tb/u_lpddr3/c3_p0_rd_error" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">c3_p0_rd_error</obj_property>
+      <obj_property name="ObjectShortName">c3_p0_rd_error</obj_property>
+   </wvobject>
+   <wvobject fp_name="group197" type="group">
+      <obj_property name="label">DDR</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <wvobject fp_name="/memory_interface_tb/u_lpddr3/mcb3_dram_dq" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">mcb3_dram_dq[15:0]</obj_property>
+         <obj_property name="ObjectShortName">mcb3_dram_dq[15:0]</obj_property>
+      </wvobject>
+   </wvobject>
+   <wvobject fp_name="/memory_interface_tb/lpddr0/Clk" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">Clk</obj_property>
+      <obj_property name="ObjectShortName">Clk</obj_property>
+   </wvobject>
+   <wvobject fp_name="/memory_interface_tb/u_lpddr3/mcb3_dram_a" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">mcb3_dram_a[12:0]</obj_property>
+      <obj_property name="ObjectShortName">mcb3_dram_a[12:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/memory_interface_tb/u_lpddr3/mcb3_dram_ba" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">mcb3_dram_ba[1:0]</obj_property>
+      <obj_property name="ObjectShortName">mcb3_dram_ba[1:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/memory_interface_tb/u_lpddr3/mcb3_dram_cke" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">mcb3_dram_cke</obj_property>
+      <obj_property name="ObjectShortName">mcb3_dram_cke</obj_property>
+   </wvobject>
+   <wvobject fp_name="/memory_interface_tb/u_lpddr3/mcb3_dram_ras_n" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">mcb3_dram_ras_n</obj_property>
+      <obj_property name="ObjectShortName">mcb3_dram_ras_n</obj_property>
+   </wvobject>
+   <wvobject fp_name="/memory_interface_tb/u_lpddr3/mcb3_dram_cas_n" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">mcb3_dram_cas_n</obj_property>
+      <obj_property name="ObjectShortName">mcb3_dram_cas_n</obj_property>
+   </wvobject>
+   <wvobject fp_name="/memory_interface_tb/u_lpddr3/mcb3_dram_we_n" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">mcb3_dram_we_n</obj_property>
+      <obj_property name="ObjectShortName">mcb3_dram_we_n</obj_property>
+   </wvobject>
+   <wvobject fp_name="/memory_interface_tb/u_lpddr3/mcb3_dram_dm" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">mcb3_dram_dm</obj_property>
+      <obj_property name="ObjectShortName">mcb3_dram_dm</obj_property>
+   </wvobject>
+   <wvobject fp_name="/memory_interface_tb/u_lpddr3/mcb3_dram_udqs" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">mcb3_dram_udqs</obj_property>
+      <obj_property name="ObjectShortName">mcb3_dram_udqs</obj_property>
+   </wvobject>
+   <wvobject fp_name="/memory_interface_tb/u_lpddr3/mcb3_rzq" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">mcb3_rzq</obj_property>
+      <obj_property name="ObjectShortName">mcb3_rzq</obj_property>
+   </wvobject>
+   <wvobject fp_name="/memory_interface_tb/u_lpddr3/mcb3_dram_udm" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">mcb3_dram_udm</obj_property>
+      <obj_property name="ObjectShortName">mcb3_dram_udm</obj_property>
+   </wvobject>
+   <wvobject fp_name="/memory_interface_tb/u_lpddr3/mcb3_dram_ck_n" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">mcb3_dram_ck_n</obj_property>
+      <obj_property name="ObjectShortName">mcb3_dram_ck_n</obj_property>
+   </wvobject>
+   <wvobject fp_name="/memory_interface_tb/u_lpddr3/mcb3_dram_ck" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">mcb3_dram_ck</obj_property>
+      <obj_property name="ObjectShortName">mcb3_dram_ck</obj_property>
+   </wvobject>
+   <wvobject fp_name="/memory_interface_tb/u_lpddr3/mcb3_dram_dqs" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">mcb3_dram_dqs</obj_property>
+      <obj_property name="ObjectShortName">mcb3_dram_dqs</obj_property>
+   </wvobject>
+</wave_config>

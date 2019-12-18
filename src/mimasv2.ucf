@@ -1,0 +1,410 @@
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++#
+# This file is a .ucf for Mimas V2 (http://www.numato.com)                                            #
+# To use it in your project :                                                                         #
+# * Remove or comment the lines corresponding to unused pins in the project.                          #
+# * Rename the used signals according to the your project.                                            #
+# * For more detail refer the User Guide for Mimas V2 available at http://numato.com/fpga-cpld        #
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++#
+#**************************************************************************************************************************************************#
+#                                            UCF for Mimas V2                                                                                      #
+#**************************************************************************************************************************************************#
+CONFIG VCCAUX  = 3.3;
+
+#| PERIOD = 10 ns HIGH 50%;
+NET "clk_100mhz" LOC = V10;
+NET "clk_100mhz" IOSTANDARD = LVCMOS33;
+#NET "CLK_12MHz"                   LOC = D9      | IOSTANDARD = LVCMOS33 | PERIOD = 12MHz ;
+#NET "CLK_100MHz"                  LOC = V10     |IOSTANDARD = LVCMOS33 | TNM = "CLK_100MHz";    
+#TIMESPEC TS_CLK_100MHz = PERIOD "CLK_100MHz" 10 ns HIGH 50%;
+#TIMESPEC TS_CLK_100MHz = PERIOD "CLK_100MHz" 10 ns HIGH 50%;
+   
+###################################################################################################################################################
+#                                                 UART Interface                                                                                  #
+################################################################################################################################################### 
+#NET "UART_TX"                    LOC = A8      |  IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ;
+#NET "UART_RX"                    LOC = B8      |  IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ;
+###################################################################################################################################################
+#                                                   SPI Flash                                                                                     #
+###################################################################################################################################################
+#NET "SDI"                        LOC = T13     | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8 ;  #MOSI
+#NET "SDO"                        LOC = R13     | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8 ;  #MISO 
+#NET "SCLK"                       LOC = R15     | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8 ;  #SCK
+#NET "CS"                         LOC = V3      | IOSTANDARD = LVCMOS33 | SLEW = FAST | DRIVE = 8 ;  #CS 
+###################################################################################################################################################
+#                                                 LPDDR MT46H32M16XXXX-5                                                                          #
+################################################################################################################################################### 
+#NET  "calib_done"                LOC = P15     | IOSTANDARD = LVCMOS33;
+#NET  "error"                     LOC = P16     | IOSTANDARD = LVCMOS33;
+#NET  "c3_sys_rst_n"              LOC = L15     | IOSTANDARD = LVCMOS33 | PULLDOWN;    # Pin 7 of Header P9
+NET "mcb3_dram_a[0]" LOC = J7;
+NET "mcb3_dram_a[0]" IOSTANDARD = MOBILE_DDR;
+NET "mcb3_dram_a[10]" LOC = F4;
+NET "mcb3_dram_a[10]" IOSTANDARD = MOBILE_DDR;
+NET "mcb3_dram_a[11]" LOC = D3;
+NET "mcb3_dram_a[11]" IOSTANDARD = MOBILE_DDR;
+NET "mcb3_dram_a[12]" LOC = G6;
+NET "mcb3_dram_a[12]" IOSTANDARD = MOBILE_DDR;
+NET "mcb3_dram_a[1]" LOC = J6;
+NET "mcb3_dram_a[1]" IOSTANDARD = MOBILE_DDR;
+NET "mcb3_dram_a[2]" LOC = H5;
+NET "mcb3_dram_a[2]" IOSTANDARD = MOBILE_DDR;
+NET "mcb3_dram_a[3]" LOC = L7;
+NET "mcb3_dram_a[3]" IOSTANDARD = MOBILE_DDR;
+NET "mcb3_dram_a[4]" LOC = F3;
+NET "mcb3_dram_a[4]" IOSTANDARD = MOBILE_DDR;
+NET "mcb3_dram_a[5]" LOC = H4;
+NET "mcb3_dram_a[5]" IOSTANDARD = MOBILE_DDR;
+NET "mcb3_dram_a[6]" LOC = H3;
+NET "mcb3_dram_a[6]" IOSTANDARD = MOBILE_DDR;
+NET "mcb3_dram_a[7]" LOC = H6;
+NET "mcb3_dram_a[7]" IOSTANDARD = MOBILE_DDR;
+NET "mcb3_dram_a[8]" LOC = D2;
+NET "mcb3_dram_a[8]" IOSTANDARD = MOBILE_DDR;
+NET "mcb3_dram_a[9]" LOC = D1;
+NET "mcb3_dram_a[9]" IOSTANDARD = MOBILE_DDR;
+NET "mcb3_dram_ba[0]" LOC = F2;
+NET "mcb3_dram_ba[0]" IOSTANDARD = MOBILE_DDR;
+NET "mcb3_dram_ba[1]" LOC = F1;
+NET "mcb3_dram_ba[1]" IOSTANDARD = MOBILE_DDR;
+NET "mcb3_dram_cas_n" LOC = K5;
+NET "mcb3_dram_cas_n" IOSTANDARD = MOBILE_DDR;
+NET "mcb3_dram_ck" LOC = G3;
+NET "mcb3_dram_ck" IOSTANDARD = DIFF_MOBILE_DDR;
+NET "mcb3_dram_ck_n" LOC = G1;
+NET "mcb3_dram_ck_n" IOSTANDARD = DIFF_MOBILE_DDR;
+NET "mcb3_dram_cke" LOC = H7;
+NET "mcb3_dram_cke" IOSTANDARD = MOBILE_DDR;
+NET "mcb3_dram_dm" LOC = K3;
+NET "mcb3_dram_dm" IOSTANDARD = MOBILE_DDR;
+NET "mcb3_dram_dq[0]" LOC = L2;
+NET "mcb3_dram_dq[0]" IOSTANDARD = MOBILE_DDR;
+NET "mcb3_dram_dq[10]" LOC = N2;
+NET "mcb3_dram_dq[10]" IOSTANDARD = MOBILE_DDR;
+NET "mcb3_dram_dq[11]" LOC = N1;
+NET "mcb3_dram_dq[11]" IOSTANDARD = MOBILE_DDR;
+NET "mcb3_dram_dq[12]" LOC = T2;
+NET "mcb3_dram_dq[12]" IOSTANDARD = MOBILE_DDR;
+NET "mcb3_dram_dq[13]" LOC = T1;
+NET "mcb3_dram_dq[13]" IOSTANDARD = MOBILE_DDR;
+NET "mcb3_dram_dq[14]" LOC = U2;
+NET "mcb3_dram_dq[14]" IOSTANDARD = MOBILE_DDR;
+NET "mcb3_dram_dq[15]" LOC = U1;
+NET "mcb3_dram_dq[15]" IOSTANDARD = MOBILE_DDR;
+NET "mcb3_dram_dq[1]" LOC = L1;
+NET "mcb3_dram_dq[1]" IOSTANDARD = MOBILE_DDR;
+NET "mcb3_dram_dq[2]" LOC = K2;
+NET "mcb3_dram_dq[2]" IOSTANDARD = MOBILE_DDR;
+NET "mcb3_dram_dq[3]" LOC = K1;
+NET "mcb3_dram_dq[3]" IOSTANDARD = MOBILE_DDR;
+NET "mcb3_dram_dq[4]" LOC = H2;
+NET "mcb3_dram_dq[4]" IOSTANDARD = MOBILE_DDR;
+NET "mcb3_dram_dq[5]" LOC = H1;
+NET "mcb3_dram_dq[5]" IOSTANDARD = MOBILE_DDR;
+NET "mcb3_dram_dq[6]" LOC = J3;
+NET "mcb3_dram_dq[6]" IOSTANDARD = MOBILE_DDR;
+NET "mcb3_dram_dq[7]" LOC = J1;
+NET "mcb3_dram_dq[7]" IOSTANDARD = MOBILE_DDR;
+NET "mcb3_dram_dq[8]" LOC = M3;
+NET "mcb3_dram_dq[8]" IOSTANDARD = MOBILE_DDR;
+NET "mcb3_dram_dq[9]" LOC = M1;
+NET "mcb3_dram_dq[9]" IOSTANDARD = MOBILE_DDR;
+NET "mcb3_dram_dqs" LOC = L4;
+NET "mcb3_dram_dqs" IOSTANDARD = MOBILE_DDR;
+NET "mcb3_dram_ras_n" LOC = L5;
+NET "mcb3_dram_ras_n" IOSTANDARD = MOBILE_DDR;
+NET "mcb3_dram_udm" LOC = K4;
+NET "mcb3_dram_udm" IOSTANDARD = MOBILE_DDR;
+NET "mcb3_dram_udqs" LOC = P2;
+NET "mcb3_dram_udqs" IOSTANDARD = MOBILE_DDR;
+NET "mcb3_dram_we_n" LOC = E3;
+NET "mcb3_dram_we_n" IOSTANDARD = MOBILE_DDR;
+NET "mcb3_rzq" LOC = N4;
+NET "mcb3_rzq" IOSTANDARD = MOBILE_DDR;
+
+
+   
+###################################################################################################################################################
+#                                                 DIP Switches                                                                                    #
+################################################################################################################################################### 
+#NET "DPSwitch[0]"                LOC = C17     | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST | PULLUP;  #DP 8
+#NET "DPSwitch[1]"                LOC = C18     | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST | PULLUP;  #DP 7
+#NET "DPSwitch[2]"                LOC = D17     | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST | PULLUP;  #DP 6
+#NET "DPSwitch[3]"                LOC = D18     | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST | PULLUP;  #DP 5
+#NET "DPSwitch[4]"                LOC = E18     | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST | PULLUP;  #DP 4
+#NET "DPSwitch[5]"                LOC = E16     | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST | PULLUP;  #DP 3
+#NET "DPSwitch[6]"                LOC = F18     | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST | PULLUP;  #DP 2
+#NET "DPSwitch[7]"                LOC = F17     | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST | PULLUP;  #DP 1
+###################################################################################################################################################
+#                                              Push Buttons Switches                                                                              #
+################################################################################################################################################### 
+#NET "Switch[5]"                  LOC = M18     | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST | PULLUP; #SW1
+#NET "Switch[4]"                  LOC = L18     | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST | PULLUP; #SW2
+#NET "Switch[3]"                  LOC = M16     | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST | PULLUP; #SW3
+#NET "Switch[2]"                  LOC = L17     | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST | PULLUP; #SW4
+#NET "Switch[1]"                  LOC = K17     | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST | PULLUP; #SW5
+#NET "Switch[0]"                  LOC = K18     | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST | PULLUP; #SW5
+#NET "restart_button"              LOC = K17     | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST | PULLUP; #SW5
+#SW6
+NET "reset_button" LOC = K18;
+NET "reset_button" IOSTANDARD = LVCMOS33;
+NET "reset_button" DRIVE = 8;
+NET "reset_button" SLEW = FAST;
+NET "reset_button" PULLUP;
+###################################################################################################################################################
+#                                                    LEDs                                                                                         #
+################################################################################################################################################### 
+#D1
+NET "LED[7]" LOC = P15;
+NET "LED[7]" IOSTANDARD = LVCMOS33;
+NET "LED[7]" DRIVE = 8;
+NET "LED[7]" SLEW = FAST;
+#D2
+NET "LED[6]" LOC = P16;
+NET "LED[6]" IOSTANDARD = LVCMOS33;
+NET "LED[6]" DRIVE = 8;
+NET "LED[6]" SLEW = FAST;
+#D3
+NET "LED[5]" LOC = N15;
+NET "LED[5]" IOSTANDARD = LVCMOS33;
+NET "LED[5]" DRIVE = 8;
+NET "LED[5]" SLEW = FAST;
+#D4
+NET "LED[4]" LOC = N16;
+NET "LED[4]" IOSTANDARD = LVCMOS33;
+NET "LED[4]" DRIVE = 8;
+NET "LED[4]" SLEW = FAST;
+#D5
+NET "LED[3]" LOC = U17;
+NET "LED[3]" IOSTANDARD = LVCMOS33;
+NET "LED[3]" DRIVE = 8;
+NET "LED[3]" SLEW = FAST;
+#D6
+NET "LED[2]" LOC = U18;
+NET "LED[2]" IOSTANDARD = LVCMOS33;
+NET "LED[2]" DRIVE = 8;
+NET "LED[2]" SLEW = FAST;
+#D7
+NET "LED[1]" LOC = T17;
+NET "LED[1]" IOSTANDARD = LVCMOS33;
+NET "LED[1]" DRIVE = 8;
+NET "LED[1]" SLEW = FAST;
+#D8
+NET "LED[0]" LOC = T18;
+NET "LED[0]" IOSTANDARD = LVCMOS33;
+NET "LED[0]" DRIVE = 8;
+NET "LED[0]" SLEW = FAST;
+###################################################################################################################################################
+#                                                   Micro SD Card                                                                                 #
+###################################################################################################################################################
+#NET "DAT0"                       LOC = K14     | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ; #MISO
+#NET "DAT1"                       LOC = G18     | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ;
+#NET "DAT2"                       LOC = J13     | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ;
+#NET "DAT3"                       LOC = L13     | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ; #CS
+#NET "CMD"                        LOC = G16     | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ; #MOSI
+#NET "CLK"                        LOC = L12     | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ; #CLK
+###################################################################################################################################################
+#                                               Seven Segment Display                                                                             #
+################################################################################################################################################### 
+#a
+NET "SevenSegment[7]" LOC = A3;
+NET "SevenSegment[7]" IOSTANDARD = LVCMOS33;
+NET "SevenSegment[7]" DRIVE = 8;
+NET "SevenSegment[7]" SLEW = FAST;
+#b
+NET "SevenSegment[6]" LOC = B4;
+NET "SevenSegment[6]" IOSTANDARD = LVCMOS33;
+NET "SevenSegment[6]" DRIVE = 8;
+NET "SevenSegment[6]" SLEW = FAST;
+#c
+NET "SevenSegment[5]" LOC = A4;
+NET "SevenSegment[5]" IOSTANDARD = LVCMOS33;
+NET "SevenSegment[5]" DRIVE = 8;
+NET "SevenSegment[5]" SLEW = FAST;
+#d
+NET "SevenSegment[4]" LOC = C4;
+NET "SevenSegment[4]" IOSTANDARD = LVCMOS33;
+NET "SevenSegment[4]" DRIVE = 8;
+NET "SevenSegment[4]" SLEW = FAST;
+#e
+NET "SevenSegment[3]" LOC = C5;
+NET "SevenSegment[3]" IOSTANDARD = LVCMOS33;
+NET "SevenSegment[3]" DRIVE = 8;
+NET "SevenSegment[3]" SLEW = FAST;
+#f
+NET "SevenSegment[2]" LOC = D6;
+NET "SevenSegment[2]" IOSTANDARD = LVCMOS33;
+NET "SevenSegment[2]" DRIVE = 8;
+NET "SevenSegment[2]" SLEW = FAST;
+#g
+NET "SevenSegment[1]" LOC = C6;
+NET "SevenSegment[1]" IOSTANDARD = LVCMOS33;
+NET "SevenSegment[1]" DRIVE = 8;
+NET "SevenSegment[1]" SLEW = FAST;
+#dot
+NET "SevenSegment[0]" LOC = A5;
+NET "SevenSegment[0]" IOSTANDARD = LVCMOS33;
+NET "SevenSegment[0]" DRIVE = 8;
+NET "SevenSegment[0]" SLEW = FAST;
+#Enables for Seven Segment
+NET "SevenSegmentEnable[2]" LOC = B3;
+NET "SevenSegmentEnable[2]" IOSTANDARD = LVCMOS33;
+NET "SevenSegmentEnable[2]" DRIVE = 8;
+NET "SevenSegmentEnable[2]" SLEW = FAST;
+NET "SevenSegmentEnable[1]" LOC = A2;
+NET "SevenSegmentEnable[1]" IOSTANDARD = LVCMOS33;
+NET "SevenSegmentEnable[1]" DRIVE = 8;
+NET "SevenSegmentEnable[1]" SLEW = FAST;
+NET "SevenSegmentEnable[0]" LOC = B2;
+NET "SevenSegmentEnable[0]" IOSTANDARD = LVCMOS33;
+NET "SevenSegmentEnable[0]" DRIVE = 8;
+NET "SevenSegmentEnable[0]" SLEW = FAST;
+
+###################################################################################################################################################
+#                                                    Audio                                                                                        #
+################################################################################################################################################### 
+#NET "Audio1"                     LOC = B16     | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ;  # Audio Left               
+#NET "Audio2"                     LOC = A16     | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ;  # Audio Right
+###################################################################################################################################################
+#                                                    VGA                                                                                          #
+################################################################################################################################################### 
+NET "hsync" LOC = B12;
+NET "hsync" IOSTANDARD = LVCMOS33;
+NET "hsync" DRIVE = 8;
+NET "hsync" SLEW = FAST;
+NET "vsync" LOC = A12;
+NET "vsync" IOSTANDARD = LVCMOS33;
+NET "vsync" DRIVE = 8;
+NET "vsync" SLEW = FAST;
+
+NET "red[2]" LOC = C9;
+NET "red[2]" IOSTANDARD = LVCMOS33;
+NET "red[2]" DRIVE = 8;
+NET "red[2]" SLEW = FAST;
+NET "red[1]" LOC = B9;
+NET "red[1]" IOSTANDARD = LVCMOS33;
+NET "red[1]" DRIVE = 8;
+NET "red[1]" SLEW = FAST;
+NET "red[0]" LOC = A9;
+NET "red[0]" IOSTANDARD = LVCMOS33;
+NET "red[0]" DRIVE = 8;
+NET "red[0]" SLEW = FAST;
+
+NET "green[2]" LOC = C11;
+NET "green[2]" IOSTANDARD = LVCMOS33;
+NET "green[2]" DRIVE = 8;
+NET "green[2]" SLEW = FAST;
+NET "green[1]" LOC = A10;
+NET "green[1]" IOSTANDARD = LVCMOS33;
+NET "green[1]" DRIVE = 8;
+NET "green[1]" SLEW = FAST;
+NET "green[0]" LOC = C10;
+NET "green[0]" IOSTANDARD = LVCMOS33;
+NET "green[0]" DRIVE = 8;
+NET "green[0]" SLEW = FAST;
+
+NET "blue[2]" LOC = A11;
+NET "blue[2]" IOSTANDARD = LVCMOS33;
+NET "blue[2]" DRIVE = 8;
+NET "blue[2]" SLEW = FAST;
+NET "blue[1]" LOC = B11;
+NET "blue[1]" IOSTANDARD = LVCMOS33;
+NET "blue[1]" DRIVE = 8;
+NET "blue[1]" SLEW = FAST;
+  
+###################################################################################################################################################
+#                                                   HEADER P6                                                                                     #
+################################################################################################################################################### 
+#NET "IO_P6[7]"                   LOC = U7      | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ; #Pin 1
+#NET "IO_P6[6]"                   LOC = V7      | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ; #Pin 2
+#NET "IO_P6[5]"                   LOC = T4      | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ; #Pin 3
+#NET "IO_P6[4]"                   LOC = V4      | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ; #Pin 4
+#NET "IO_P6[3]"                   LOC = U5      | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ; #Pin 5
+#NET "IO_P6[2]"                   LOC = V5      | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ; #Pin 6
+#NET "IO_P6[1]"                   LOC = R3      | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ; #Pin 7
+#NET "IO_P6[0]"                   LOC = T3      | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ; #Pin 8
+###################################################################################################################################################
+#                                                   HEADER P7                                                                                     #
+###################################################################################################################################################  
+#NET "IO_P7[7]"                   LOC = U8      | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ; #Pin 1
+#NET "IO_P7[6]"                   LOC = V8      | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ; #Pin 2
+#NET "IO_P7[5]"                   LOC = R8      | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ; #Pin 3
+#NET "IO_P7[4]"                   LOC = T8      | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ; #Pin 4
+#NET "IO_P7[3]"                   LOC = R5      | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ; #Pin 5
+#NET "IO_P7[2]"                   LOC = T5      | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ; #Pin 6
+#NET "IO_P7[1]"                   LOC = T9      | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ; #Pin 7
+#NET "IO_P7[0]"                   LOC = V9      | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ; #Pin 8
+###################################################################################################################################################
+#                                                   HEADER P8                                                                                     #
+###################################################################################################################################################
+#NET "IO_P8[7]"                  LOC = R11     | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ; #Pin 1
+#NET "IO_P8[6]"                  LOC = T11     | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ; #Pin 2
+#NET "IO_P8[5]"                  LOC = R10     | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ; #Pin 3
+#NET "IO_P8[4]"                  LOC = T10     | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ; #Pin 4
+#NET "IO_P8[3]"                  LOC = U13     | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ; #Pin 5
+#NET "IO_P8[2]"                  LOC = V13     | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ; #Pin 6
+#NET "IO_P8[1]"                  LOC = U11     | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ; #Pin 7
+#NET "IO_P8[0]"                  LOC = V11     | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ; #Pin 8
+###################################################################################################################################################
+#                                                   HEADER P9                                                                                     #
+###################################################################################################################################################
+#NET "IO_P9[7]"                 LOC = H17      | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ; #Pin 1
+#NET "IO_P9[6]"                 LOC = H18      | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ; #Pin 2
+#NET "IO_P9[5]"                 LOC = J16      | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ; #Pin 3
+#NET "IO_P9[4]"                 LOC = J18      | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ; #Pin 4
+#NET "IO_P9[3]"                 LOC = K15      | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ; #Pin 5
+#NET "IO_P9[2]"                 LOC = K16      | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ; #Pin 6
+#NET "IO_P9[1]"                 LOC = L15      | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ; #Pin 7
+#NET "IO_P9[0]"                 LOC = L16      | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ; #Pin 8
+#Created by Constraints Editor (xc6slx9-csg324-2) - 2019/12/01
+NET "clk_100mhz" TNM_NET = "clk_100mhz";
+TIMESPEC TS_clk_100mhz = PERIOD "clk_100mhz" 10 ns HIGH 50 %;
+
+
+############################################################################
+# DDR2 requires the MCB to operate in Extended performance mode with higher Vccint
+# specification to achieve maximum frequency. Therefore, the following CONFIG constraint
+# follows the corresponding GUI option setting. However, DDR3 can operate at higher 
+# frequencies with any Vcciint value by operating MCB in extended mode. Please do not
+# remove/edit the below constraint to avoid false errors.
+############################################################################
+CONFIG MCB_PERFORMANCE  = STANDARD;
+
+
+##################################################################################
+# Timing Ignore constraints for paths crossing the clock domain 
+##################################################################################
+NET "u_lpddr3/memc3_wrapper_inst/memc3_mcb_raw_wrapper_inst/selfrefresh_mcb_mode" TIG;
+NET "u_lpddr3/c3_pll_lock" TIG;
+#INST "u_lpddr3/memc3_wrapper_inst/memc3_mcb_raw_wrapper_inst/gen_term_calib.mcb_soft_calibration_top_inst/mcb_soft_calibration_inst/DONE_SOFTANDHARD_CAL*" TIG;
+
+#Please uncomment the below TIG if used in a design which enables self-refresh mode
+#NET "memc?_wrapper_inst/memc?_mcb_raw_wrapper_inst/gen_term_calib.mcb_soft_calibration_top_inst/mcb_soft_calibration_inst/SELFREFRESH_MCB_REQ" TIG;
+     
+
+############################################################################
+## Memory Controller 3                               
+## Memory Device: LPDDR->MT46H32M16XXXX-5 
+## Frequency: 100 MHz
+## Time Period: 10000 ps
+## Supported Part Numbers: MT46H32M16LFBF-5
+############################################################################
+
+############################################################################	
+# All the IO resources in an IO tile which contains DQSP/UDQSP are used		
+# irrespective of a single-ended or differential DQS design. Any signal that	
+# is connected to the free pin of the same IO tile in a single-ended design	
+# will be unrouted. Hence, the IOB cannot used as general pupose IO.			
+############################################################################	
+CONFIG PROHIBIT = P1,L3;
+
+############################################################################
+## Clock constraints                                                        
+############################################################################
+NET "u_lpddr3/memc3_infrastructure_inst/sys_clk_ibufg" TNM_NET = "SYS_CLK3";
+TIMESPEC TS_SYS_CLK3 = PERIOD "SYS_CLK3" 10 ns HIGH 50 %;
+############################################################################
+
+# PlanAhead Generated physical constraints 
+
+#INST "control_logic0/instr_read_enable1" BEL = B6LUT;
+#INST "control_logic0/instr_read_enable1" LOC = SLICE_X5Y14;
