@@ -130,8 +130,10 @@ architecture machine_arch of machine is
         lpddr_pB_rd_empty                          : in std_logic;
         lpddr_pB_rd_count                          : in std_logic_vector(6 downto 0);
         lpddr_pB_rd_overflow                       : in std_logic;
-        lpddr_pB_rd_error                          : in std_logic
-		);
+        lpddr_pB_rd_error                          : in std_logic;
+        led                                        : out std_logic_vector(7 downto 0);
+        seven_seg                                  : out std_logic_vector( 7 downto 0)
+	);
 	END COMPONENT;
 
     
@@ -618,7 +620,8 @@ begin
 		lpddr_pB_rd_empty => c3_p1_rd_empty,
 		lpddr_pB_rd_count => c3_p1_rd_count,
 		lpddr_pB_rd_overflow => c3_p1_rd_overflow,
-		lpddr_pB_rd_error => c3_p1_rd_error
+		lpddr_pB_rd_error => c3_p1_rd_error,
+        led=>led
      );
 
 
@@ -627,14 +630,14 @@ begin
     SevenSegment <= "11111111";
 
     -- LED outputs
-    LED(0) <= c3_calib_done;    
-    LED(1) <= pattern_generate_done;
-    LED(2) <= '0';
-    LED(3) <= '0';
-    LED(4) <= '0';
-    LED(5) <= '0';
-    LED(6) <= '0';
-    LED(7) <= '0';
-    
+--    LED(0) <= c3_calib_done;    
+--    LED(1) <= pattern_generate_done;
+--    LED(2) <= '0';
+--    LED(3) <= '0';
+--    LED(4) <= '0';
+--    LED(5) <= '0';
+--    LED(6) <= '0';
+--    LED(7) <= '0';
+--    
 
 end machine_arch;

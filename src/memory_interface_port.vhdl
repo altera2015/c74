@@ -66,7 +66,7 @@ end memory_interface_port;
 architecture Behavioral of memory_interface_port is
     signal bank: std_logic := '1';
     signal lpddr_data : std_logic_vector(31 downto 0);
-    type AccessState is ( IDLE, B0_R_START, B0_W_START, B1_R_START, B1_R_READ, B1_W_WAIT_TO_START, B1_W_START, B1_W_DELAY, B1_W_COMMIT_COMMAND, CLEAR_READY);
+    type AccessState is ( IDLE, B0_R_START, B0_W_START, B1_R_START, B1_R_START_DELAYED, B1_R_READ, B1_W_WAIT_TO_START, B1_W_START, B1_W_DELAY, B1_W_COMMIT_COMMAND, CLEAR_READY,CLEAR_READY_A);
     signal state_sig : AccessState;
 begin
 
@@ -117,12 +117,17 @@ begin
                             
                         else 
                             bank <= '1';
-                            state := B1_R_START;
+                            
                             
                             lpddr_cmd_bl <= "000000";
                             lpddr_cmd_instr <= "001";
                             lpddr_cmd_byte_addr <= std_logic_vector((unsigned(address(29 downto 0)) - bank_cutoff));
-                            lpddr_cmd_en <= '1';
+                            if lpddr_cmd_full = '0' then
+                                lpddr_cmd_en <= '1';
+                                state := B1_R_START;
+                            else
+                                state := B1_R_START_DELAYED;
+                            end if;
                             
                         end if;                    
                         
@@ -163,7 +168,8 @@ begin
                     ready <= '1';
                     fr_en <= '0';
                     state := CLEAR_READY;
-                                   
+                when CLEAR_READY_A =>
+                    state := CLEAR_READY;
                 when B0_W_START =>
                     ready <= '1';
                     fr_en <= '0';
@@ -183,8 +189,10 @@ begin
                     
                 when B1_W_START =>
                     lpddr_wr_en <= '0';
-                    lpddr_cmd_en <= '1';
-                    state := B1_W_COMMIT_COMMAND;
+                    if lpddr_cmd_full='0' then
+                        lpddr_cmd_en <= '1';
+                        state := B1_W_COMMIT_COMMAND;
+                    end if;
 
                 when B1_W_COMMIT_COMMAND =>
                     lpddr_cmd_en <= '0';
@@ -192,7 +200,10 @@ begin
                     state := CLEAR_READY;
                     
                     
-                -- **** READ ****                
+                -- **** READ ****  
+                when B1_R_START_DELAYED=>
+                    lpddr_cmd_en <= '1';
+                    state := B1_R_START;               
                 when B1_R_START =>
                 
                    lpddr_cmd_en <= '0';

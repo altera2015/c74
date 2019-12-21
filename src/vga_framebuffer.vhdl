@@ -12,7 +12,7 @@ use ieee.numeric_std.all;
 
 entity vga_framebuffer is
     generic (
-        BASE_ADDRESS           : integer := 1024;        
+        BASE_ADDRESS           : integer := 4096;        
         WIDTH                  : integer := 800;
         HEIGHT                 : integer := 600               
     );

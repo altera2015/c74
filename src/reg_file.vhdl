@@ -120,29 +120,31 @@ begin
                 clk           => clk,
                 reset         => reset,            
                 load          => load_regs(i),
-                q             => qs(i),
-                d             => ds(i),
+                q             => Qs(i),
+                d             => Ds(i),
                 inc           => inc_regs(i),
                 dec           => dec_regs(i),
                 op_value      => "0000000000000100"
             );
+                    
                                  
         end generate;
     end generate generator_loop;
-    
-    Ds(14) <=   sp_D when sp_load='1' else
-                a_D when to_integer(unsigned(a_reg_idx)) = 14 else
-                b_D when to_integer(unsigned(b_reg_idx)) = 14 else
-                c_D when to_integer(unsigned(c_reg_idx)) = 14 else
-                (others => '0');
-    Ds(15) <=   pc_D when pc_load='1' else
-                a_D when to_integer(unsigned(a_reg_idx)) = 15 else
-                b_D when to_integer(unsigned(b_reg_idx)) = 15 else
-                c_D when to_integer(unsigned(c_reg_idx)) = 15 else
-                (others => '0');
-                    
 
-  
+
+    Ds(14) <= sp_D when sp_load = '1' else
+             a_D when to_integer(unsigned(a_reg_idx)) = 14 else
+             b_D when to_integer(unsigned(b_reg_idx)) = 14 else
+             c_D when to_integer(unsigned(c_reg_idx)) = 14 else
+             (others => '0');    
+
+    Ds(15) <= pc_D when pc_load = '1' else
+             a_D when to_integer(unsigned(a_reg_idx)) = 15 else
+             b_D when to_integer(unsigned(b_reg_idx)) = 15 else
+             c_D when to_integer(unsigned(c_reg_idx)) = 15 else
+             (others => '0');    
+
+
     sp_Q <= Qs(14);
     pc_Q <= Qs(15);
   
