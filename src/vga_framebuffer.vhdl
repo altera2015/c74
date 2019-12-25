@@ -52,19 +52,19 @@ architecture vga_framebuffer_arch of vga_framebuffer is
     component vga
         generic (
             
-            
-            H_VISIBLE       : integer := 800;
-            H_FRONT_PORCH   : integer := 56;
-            H_SYNC_PULSE    : integer := 120;
-            H_BACK_PORCH    : integer := 64;
-        
-            V_VISIBLE       : integer := 600;
-            V_FRONT_PORCH   : integer := 37;
-            V_SYNC_PULSE    : integer := 6;
-            V_BACK_PORCH    : integer := 23
+        H_VISIBLE       : integer := 800;
+        H_FRONT_PORCH   : integer := 40;
+        H_SYNC_PULSE    : integer := 128;
+        H_BACK_PORCH    : integer := 88;
+    
+        V_VISIBLE       : integer := 600;
+        V_FRONT_PORCH   : integer := 1;
+        V_SYNC_PULSE    : integer := 4;
+        V_BACK_PORCH    : integer := 23
+
         );
         port (
-            clk      : in std_logic; -- expecting 100MHz.
+            clk      : in std_logic; -- expecting 40MHz.
             reset    : in std_logic;
             h_sync_n : out std_logic;
             v_sync_n : out std_logic;
@@ -92,19 +92,12 @@ architecture vga_framebuffer_arch of vga_framebuffer is
     type mem_read_state is ( WaitForSof, Idle, QueueCommand, QueueDone );        
     signal read_state: mem_read_state := WaitForSof;
     
-    type mem_word_state is ( PREPARE_BYTE1, 
-                             HOLD_BYTE1, 
+    type mem_word_state is ( PREPARE_BYTE1,        
                              PREPARE_BYTE2, 
-                             HOLD_BYTE2, 
                              PREPARE_BYTE3, 
-                             HOLD_BYTE3, 
-                             PREPARE_BYTE4, 
-                             HOLD_BYTE4 );
+                             PREPARE_BYTE4 );
                              
     signal word_state: mem_word_state := PREPARE_BYTE1;
-    
-    signal pixel_word : std_logic_vector(31 downto 0);
-    
     signal red_intermediary : std_logic_vector(2 downto 0);
     signal green_intermediary : std_logic_vector(2 downto 0);
     signal blue_intermediary : std_logic_vector(2 downto 1);
@@ -135,6 +128,7 @@ begin
         variable trd : integer;
         variable total_read : integer;
         variable to_read : integer;
+        variable pixel_word : std_logic_vector(31 downto 0);
     begin
     
         if rising_edge(clk) then
@@ -154,8 +148,8 @@ begin
             else
                 
                 blank <= blank_internal;
-                vsync <= vsync_internal;
-                hsync <= hsync_internal;
+                vsync <= not vsync_internal;
+                hsync <= not hsync_internal;
                 
                 cmd_en <= '0'; -- disable command.
                 rd_en <= '0';  -- disable read.
@@ -228,31 +222,23 @@ begin
                                 rd_en <= '1';                
                                 total_read := total_read+1;
                             end if;                        
-                            pixel_word <= rd_data;                            
-                            word_state <= HOLD_BYTE1;
-
-                        when HOLD_BYTE1 =>
+                            pixel_word := rd_data;                            
                             word_state <= PREPARE_BYTE2;
                         when PREPARE_BYTE2 =>
-                            pixel_word(31 downto 8) <= pixel_word(23 downto 0);
-                            word_state <= HOLD_BYTE2;            
-                        when HOLD_BYTE2 =>
+                            pixel_word(31 downto 8) := pixel_word(23 downto 0);
                             word_state <= PREPARE_BYTE3;
                         when PREPARE_BYTE3 =>
-                            pixel_word(31 downto 16) <= pixel_word(23 downto 8);
-                            word_state <= HOLD_BYTE3;             
-                        when HOLD_BYTE3 =>
+                            pixel_word(31 downto 16) := pixel_word(23 downto 8);
                             word_state <= PREPARE_BYTE4;
                         when PREPARE_BYTE4 =>
-                            pixel_word(31 downto 24) <= pixel_word(23 downto 16);
-                            word_state <= HOLD_BYTE4;
-                        when HOLD_BYTE4 =>
+                            pixel_word(31 downto 24) := pixel_word(23 downto 16);
                             word_state <= PREPARE_BYTE1;
-                            
                     end case;
+                    
                     red <= pixel_word(31 downto 29);
                     green <= pixel_word(28 downto 26);
                     blue <= pixel_word(25 downto 24);
+                 
                 else
                     red <= "000";
                     green <= "000";

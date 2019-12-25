@@ -30,13 +30,13 @@ entity vga is
     generic (
         
         H_VISIBLE       : integer := 800;
-        H_FRONT_PORCH   : integer := 56;
-        H_SYNC_PULSE    : integer := 120;
-        H_BACK_PORCH    : integer := 64;
+        H_FRONT_PORCH   : integer := 40;
+        H_SYNC_PULSE    : integer := 128;
+        H_BACK_PORCH    : integer := 88;
     
         V_VISIBLE       : integer := 600;
-        V_FRONT_PORCH   : integer := 37;
-        V_SYNC_PULSE    : integer := 6;
+        V_FRONT_PORCH   : integer := 1;
+        V_SYNC_PULSE    : integer := 4;
         V_BACK_PORCH    : integer := 23
         
     );
@@ -62,7 +62,6 @@ architecture vga_arch of vga is
     
     signal x_c : integer range 0 to H_WHOLE_FRAME := 0;
     signal y_c : integer range 0 to V_WHOLE_FRAME := 0;
-    signal div : std_logic := '0';
 
 begin
     
@@ -70,15 +69,14 @@ begin
     process(clk, reset)
         variable vx_c : integer range 0 to H_WHOLE_FRAME := 0;
         variable vy_c : integer range 0 to V_WHOLE_FRAME := 0;    
-        variable div  : std_logic;
+
     begin
 
         if rising_edge(clk) then
             if reset = '1' then
                 vx_c := 0;
-                vy_c := 0;   
-                div  := '0';        
-            elsif div = '1' then
+                vy_c := 0;
+            else
                 vx_c := vx_c + 1;            
                 if vx_c = H_WHOLE_FRAME then
                     vx_c := 0;            
@@ -90,12 +88,12 @@ begin
                 x_c <= vx_c;
                 y_c <= vy_c;        
             end if;
-            div  := not div;
+
         end if;   
     end process;
     
 
-    blank <= '1' when x_c < H_BLANK else
+    blank <= '1' when x_c < ( H_BLANK ) else
              '1' when x_c >= H_WHOLE_FRAME else
              '1' when y_c >= V_WHOLE_FRAME - V_BLANK else
              '0';
