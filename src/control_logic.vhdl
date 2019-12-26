@@ -68,7 +68,12 @@ entity control_logic is
         lpddr_pB_rd_error                          : in std_logic;
         
         led : out std_logic_vector(7 downto 0);
-        seven_seg : out std_logic_vector( 7 downto 0)
+        seven_seg : out std_logic_vector( 7 downto 0);
+        
+        -- UART Pins.
+   		rx_pin : IN std_logic;          
+        tx_pin : OUT std_logic
+
     );
 end control_logic;
 
@@ -185,6 +190,31 @@ architecture behavioral of control_logic is
 		);
 	END COMPONENT;    
     
+    
+	COMPONENT buffered_uart
+	PORT(
+		clk : IN std_logic;
+		reset : IN std_logic;
+		tx_data : IN std_logic_vector(7 downto 0);
+		tx_enable : IN std_logic;
+		rx_enable : IN std_logic;
+		
+		tx_full : OUT std_logic;
+		tx_busy : OUT std_logic;
+		rx_empty : OUT std_logic;
+		rx_data : OUT std_logic_vector(7 downto 0);
+		rx_pin : IN std_logic;          
+        tx_pin : OUT std_logic
+		);
+	END COMPONENT;    
+    
+    signal tx_enable : std_logic;
+    signal rx_enable : std_logic;
+    signal tx_full : std_logic;
+    signal tx_busy : std_logic;
+    signal rx_empty : std_logic;
+    signal rx_data : std_logic_vector(7 downto 0);
+    signal tx_data : std_logic_vector(7 downto 0);    
 
     -- Memory Interface
     -- PORT_A
@@ -300,7 +330,14 @@ architecture behavioral of control_logic is
     constant OP_DEC  : integer := 61;    
     
     constant OP_OUT  : integer := 70;
+    constant OP_IN   : integer := 71;
     
+    constant OP_CALLI: integer := 72;
+    constant OP_CALL : integer := 73;
+    constant OP_RET  : integer := 74;
+    constant OP_PUSH : integer := 75;
+    constant OP_POP  : integer := 76;
+        
     signal zero_flag : std_logic;
     signal carry_flag : std_logic;
     signal negative_flag : std_logic;
@@ -412,6 +449,7 @@ begin
 
                 sp_inc <= '0';
                 pc_inc <= '0';
+                sp_dec <= '0';
                 sp_load <= '0';
                 pc_load <= '0';
 
@@ -435,6 +473,7 @@ begin
 
                 sp_inc <= '0';
                 pc_inc <= '0';
+                sp_dec <= '0';                
                 sp_load <= '0';
                 pc_load <= '0';
 
@@ -443,7 +482,9 @@ begin
                 a_WE <= "0000";
                 b_RE <= '0';
                 b_WE <= "0000";
-
+                
+                
+                tx_enable <= '0';
             
                 case stage is
                     
@@ -488,7 +529,7 @@ begin
                                 when OP_SETZ | OP_SETC | OP_SETN | OP_SETO =>
                                     imm <= immediate(a_Q, 0);
                                     
-                                when OP_INC | OP_DEC | OP_MOVI | OP_CMPI | OP_OUT =>
+                                when OP_INC | OP_DEC | OP_MOVI | OP_CMPI | OP_OUT | OP_IN =>
                                     imm <= immediate(a_Q, 1);
                                     
                                 when OP_LDR | OP_STR |                                      
@@ -507,7 +548,6 @@ begin
                             end case;
                             
                         end if;
-                        
                         
                     when 2 =>
                         --led <= "00000100";
@@ -538,6 +578,22 @@ begin
                                     led <= a_reg_Q(7 downto 0);
                                 when 1 =>
                                     seven_seg <= a_reg_Q(7 downto 0);
+                                when 2 =>
+                                    tx_data <= a_reg_Q(7 downto 0);
+                                    tx_enable <= '1';
+                                when others =>
+                                    -- do nothing.
+                                end case;
+                                
+                            when OP_IN =>
+                                stage <= 0;
+                                case to_integer(unsigned(imm)) is
+
+                                when 3 =>
+                                    a_reg_D <= "0000000000000000000000000000000" & tx_full;
+                                    a_reg_load <= '1';
+                                    -- tx_data <= a_reg_Q(7 downto 0);
+                                    -- tx_enable <= '1';
                                 when others =>
                                     -- do nothing.
                                 end case;
@@ -601,6 +657,17 @@ begin
                                 b_D <= b_reg_Q;                                
                                 a_reg_op_value <= imm(15 downto 0);
                                 a_reg_inc <= '1';
+                                
+                            when OP_PUSH =>
+                                b_WE <= "1111";
+                                b_address <= std_logic_vector(unsigned(sp_Q) - 4);
+                                b_D <= a_reg_Q;
+                                sp_dec <= '1';
+                                
+                            when OP_POP =>
+                                b_RE <= '1';
+                                b_address <= sp_Q;
+                                sp_inc <= '1';
                                 
                             when OP_SETZ =>
                                 zero_flag <= imm(0);
@@ -687,7 +754,23 @@ begin
                             else
                                 -- stick around for results.
                                 stage <= 3;
-                            end if;   
+                            end if;
+                            
+                        when OP_PUSH =>
+                            
+                            if b_ready = '0' then
+                                stage <= 3; -- stick around a bit.
+                            end if;                        
+                            
+                        when OP_POP =>
+                        
+                            if b_READY = '1' then
+                                a_reg_D <= b_Q;
+                                a_reg_load <= '1';
+                            else
+                                -- stick around for results.
+                                stage <= 3;
+                            end if;
                             
                         when OP_STRI | OP_STR =>
                             if b_ready = '0' then
@@ -823,6 +906,22 @@ begin
 		pc_Q => pc_Q,
 		pc_D => pc_D
 	);    
+    
+    
+
+	buffered_uart0: buffered_uart PORT MAP(
+		clk => clk,
+		reset => reset,
+		tx_data => tx_data,
+		tx_enable => tx_enable,
+		tx_full => tx_full,
+		tx_busy => tx_busy,		
+		rx_empty => rx_empty,
+		rx_data => rx_data,
+		rx_enable => rx_enable,
+		rx_pin => rx_pin,
+		tx_pin => tx_pin
+	);
     
 
 end Behavioral;

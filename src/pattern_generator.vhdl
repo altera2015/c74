@@ -7,7 +7,7 @@ entity pattern_generator is
         DATA_PORT_SIZE      : integer := 32;
         WIDTH : integer := 800; -- 1023 max, must be multiple of 4
         HEIGHT : integer := 600; -- 1023 max
-        BASE_ADDRESS : integer := 1024      
+        BASE_ADDRESS : integer := 4096      
     );
     port (
         clk                               : in std_logic;

@@ -50,7 +50,9 @@ ARCHITECTURE behavior OF machine_tb IS
          mcb3_dram_dqs : INOUT  std_logic;
          mcb3_dram_ck : OUT  std_logic;
          mcb3_dram_ck_n : OUT  std_logic;
-         c3_rst0 : OUT  std_logic
+         c3_rst0 : OUT  std_logic;
+         UART_TX             : out std_logic;
+         UART_RX             : in std_logic
         );
     END COMPONENT;
    
@@ -108,8 +110,10 @@ ARCHITECTURE behavior OF machine_tb IS
    signal mcb3_dram_dm_vector : std_logic_vector(1 downto 0);
    signal mcb3_command               : std_logic_vector(2 downto 0);
    signal mcb3_enable1                : std_logic;
-   signal mcb3_enable2              : std_logic
-;  
+   signal mcb3_enable2              : std_logic;  
+   
+   signal UART_TX : std_logic;
+   signal UART_RX : std_logic;
 
    -- Clock period definitions
    constant clk_100mhz_period : time := 10 ns;
@@ -198,7 +202,9 @@ BEGIN
           mcb3_dram_dqs => mcb3_dram_dqs,
           mcb3_dram_ck => mcb3_dram_ck,
           mcb3_dram_ck_n => mcb3_dram_ck_n,
-          c3_rst0 => c3_rst0
+          c3_rst0 => c3_rst0,
+          UART_TX => UART_TX,
+          UART_RX => UART_RX          
         );
 
    -- Clock process definitions

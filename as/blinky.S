@@ -11,7 +11,8 @@
     mov r3, 0xffff    
 :wait_loop
     sub r3, r3, 1
-    jne wait_loop
+        
+    ; jne wait_loop
     add r1, r1, 1        
     out r1, 0
     
@@ -23,4 +24,4 @@
     j loop
     
 :pixel_count
-    .word 120000
+    .word 480000

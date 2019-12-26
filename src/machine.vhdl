@@ -72,7 +72,10 @@ entity machine is
         mcb3_dram_dqs       : inout  std_logic;
         mcb3_dram_ck        : out std_logic;
         mcb3_dram_ck_n      : out std_logic;        
-        c3_rst0             : out std_logic  
+        c3_rst0             : out std_logic ;
+
+        UART_TX             : out std_logic;
+        UART_RX             : in std_logic
     );
 end machine;
 
@@ -132,7 +135,11 @@ architecture machine_arch of machine is
         lpddr_pB_rd_overflow                       : in std_logic;
         lpddr_pB_rd_error                          : in std_logic;
         led                                        : out std_logic_vector(7 downto 0);
-        seven_seg                                  : out std_logic_vector( 7 downto 0)
+        seven_seg                                  : out std_logic_vector( 7 downto 0);
+        
+        -- UART Pins.
+   		rx_pin : IN std_logic;          
+        tx_pin : OUT std_logic
 	);
 	END COMPONENT;
 
@@ -283,27 +290,27 @@ architecture machine_arch of machine is
 	END COMPONENT;    
     
     
-    --	COMPONENT pattern_generator
-    --	PORT(
-    --		clk : IN std_logic;
-    --		reset : IN std_logic;
-    --		cmd_empty : IN std_logic;
-    --		cmd_full : IN std_logic;
-    --		wr_full : IN std_logic;
-    --		wr_empty : IN std_logic;
-    --		wr_count : IN std_logic_vector(6 downto 0);
-    --		wr_underrun : IN std_logic;
-    --		wr_error : IN std_logic;          
-    --		done : OUT std_logic;
-    --		cmd_en : OUT std_logic;
-    --		cmd_instr : OUT std_logic_vector(2 downto 0);
-    --		cmd_bl : OUT std_logic_vector(5 downto 0);
-    --		cmd_byte_addr : OUT std_logic_vector(29 downto 0);
-    --		wr_en : OUT std_logic;
-    --		wr_mask : OUT std_logic_vector(3 downto 0);
-    --		wr_data : OUT std_logic_vector(31 downto 0)
-    --		);
-    --	END COMPONENT;
+    	COMPONENT pattern_generator
+    	PORT(
+    		clk : IN std_logic;
+    		reset : IN std_logic;
+    		cmd_empty : IN std_logic;
+    		cmd_full : IN std_logic;
+    		wr_full : IN std_logic;
+    		wr_empty : IN std_logic;
+    		wr_count : IN std_logic_vector(6 downto 0);
+    		wr_underrun : IN std_logic;
+    		wr_error : IN std_logic;          
+    		done : OUT std_logic;
+    		cmd_en : OUT std_logic;
+    		cmd_instr : OUT std_logic_vector(2 downto 0);
+    		cmd_bl : OUT std_logic_vector(5 downto 0);
+    		cmd_byte_addr : OUT std_logic_vector(29 downto 0);
+    		wr_en : OUT std_logic;
+    		wr_mask : OUT std_logic_vector(3 downto 0);
+    		wr_data : OUT std_logic_vector(31 downto 0)
+    		);
+    	END COMPONENT;
         
 
     signal master_reset : std_logic;
@@ -385,7 +392,7 @@ architecture machine_arch of machine is
     signal  c3_p3_rd_overflow                        : std_logic;
     signal  c3_p3_rd_error                           : std_logic; 
     signal  user_clk                                 : std_logic;
-    
+    signal  framebuffer_reset                        : std_logic;
 begin
    
     master_reset <= not reset_button;
@@ -515,9 +522,22 @@ begin
     );
 
 
+
+    process(clk)
+    begin
+        if rising_edge(clk) then
+            if master_reset = '1' or c3_calib_done = '0' then
+                framebuffer_reset <= '1';
+            else
+                framebuffer_reset <= '0';
+            end if;            
+        end if;
+    end process;
+    
+
 	vga_framebuffer0: vga_framebuffer PORT MAP(
 		clk => clk,
-		reset => reset,
+		reset => framebuffer_reset,
 		hsync => hsync,
 		vsync => vsync,
 		red => red,
@@ -539,11 +559,19 @@ begin
 	);
 
 
+
     c3_p2_cmd_en <= '0';
     c3_p2_rd_en <= '0';
-    c3_p2_cmd_instr <= "000";
-    c3_p2_cmd_bl <= "000000";
-    c3_p2_cmd_byte_addr <= (others=>'0');
+    
+    -- c3_p2_wd_en <= '0';
+    
+--    c3_p2_cmd_instr <= "000";
+--    c3_p2_cmd_bl <= "000000";
+--    c3_p2_cmd_byte_addr <= (others=>'0');
+    
+    -- c3_p0_cmd_en <= '0';
+    -- c3_p1_rd_en <= '0';
+    --c3_p0_wr_en <= '0';
     
     process(user_clk)
     begin
@@ -556,8 +584,14 @@ begin
         end if;
     end process;
 
+--    uncomment when using the pattern generator.
+--    c3_p0_cmd_en <= '0';
+--    c3_p0_rd_en <= '0';
+--    c3_p0_wr_en <= '0';
+--    c3_p1_rd_en <= '0';
+
 --	pattern_generator0: pattern_generator PORT MAP(
---		clk => clk,
+--		clk => user_clk,
 --		reset => reset,
 --		done => pattern_generate_done,
 --		cmd_en => c3_p1_cmd_en,
@@ -621,7 +655,9 @@ begin
 		lpddr_pB_rd_count => c3_p1_rd_count,
 		lpddr_pB_rd_overflow => c3_p1_rd_overflow,
 		lpddr_pB_rd_error => c3_p1_rd_error,
-        led=>led
+        led=>led,
+        tx_pin => UART_TX,
+        rx_pin => UART_RX
      );
 
 

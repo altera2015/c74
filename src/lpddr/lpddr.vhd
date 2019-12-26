@@ -431,20 +431,29 @@ component memc3_wrapper is
 
 
 
-   --constant C3_CLKOUT0_DIVIDE       : integer := 2; 
-   --constant C3_CLKOUT1_DIVIDE       : integer := 2; 
-   --constant C3_CLKOUT2_DIVIDE       : integer := 16; 
-   --constant C3_CLKOUT3_DIVIDE       : integer := 8; 
-   --constant C3_CLKFBOUT_MULT        : integer := 4; 
+   --constant C3_CLKOUT0_DIVIDE       : integer := 2; -- 200
+   --constant C3_CLKOUT1_DIVIDE       : integer := 2; -- 200
+   --constant C3_CLKOUT2_DIVIDE       : integer := 16; -- 25
+   --constant C3_CLKOUT3_DIVIDE       : integer := 8; --50
+   --constant C3_CLKFBOUT_MULT        : integer := 4; -- 400
    --constant C3_DIVCLK_DIVIDE        : integer := 1; 
    
-   constant C3_CLKOUT0_DIVIDE       : integer := 3; -- 333 O1
-   constant C3_CLKOUT1_DIVIDE       : integer := 3; -- 333 O2
-   constant C3_CLKOUT2_DIVIDE       : integer := 10; -- 100 USER 30 passes timing checks
-   constant C3_CLKOUT3_DIVIDE       : integer := 10;  -- 100 CALIB
-   constant C3_CLKOUT4_DIVIDE       : integer := 10;  -- 100 User_clk
-   constant C3_CLKFBOUT_MULT        : integer := 10; --1000
-   constant C3_DIVCLK_DIVIDE        : integer := 1; --100   
+--   constant C3_CLKOUT0_DIVIDE       : integer := 3;  -- 333 O1
+--   constant C3_CLKOUT1_DIVIDE       : integer := 3;  -- 333 O2
+--   constant C3_CLKOUT2_DIVIDE       : integer := 10; -- 100 USER 30 passes timing checks
+--   constant C3_CLKOUT3_DIVIDE       : integer := 10; -- 100 CALIB
+--   constant C3_CLKOUT4_DIVIDE       : integer := 10; -- 100 User_clk
+--   constant C3_CLKFBOUT_MULT        : integer := 10; --100
+--   constant C3_DIVCLK_DIVIDE        : integer := 1;  --100   
+
+
+   constant C3_CLKOUT0_DIVIDE       : integer := 3;  -- 333 MHz LPDDR 
+   constant C3_CLKOUT1_DIVIDE       : integer := 3;  -- 333 MHz LPDDR
+   constant C3_CLKOUT2_DIVIDE       : integer := 25; -- 40 MHz VGABuffer
+   constant C3_CLKOUT3_DIVIDE       : integer := 10; -- 100 MHz CALIB
+   constant C3_CLKOUT4_DIVIDE       : integer := 10; -- 100 MHz User_clk
+   constant C3_CLKFBOUT_MULT        : integer := 10; --1000 MHz
+   constant C3_DIVCLK_DIVIDE        : integer := 1;  --100 MHz  
    
    constant C3_INCLK_PERIOD         : integer := ((C3_MEMCLK_PERIOD * C3_CLKFBOUT_MULT) / (C3_DIVCLK_DIVIDE * C3_CLKOUT0_DIVIDE * 2)); 
    constant C3_ARB_NUM_TIME_SLOTS   : integer := 12; 

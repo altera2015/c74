@@ -85,6 +85,13 @@ OP_DEC   = 61 # no flags changed
 
 
 OP_OUT   = 70
+OP_IN    = 71
+OP_CALLI = 72
+OP_CALL  = 73
+OP_RET   = 74
+OP_PUSH  = 75
+OP_POP   = 76
+
 
 REG_NONE = 0
 REG_A = 1
@@ -137,6 +144,13 @@ op_defs = {
     "dec": [[OP_DEC, REG_A, ARG_UNSIGNED]],
     
     "out": [[OP_OUT, REG_A, ARG_UNSIGNED]],
+    "in":  [[OP_IN, REG_A, ARG_UNSIGNED]],
+    
+    "push": [[OP_PUSH, REG_A, ARG_NONE]],
+    "pop": [[OP_POP, REG_A, ARG_NONE]],
+    "call": [[OP_CALLI, REG_NONE, ARG_SIGNED, True], [OP_CALL, REG_A, ARG_NONE]],
+    "ret": [[OP_RET, REG_NONE, ARG_NONE]],
+    
     ".word":[[OP_LITERAL, REG_NONE, ARG_32BIT] ]   
 }
 
