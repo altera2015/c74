@@ -271,72 +271,87 @@ architecture behavioral of control_logic is
     -- Primary Signals
     signal stage : integer range 0 to 7 := 7;
     
-    constant OP_NOP  : integer := 0;
+    constant OP_NOP  : integer := 0; --
     
-    constant OP_JI   : integer := 2;
-    constant OP_J    : integer := 3;
-    constant OP_JEQI : integer := 4;
-    constant OP_JEQ  : integer := 5;
-    constant OP_JNEI : integer := 6;
-    constant OP_JNE  : integer := 7;
-    constant OP_JCSI : integer := 8;
-    constant OP_JCS  : integer := 9;
-    constant OP_JCCI : integer := 10;
-    constant OP_JCC  : integer := 11;
-    constant OP_JNEGI: integer := 12;
-    constant OP_JNEG : integer := 13;
-    constant OP_JPOSI: integer := 14;
-    constant OP_JPOS : integer := 15;
-    constant OP_JVSI : integer := 16;
-    constant OP_JVS  : integer := 17;
-    constant OP_JVCI : integer := 18;
-    constant OP_JVC  : integer := 19;
-    constant OP_JHII : integer := 20;
-    constant OP_JHI  : integer := 21;
-    constant OP_JLSI : integer := 22;
-    constant OP_JLS  : integer := 23;
-    constant OP_JGEI : integer := 24;
-    constant OP_JGE  : integer := 25;
-    constant OP_JLTI : integer := 26;
-    constant OP_JLT  : integer := 27;
-    constant OP_JGTI : integer := 28;
-    constant OP_JGT  : integer := 29;
-    constant OP_JLEI : integer := 30;
-    constant OP_JLE  : integer := 31;
+    constant OP_JI   : integer := 2; --    
+    constant OP_J    : integer := 3; --
+    constant OP_JEQI : integer := 4; --   
+    constant OP_JEQ  : integer := 5; --   
+    constant OP_JNEI : integer := 6; --   
+    constant OP_JNE  : integer := 7; --   
+    constant OP_JCSI : integer := 8; --   
+    constant OP_JCS  : integer := 9; --   
+    constant OP_JCCI : integer := 10; --   
+    constant OP_JCC  : integer := 11; --   
+    constant OP_JNEGI: integer := 12; --   
+    constant OP_JNEG : integer := 13; --   
+    constant OP_JPOSI: integer := 14; --   
+    constant OP_JPOS : integer := 15; --   
+    constant OP_JVSI : integer := 16; --   
+    constant OP_JVS  : integer := 17; --   
+    constant OP_JVCI : integer := 18; --   
+    constant OP_JVC  : integer := 19; --   
+    constant OP_JHII : integer := 20; --   
+    constant OP_JHI  : integer := 21; --   
+    constant OP_JLSI : integer := 22; --   
+    constant OP_JLS  : integer := 23; --   
+    constant OP_JGEI : integer := 24; --   
+    constant OP_JGE  : integer := 25; --   
+    constant OP_JLTI : integer := 26; --   
+    constant OP_JLT  : integer := 27; --   
+    constant OP_JGTI : integer := 28; --   
+    constant OP_JGT  : integer := 29; --   
+    constant OP_JLEI : integer := 30; --   
+    constant OP_JLE  : integer := 31; --   
     
-    constant OP_SETZ : integer := 32;   -- set zero flag to lowest bit of immediate.
-    constant OP_SETC : integer := 33;   -- set carry flag to lowest bit of immediate.
-    constant OP_SETN : integer := 34;   -- set negative flag to lowest bit of immediate.
-    constant OP_SETO : integer := 35;   -- set negative flag to lowest bit of immediate.
+    constant OP_SETZ : integer := 32; -- set zero flag to lowest bit of immediate.
+    constant OP_SETC : integer := 33; -- set carry flag to lowest bit of immediate.
+    constant OP_SETN : integer := 34; -- set negative flag to lowest bit of immediate.
+    constant OP_SETO : integer := 35; -- set negative flag to lowest bit of immediate.
 
-    constant OP_MOVI : integer := 40;
-    constant OP_MOV  : integer := 41;
-    constant OP_LDRI : integer := 42;
-    constant OP_LDR  : integer := 43;
-    constant OP_STRI : integer := 44;
-    constant OP_STR  : integer := 45;
+    constant OP_MOVI : integer := 40; --
+    constant OP_MOV  : integer := 41; --    
+    constant OP_LDR  : integer := 42; -- (Load Register) load ra with value at memory location rb + signed    
+    constant OP_STR  : integer := 43; -- (Store Register) store ra value at memory location rb + signed    
+    constant OP_LDA  : integer := 44; -- (Load & Add) load ra with value at memory location rb, post load increment rb + signed
+    constant OP_STA  : integer := 45; -- (Store & Add) store ra value at memory location rb, post store increment rb + signed
             
-    constant OP_ADDI : integer := 50;
-    constant OP_ADD  : integer := 51;    
-    constant OP_ADDCI: integer := 52;
-    constant OP_ADDC : integer := 53;
-    constant OP_SUBI : integer := 54;
-    constant OP_SUB  : integer := 55;
-    constant OP_SUBCI: integer := 56;
-    constant OP_SUBC : integer := 57;
-    constant OP_CMPI : integer := 58;
-    constant OP_CMP  : integer := 59;
-    constant OP_INC  : integer := 60;    
-    constant OP_DEC  : integer := 61;    
+    constant OP_ADDI : integer := 50; --
+    constant OP_ADD  : integer := 51; --    
+    constant OP_ADDCI: integer := 52; --
+    constant OP_ADDC : integer := 53; --
+    constant OP_SUBI : integer := 54; --
+    constant OP_SUB  : integer := 55; --
+    constant OP_SUBCI: integer := 56; --
+    constant OP_SUBC : integer := 57; --
+    constant OP_CMPI : integer := 58; --
+    constant OP_CMP  : integer := 59; --
+    constant OP_INC  : integer := 60; -- 
+    constant OP_DEC  : integer := 61; --
     
-    constant OP_OUT  : integer := 70;
-    constant OP_IN   : integer := 71;
     
-    constant OP_CALLI: integer := 72;
-    constant OP_CALL : integer := 73;
-    constant OP_RET  : integer := 74;
-    constant OP_PUSH : integer := 75;
-    constant OP_POP  : integer := 76;
+    constant OP_ANDI : integer := 62; --   
+    constant OP_AND  : integer := 63; --   
+    constant OP_ORI  : integer := 64; --   
+    constant OP_OR   : integer := 65; --   
+    constant OP_XORI : integer := 66; --   
+    constant OP_XOR  : integer := 67; --   
+    
+    constant OP_NOT  : integer := 68; --   
+    constant OP_LSL  : integer := 69; --   
+    constant OP_LSR  : integer := 70; --   
+    constant OP_ASL  : integer := 71; --   
+    constant OP_ASR  : integer := 72; --   
+    
+    
+    constant OP_OUT  : integer := 80; --
+    constant OP_IN   : integer := 81; --
+    
+    constant OP_CALLI: integer := 82; --
+    constant OP_CALL : integer := 83; --
+    constant OP_RET  : integer := 84; --
+    constant OP_PUSH : integer := 85; --
+    constant OP_POP  : integer := 86; --
         
     signal zero_flag : std_logic;
     signal carry_flag : std_logic;
@@ -529,20 +544,24 @@ begin
                                 when OP_SETZ | OP_SETC | OP_SETN | OP_SETO =>
                                     imm <= immediate(a_Q, 0);
                                     
-                                when OP_INC | OP_DEC | OP_MOVI | OP_CMPI | OP_OUT | OP_IN =>
+                                when OP_INC | OP_DEC | OP_MOVI | OP_CMPI | OP_OUT | OP_IN |
+                                     OP_ANDI | OP_ORI | OP_XORI | OP_LSL | OP_LSR | OP_ASL |
+                                     OP_ASR =>
                                     imm <= immediate(a_Q, 1);
-                                    
-                                when OP_LDR | OP_STR |                                      
-                                     OP_ADDI | OP_ADDCI | 
-                                     OP_SUBI | OP_SUBCI =>
-                                    imm <= immediate(a_Q, 2); 
-                                    
-                                when OP_JI | OP_JEQI | OP_JNEI | OP_JCSI | OP_JCCI =>
+                                                                    
+                                when OP_ADDI | OP_ADDCI | 
+                                     OP_SUBI | OP_SUBCI =>                                
+                                   imm <= immediate(a_Q, 2); 
+                                                                      
+                                when OP_JI | OP_JEQI | OP_JNEI | OP_JCSI | OP_JCCI | 
+                                    OP_JNEGI | OP_JPOSI | OP_JVSI | OP_JVCI | OP_JHII | 
+                                    OP_JLSI | OP_JGEI | OP_JLTI | OP_JGTI | OP_JLEI | 
+                                    OP_CALLI =>
                                     signed_val <= signed_value(a_Q,0);
-                                    
-                                when OP_LDRI | OP_STRI =>
-                                    signed_val <= signed_value(a_Q,1);
-                                   
+
+                                when OP_LDR | OP_STR | OP_LDA | OP_STA =>
+                                    signed_val <= signed_value(a_Q,2);
+                                  
                                 when others =>
                                     -- do nothing.
                             end case;
@@ -560,17 +579,7 @@ begin
                             when OP_DEC =>
                                 a_reg_dec <= '1';
                                 a_reg_op_value <= imm(15 downto 0);                                
-                                
-                            when OP_JI =>
-                                pc_D <= std_logic_vector(unsigned(pc_Q) + unsigned(signed_val));
-                                pc_load <= '1';
-                                stage <= 0; -- done!
-                                
-                            when OP_J =>
-                                pc_D <= a_reg_Q;
-                                pc_load <= '1';
-                                stage <= 0; -- done!
-                                
+
                             when OP_OUT =>
                                 stage <= 0;
                                 case to_integer(unsigned(imm)) is
@@ -592,12 +601,22 @@ begin
                                 when 3 =>
                                     a_reg_D <= "0000000000000000000000000000000" & tx_full;
                                     a_reg_load <= '1';
-                                    -- tx_data <= a_reg_Q(7 downto 0);
-                                    -- tx_enable <= '1';
                                 when others =>
                                     -- do nothing.
                                 end case;
                                           
+                            
+                            when OP_JI =>
+                                pc_D <= std_logic_vector(unsigned(pc_Q) + unsigned(signed_val));
+                                pc_load <= '1';
+                                stage <= 0; -- done!
+                                
+                            when OP_J =>
+                                pc_D <= a_reg_Q;
+                                pc_load <= '1';
+                                stage <= 0; -- done!
+                                
+                            
                                 
                             when OP_JEQI =>
                                 if zero_flag = '1' then
@@ -605,6 +624,7 @@ begin
                                     pc_load <= '1';
                                 end if;
                                 stage <= 0; -- done!
+                                
                             when OP_JEQ =>
                                 if zero_flag = '1' then
                                     pc_D <= a_reg_Q;
@@ -618,6 +638,7 @@ begin
                                     pc_load <= '1';
                                 end if;
                                 stage <= 0; -- done!
+                                
                             when OP_JNE =>
                                 if zero_flag = '0' then
                                     pc_D <= a_reg_Q;
@@ -625,8 +646,177 @@ begin
                                 end if;
                                 stage <= 0; -- done!
 
-
                                 
+                            when OP_JCSI =>
+                                if carry_flag = '1' then
+                                    pc_D <= std_logic_vector(unsigned(pc_Q) + unsigned(signed_val));
+                                    pc_load <= '1';
+                                end if;
+                                stage <= 0; -- done!
+                                
+                            when OP_JCS =>
+                                if carry_flag = '1' then
+                                    pc_D <= a_reg_Q;
+                                    pc_load <= '1';
+                                end if;
+                                stage <= 0; -- done!
+
+                            when OP_JCCI =>
+                                if carry_flag = '0' then
+                                    pc_D <= std_logic_vector(unsigned(pc_Q) + unsigned(signed_val));
+                                    pc_load <= '1';
+                                end if;
+                                stage <= 0; -- done!
+                                
+                            when OP_JCC =>
+                                if carry_flag = '0' then
+                                    pc_D <= a_reg_Q;
+                                    pc_load <= '1';
+                                end if;
+                                stage <= 0; -- done!
+
+                            when OP_JNEGI =>
+                                if negative_flag = '1' then
+                                    pc_D <= std_logic_vector(unsigned(pc_Q) + unsigned(signed_val));
+                                    pc_load <= '1';
+                                end if;
+                                stage <= 0; -- done!
+                                
+                            when OP_JNEG =>
+                                if negative_flag = '1' then
+                                    pc_D <= a_reg_Q;
+                                    pc_load <= '1';
+                                end if;
+                                stage <= 0; -- done!
+
+                            when OP_JPOSI =>
+                                if negative_flag = '0' then
+                                    pc_D <= std_logic_vector(unsigned(pc_Q) + unsigned(signed_val));
+                                    pc_load <= '1';
+                                end if;
+                                stage <= 0; -- done!
+                                
+                            when OP_JPOS =>
+                                if negative_flag = '0' then
+                                    pc_D <= a_reg_Q;
+                                    pc_load <= '1';
+                                end if;
+                                stage <= 0; -- done!
+
+                            when OP_JVSI =>
+                                if overflow_flag = '1' then
+                                    pc_D <= std_logic_vector(unsigned(pc_Q) + unsigned(signed_val));
+                                    pc_load <= '1';
+                                end if;
+                                stage <= 0; -- done!
+                                
+                            when OP_JVS =>
+                                if overflow_flag = '1' then
+                                    pc_D <= a_reg_Q;
+                                    pc_load <= '1';
+                                end if;
+                                stage <= 0; -- done!
+
+                            when OP_JVCI =>
+                                if overflow_flag = '0' then
+                                    pc_D <= std_logic_vector(unsigned(pc_Q) + unsigned(signed_val));
+                                    pc_load <= '1';
+                                end if;
+                                stage <= 0; -- done!
+                                
+                            when OP_JVC =>
+                                if overflow_flag = '0' then
+                                    pc_D <= a_reg_Q;
+                                    pc_load <= '1';
+                                end if;
+                                stage <= 0; -- done!
+
+                            when OP_JHII =>
+                                if (carry_flag = '1') and (zero_flag = '0') then
+                                    pc_D <= std_logic_vector(unsigned(pc_Q) + unsigned(signed_val));
+                                    pc_load <= '1';
+                                end if;
+                                stage <= 0; -- done!
+                                
+                            when OP_JHI =>
+                                if (carry_flag = '1') and (zero_flag = '0') then
+                                    pc_D <= a_reg_Q;
+                                    pc_load <= '1';
+                                end if;
+                                stage <= 0; -- done!
+
+                            when OP_JLSI =>
+                                if (carry_flag = '0') or (zero_flag = '1') then
+                                    pc_D <= std_logic_vector(unsigned(pc_Q) + unsigned(signed_val));
+                                    pc_load <= '1';
+                                end if;
+                                stage <= 0; -- done!
+                                
+                            when OP_JLS =>
+                                if (carry_flag = '0') or (zero_flag = '1') then
+                                    pc_D <= a_reg_Q;
+                                    pc_load <= '1';
+                                end if;
+                                stage <= 0; -- done!
+
+
+                            when OP_JGEI =>
+                                if negative_flag = overflow_flag then
+                                    pc_D <= std_logic_vector(unsigned(pc_Q) + unsigned(signed_val));
+                                    pc_load <= '1';
+                                end if;
+                                stage <= 0; -- done!
+                                
+                            when OP_JGE =>
+                                if negative_flag = overflow_flag then
+                                    pc_D <= a_reg_Q;
+                                    pc_load <= '1';
+                                end if;
+                                stage <= 0; -- done!
+
+                            when OP_JLTI =>
+                                if negative_flag /= overflow_flag then
+                                    pc_D <= std_logic_vector(unsigned(pc_Q) + unsigned(signed_val));
+                                    pc_load <= '1';
+                                end if;
+                                stage <= 0; -- done!
+                                
+                            when OP_JLT =>
+                                if negative_flag /= overflow_flag then
+                                    pc_D <= a_reg_Q;
+                                    pc_load <= '1';
+                                end if;
+                                stage <= 0; -- done!
+
+                            when OP_JGTI =>
+                                if ( zero_flag = '0' ) and ( negative_flag = overflow_flag ) then
+                                    pc_D <= std_logic_vector(unsigned(pc_Q) + unsigned(signed_val));
+                                    pc_load <= '1';
+                                end if;
+                                stage <= 0; -- done!
+                                
+                            when OP_JGT =>
+                                if ( zero_flag = '0' ) and ( negative_flag = overflow_flag ) then
+                                    pc_D <= a_reg_Q;
+                                    pc_load <= '1';
+                                end if;
+                                stage <= 0; -- done!
+
+                            when OP_JLEI =>
+                                if ( zero_flag = '1' ) or ( negative_flag /= overflow_flag ) then
+                                    pc_D <= std_logic_vector(unsigned(pc_Q) + unsigned(signed_val));
+                                    pc_load <= '1';
+                                end if;
+                                stage <= 0; -- done!
+                                
+                            when OP_JLE =>
+                                if ( zero_flag = '1' ) or ( negative_flag /= overflow_flag ) then
+                                    pc_D <= a_reg_Q;
+                                    pc_load <= '1';
+                                end if;
+                                stage <= 0; -- done!
+
+
                             when OP_MOVI =>
                                 a_reg_D <= imm;
                                 a_reg_load <= '1';
@@ -636,27 +826,34 @@ begin
                                 a_reg_D <= b_reg_Q;
                                 a_reg_load <= '1';
                                 
-                            when OP_LDRI =>
-                                b_RE <= '1';
-                                b_address <= std_logic_vector(unsigned(pc_Q) + unsigned(signed_val));
-                                
                             when OP_LDR =>
                                 b_RE <= '1';
-                                b_address <= a_reg_Q;
-                                a_reg_op_value <= imm(15 downto 0);
-                                a_reg_inc <= '1';
-                                
-                            when OP_STRI =>
-                                b_WE <= "1111";
-                                b_address <= std_logic_vector(unsigned(pc_Q) + unsigned(signed_val));
-                                b_D <= a_reg_Q;
+                                b_address <= std_logic_vector(unsigned(b_reg_Q) + unsigned(signed_val));
                                 
                             when OP_STR =>
                                 b_WE <= "1111";
-                                b_address <= a_reg_Q;
-                                b_D <= b_reg_Q;                                
-                                a_reg_op_value <= imm(15 downto 0);
-                                a_reg_inc <= '1';
+                                b_address <= std_logic_vector(unsigned(b_reg_Q) + unsigned(signed_val));
+                                b_D <= a_reg_Q;                  
+                                
+                            when OP_LDA =>
+                                b_RE <= '1';
+                                b_address <= b_reg_Q;
+                                
+                            when OP_STA =>
+                                b_WE <= "1111";
+                                b_address <= b_reg_Q;
+                                b_D <= a_reg_Q;                                    
+                                
+                            when OP_CALLI | OP_CALL =>
+                                b_WE <= "1111";                                
+                                b_address <= std_logic_vector(unsigned(sp_Q) - 4);
+                                b_D <= pc_Q;
+                                sp_dec <= '1';
+                                                                
+                            when OP_RET =>
+                                b_RE <= '1';
+                                b_address <= sp_Q;
+                                sp_inc <= '1';                             
                                 
                             when OP_PUSH =>
                                 b_WE <= "1111";
@@ -711,7 +908,69 @@ begin
 
                             when OP_CMP =>
                                 alu <= std_logic_vector(unsigned('0' & a_reg_Q) - unsigned('0' & b_reg_Q));
+                            
+                            when OP_ANDI =>
+                                a_reg_D <= b_reg_Q and imm;
+                                a_reg_load <= '1';
+                                stage <= 0;
                                 
+                            when OP_AND =>
+                                a_reg_D <= b_reg_Q and c_reg_Q;
+                                a_reg_load <= '1';
+                                stage <= 0;                                
+                                
+                            when OP_ORI =>
+                                a_reg_D <= b_reg_Q or imm;
+                                a_reg_load <= '1';
+                                stage <= 0;
+                                
+                            when OP_OR =>
+                                a_reg_D <= b_reg_Q or c_reg_Q;
+                                a_reg_load <= '1';
+                                stage <= 0;
+                                
+                            when OP_XORI =>
+                                a_reg_D <= b_reg_Q xor imm;
+                                a_reg_load <= '1';
+                                stage <= 0;
+                                
+                            when OP_XOR =>
+                                a_reg_D <= b_reg_Q xor c_reg_Q;
+                                a_reg_load <= '1';
+                                stage <= 0;                                
+                                
+                            when OP_NOT =>
+                                a_reg_D <= not b_reg_Q;
+                                a_reg_load <= '1';
+                                stage <= 0;
+
+                            -- change shift to use one clock per shift 
+                            -- the logic generated otherwise overwhelms the
+                            -- FPGA
+                            when OP_LSL =>
+                                --a_reg_D <= std_logic_vector(shift_left(unsigned(b_reg_Q), to_integer(unsigned(imm(4 downto 0)))));
+                                a_reg_D <= std_logic_vector(shift_left(unsigned(b_reg_Q), 1));
+                                a_reg_load <= '1';
+                                stage <= 0;
+                            
+                            when OP_LSR =>
+                                -- a_reg_D <= std_logic_vector(shift_right(unsigned(b_reg_Q), to_integer(unsigned(imm(4 downto 0)))));
+                                a_reg_D <= std_logic_vector(shift_right(unsigned(b_reg_Q), 1));
+                                a_reg_load <= '1';
+                                stage <= 0;
+                                                        
+                            when OP_ASL =>
+                                -- a_reg_D <= std_logic_vector(shift_left(signed(b_reg_Q), to_integer(unsigned(imm(4 downto 0)))));
+                                a_reg_D <= std_logic_vector(shift_left(signed(b_reg_Q), 1));
+                                a_reg_load <= '1';
+                                stage <= 0;
+                            
+                            when OP_ASR =>
+                                --a_reg_D <= std_logic_vector(shift_right(signed(b_reg_Q), to_integer(unsigned(imm(4 downto 0)))));
+                                a_reg_D <= std_logic_vector(shift_right(signed(b_reg_Q), 1));
+                                a_reg_load <= '1';
+                                stage <= 0;                            
+                            
                             when others =>
                                 -- do nothing.
                         end case;
@@ -738,7 +997,7 @@ begin
                                 end if;
                         
                         
-                        when OP_LDRI =>
+                        when OP_LDR =>
                             if b_READY = '1' then
                                 a_reg_D <= b_Q;
                                 a_reg_load <= '1';
@@ -747,14 +1006,58 @@ begin
                                 stage <= 3;
                             end if;
                             
-                        when OP_LDR =>
+                        when OP_LDA =>
                             if b_READY = '1' then
-                                b_reg_D <= b_Q;
+                                a_reg_D <= b_Q;
+                                a_reg_load <= '1';
+                                b_reg_D <= std_logic_vector(unsigned(b_reg_Q) + unsigned(signed_val));
                                 b_reg_load <= '1';
                             else
                                 -- stick around for results.
                                 stage <= 3;
                             end if;
+                            
+                        when OP_STR =>
+                            if b_ready = '0' then
+                                stage <= 3; -- stick around a bit.
+                            end if; 
+
+                        when OP_STA =>
+                        
+                            if b_ready = '1' then
+                                b_reg_D <= std_logic_vector(unsigned(b_reg_Q) + unsigned(signed_val));
+                                b_reg_load <= '1';
+                            else
+                                stage <= 3;
+                            end if;
+
+                        when OP_CALL =>                            
+                            
+                            if b_ready = '0' then
+                                stage <= 3; -- stick around a bit.
+                            else
+                                pc_D <= a_reg_Q;
+                                pc_load <= '1';                                
+                            end if;
+
+                        when OP_CALLI =>                            
+                                
+                            if b_ready = '0' then
+                                stage <= 3; -- stick around a bit.
+                            else
+                                pc_D <= std_logic_vector(unsigned(pc_Q) + unsigned(signed_val));
+                                pc_load <= '1';                                
+                            end if;
+                            
+                        when OP_RET =>
+                        
+                            if b_READY = '1' then
+                                pc_D <= b_Q;
+                                pc_load <= '1';
+                            else
+                                -- stick around for results.
+                                stage <= 3;
+                            end if;                            
                             
                         when OP_PUSH =>
                             
@@ -772,36 +1075,74 @@ begin
                                 stage <= 3;
                             end if;
                             
-                        when OP_STRI | OP_STR =>
-                            if b_ready = '0' then
-                                stage <= 3; -- stick around a bit.
-                            end if; 
+
                             
-                        when OP_ADD | OP_ADDC | OP_ADDI | OP_ADDCI |
-                             OP_SUB | OP_SUBC | OP_SUBI | OP_SUBCI =>
-                             
+                        when OP_ADD | OP_ADDC | OP_ADDI | OP_ADDCI =>
+
+                            carry_flag <= alu(32);
+                            negative_flag <= alu(31);
+                            if alu = "000000000000000000000000000000000" then
+                                zero_flag <= '1';
+                            else
+                                zero_flag <= '0';
+                            end if;
+                            negative_flag <= alu(31);
+                            
+                            -- when adding two positive numbers 
+                            -- and the result is negative 
+                            -- or
+                            -- when adding two negative numbers
+                            -- and the results is positive 
+                            -- then overflow occured.
+                            if a_reg_Q(31) = b_reg_Q(31) and a_reg_Q(31) /= alu(31) then
+                                overflow_flag <= '1';
+                            else
+                                overflow_flag <= '0';
+                            end if;
                             a_reg_D <= alu(31 downto 0);
                             a_reg_load <= '1';
                             stage <= 0;
                              
+
+                            
+                        when OP_SUB | OP_SUBC | OP_SUBI | OP_SUBCI =>                                
+                                                                                      
                             carry_flag <= alu(32);
+                            negative_flag <= alu(31);
                             if alu = "000000000000000000000000000000000" then
                                 zero_flag <= '1';
                             else
                                 zero_flag <= '0';
                             end if;
                             negative_flag <= alu(31);
-                                
+                            
+                            if a_reg_Q(31) /= b_reg_Q(31) and a_reg_Q(31) /= alu(31) then
+                                overflow_flag <= '1';
+                            else
+                                overflow_flag <= '0';
+                            end if;                  
+                            
+                            a_reg_D <= alu(31 downto 0);
+                            a_reg_load <= '1';
+                            stage <= 0;
+                            
                         when OP_CMP | OP_CMPI =>
                              
                             stage <= 0;                             
                             carry_flag <= alu(32);
+                            negative_flag <= alu(31);
                             if alu = "000000000000000000000000000000000" then
                                 zero_flag <= '1';
                             else
                                 zero_flag <= '0';
                             end if;
                             negative_flag <= alu(31);
+                            
+                            if a_reg_Q(31) /= b_reg_Q(31) and a_reg_Q(31) /= alu(31) then
+                                overflow_flag <= '1';
+                            else
+                                overflow_flag <= '0';
+                            end if;
 
                         when others =>
                             -- do nothing.

@@ -63,10 +63,11 @@ OP_SETV = 35 # V (overflow)
 ##############
 OP_MOVI = 40
 OP_MOV  = 41
-OP_LDRI = 42
-OP_LDR  = 43 # NOTE arguments are reversed in binary to support post increment.
-OP_STRI = 44
-OP_STR  = 45 # NOTE arguments are reversed in binary to support post increment.
+OP_LDR  = 42 # (Load Register) load ra with value at memory location rb + signed    
+OP_STR  = 43 # (Store Register) store ra value at memory location rb + signed    
+OP_LDA  = 44 # (Load & Add) load ra with value at memory location rb, post load increment rb + signed
+OP_STA  = 45 # (Store & Add) store ra value at memory location rb, post store increment rb + signed
+
 
 # ALU
 #####################
@@ -83,28 +84,39 @@ OP_CMP   = 59 # CZN
 OP_INC   = 60 # no flags changed
 OP_DEC   = 61 # no flags changed
 
+OP_ANDI  = 62
+OP_AND   = 63
+OP_ORI   = 64
+OP_OR    = 65
+OP_XORI  = 66
+OP_XOR   = 67
+OP_NOT   = 68
+OP_LSL   = 69
+OP_LSR   = 70
+OP_ASL   = 71
+OP_ASR   = 72
 
-OP_OUT   = 70
-OP_IN    = 71
-OP_CALLI = 72
-OP_CALL  = 73
-OP_RET   = 74
-OP_PUSH  = 75
-OP_POP   = 76
+
+OP_OUT   = 80
+OP_IN    = 81
+OP_CALLI = 82
+OP_CALL  = 83
+OP_RET   = 84
+OP_PUSH  = 85
+OP_POP   = 86
 
 
 REG_NONE = 0
 REG_A = 1
 REG_A_B = 2
-REG_B_A = 3
-REG_A_B_C = 4
+REG_A_B_C = 3
+REG_A_PC = 4
 
 ARG_NONE = 0
 ARG_UNSIGNED_OR_LABEL = 1
 ARG_UNSIGNED = 2
 ARG_SIGNED = 3
 ARG_32BIT = 4
-
 
 op_defs = {
     
@@ -127,8 +139,10 @@ op_defs = {
     "jle": [[OP_JLEI, REG_NONE, ARG_SIGNED, True], [OP_JLE, REG_A, ARG_NONE]],
     
     "mov": [[OP_MOV, REG_A_B, ARG_NONE], [OP_MOVI, REG_A, ARG_UNSIGNED]],    
-    "ldr": [[OP_LDR, REG_B_A, ARG_UNSIGNED], [OP_LDRI, REG_A, ARG_SIGNED, True]],
-    "str": [[OP_STR, REG_B_A, ARG_UNSIGNED], [OP_STRI, REG_A, ARG_SIGNED, True]],
+    "ldr": [[OP_LDR, REG_A_B, ARG_SIGNED], [OP_LDR, REG_A_PC, ARG_SIGNED, True]],
+    "str": [[OP_STR, REG_A_B, ARG_SIGNED], [OP_STR, REG_A_PC, ARG_SIGNED, True]],
+    "lda": [[OP_LDA, REG_A_B, ARG_SIGNED]],
+    "sta": [[OP_STA, REG_A_B, ARG_SIGNED]],
     
     "setz":[[OP_SETZ, REG_NONE, ARG_UNSIGNED]],
     "setc":[[OP_SETC, REG_NONE, ARG_UNSIGNED]],
@@ -142,6 +156,15 @@ op_defs = {
     "cmp": [[OP_CMPI, REG_A, ARG_UNSIGNED],[OP_CMP, REG_A_B, ARG_NONE]],
     "inc": [[OP_INC, REG_A, ARG_UNSIGNED]],
     "dec": [[OP_DEC, REG_A, ARG_UNSIGNED]],
+    
+    "and": [[OP_ANDI, REG_A_B, ARG_UNSIGNED],[OP_AND, REG_A_B_C, ARG_NONE]],
+    "or":  [[OP_ORI, REG_A_B, ARG_UNSIGNED],[OP_OR, REG_A_B_C, ARG_NONE]],
+    "xor": [[OP_XORI, REG_A_B, ARG_UNSIGNED],[OP_XOR, REG_A_B_C, ARG_NONE]],
+    "not": [[OP_NOT, REG_A_B, ARG_NONE]],
+    "lsl": [[OP_LSL, REG_A_B, ARG_UNSIGNED]],
+    "lsr": [[OP_LSR, REG_A_B, ARG_UNSIGNED]],
+    "asl": [[OP_ASL, REG_A_B, ARG_UNSIGNED]],
+    "asr": [[OP_ASR, REG_A_B, ARG_UNSIGNED]],
     
     "out": [[OP_OUT, REG_A, ARG_UNSIGNED]],
     "in":  [[OP_IN, REG_A, ARG_UNSIGNED]],
@@ -163,8 +186,29 @@ op_defs = {
 ###############################################################################
 
 RESERVED_LABEL_NAMES = [
-    "r0","r1","r2","r3","r4","r5","r6","r7","r8","r9","r10","r11","r12","r13","r14","r15"
+    "r0","r1","r2","r3","r4","r5","r6","r7","r8","r9","r10","r11","r12","r13","r14","r15", "sp", "pc"
 ]
+
+REGISTERS = {
+    "r0": 0,
+    "r1": 1,
+    "r2": 2,
+    "r3": 3,
+    "r4": 4,
+    "r5": 5,
+    "r6": 6,
+    "r7": 7,
+    "r8": 8,
+    "r9": 9,
+    "r10": 10,
+    "r11": 11,
+    "r12": 12,
+    "r13": 13,
+    "r14": 14,
+    "r15": 15,
+    "sp": 14,
+    "pc": 15
+}
 
 
 def parse_address( param, source_line ):
@@ -188,10 +232,10 @@ def parse_value( param, source_line):
 
 def parse_reg(reg, source_line):
     
-    if not reg.startswith('r'):
+    if not (reg in REGISTERS):
         raise Exception("Line {} | ERROR: This op requires a register starting with 'r' e.g. r1, r2, r3,...".format(source_line))
         
-    r = int(reg.strip('r'))
+    r = REGISTERS[reg] # int(reg.strip('r'))
     if r < 0 or r > 15:
         raise Exception("Line {} | ERROR: Available registers 0 through 15".format(source_line))                
     return r
@@ -258,8 +302,8 @@ def encode_op( rec, op, reg, arg, pcrelative = False):
         arg_count += 1
     elif reg == REG_A_B:
         arg_count += 2
-    elif reg == REG_B_A:
-        arg_count += 2
+    elif reg == REG_A_PC:
+        arg_count += 1
     elif reg == REG_A_B_C:
         arg_count += 3
         
@@ -296,12 +340,12 @@ def encode_op( rec, op, reg, arg, pcrelative = False):
         rb = parse_reg(args[index+1], source_line)
         index += 2
         cmd += "{0:X}{1:X}".format(ra, rb)
-    elif reg == REG_B_A:
+    elif reg == REG_A_PC:
         bits -= 8
         ra = parse_reg(args[index], source_line)
-        rb = parse_reg(args[index+1], source_line)
-        index += 2
-        cmd += "{0:X}{1:X}".format(rb, ra)
+        rb = 15
+        index += 1
+        cmd += "{0:X}{1:X}".format(ra, rb)
     elif reg == REG_A_B_C:
         bits -= 12
         ra = parse_reg(args[index], source_line)
@@ -331,11 +375,12 @@ def encode_op( rec, op, reg, arg, pcrelative = False):
             cmd += encode_signed(num, bits, source_line)
         elif arg == ARG_32BIT:
             num = parse_value(args[index], source_line)
-            cmd += encode_32(num)
-            
+            cmd += encode_32(num)            
         else:            
             print("Line {} | INTERNAL ERROR: Invalid argument option given to encode_op {}\n{}".format(source_line, reg, args[0]))
             exit(-1);
+            
+        index += 1
     
     if len(cmd) != 8:
         print("{} INTERNAL ERROR: Invalid command length generated {}, rec={}, op={}, regs={}, args={}, pcrelative={}".format(source_line, cmd, args, op, reg, arg, pcrelative))
