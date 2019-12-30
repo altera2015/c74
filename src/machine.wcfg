@@ -8,9 +8,9 @@
             <top_module name="bip_dsp48_addsub_pkg_v2_0" />
             <top_module name="bip_usecase_utils_pkg_v2_0" />
             <top_module name="bip_utils_pkg_v2_0" />
-            <top_module name="c74_opcodes" />
             <top_module name="c_addsub_pkg_v11_0" />
             <top_module name="glbl" />
+            <top_module name="isa_defs" />
             <top_module name="machine_tb" />
             <top_module name="numeric_std" />
             <top_module name="std_logic_1164" />
@@ -32,7 +32,7 @@
          </top_modules>
       </db_ref>
    </db_ref_list>
-   <WVObjectSize size="12" />
+   <WVObjectSize size="13" />
    <wvobject fp_name="/machine_tb/machine0/control_logic0/clk" type="logic" db_ref_id="1">
       <obj_property name="ElementShortName">clk</obj_property>
       <obj_property name="ObjectShortName">clk</obj_property>
@@ -435,6 +435,26 @@
       <wvobject fp_name="/machine_tb/machine0/control_logic0/alu0/z" type="logic" db_ref_id="1">
          <obj_property name="ElementShortName">z</obj_property>
          <obj_property name="ObjectShortName">z</obj_property>
+      </wvobject>
+   </wvobject>
+   <wvobject fp_name="group136" type="group">
+      <obj_property name="label">Adder0</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/data_address_adder_op1" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">data_address_adder_op1[31:0]</obj_property>
+         <obj_property name="ObjectShortName">data_address_adder_op1[31:0]</obj_property>
+      </wvobject>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/data_address_adder_op2" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">data_address_adder_op2[31:0]</obj_property>
+         <obj_property name="ObjectShortName">data_address_adder_op2[31:0]</obj_property>
+      </wvobject>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/data_address_adder_s" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">data_address_adder_s[31:0]</obj_property>
+         <obj_property name="ObjectShortName">data_address_adder_s[31:0]</obj_property>
+      </wvobject>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/data_address_adder_f" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">data_address_adder_f</obj_property>
+         <obj_property name="ObjectShortName">data_address_adder_f</obj_property>
       </wvobject>
    </wvobject>
 </wave_config>

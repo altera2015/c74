@@ -8,9 +8,10 @@ from isa_defs import *
 
 labels = {}
 constants = {}
+predefined = {}
 
 for constant in predef_constants:
-    constants[ constant.lower() ] = predef_constants[constant]
+    predefined[ constant.lower() ] = predef_constants[constant]
                
 
 
@@ -59,8 +60,8 @@ op_defs = {
     "jle": [[OP_JLEI, REG_NONE, ARG_SIGNED, True], [OP_JLE, REG_A, ARG_NONE]],
     
     "mov": [[OP_MOV, REG_A_B, ARG_NONE], [OP_MOVI, REG_A, ARG_UNSIGNED]],    
-    "ldr": [[OP_LDR, REG_A_B, ARG_SIGNED], [OP_LDR, REG_A_PC, ARG_SIGNED, True]],
-    "str": [[OP_STR, REG_A_B, ARG_SIGNED], [OP_STR, REG_A_PC, ARG_SIGNED, True]],
+    "ldr": [[OP_LDR, REG_A_B, ARG_SIGNED], [OP_LDRI, REG_A_PC, ARG_SIGNED, True]],
+    "str": [[OP_STR, REG_A_B, ARG_SIGNED], [OP_STRI, REG_A_PC, ARG_SIGNED, True]],
     "lda": [[OP_LDA, REG_A_B, ARG_SIGNED]],
     "sta": [[OP_STA, REG_A_B, ARG_SIGNED]],
     
@@ -141,6 +142,8 @@ def parse_address( param, source_line ):
             return labels[param]
         elif param in constants:
             return constants[param]
+        elif param in predefined:
+            return predefined[param]        
         else:
             raise Exception("Line {} | ERROR: Could not find label or constant by name {}".format(source_line, param))            
 
@@ -560,6 +563,10 @@ ops = load_ops(args.source)
 values, memory = assemble(ops)
 
 if args.details:
+    print("ISA / Predefined Constants\n")
+    d = build_constants(predefined)
+    print(d)
+    print("Project Details\n")
     d = build_labels(labels)    
     print(d)
     d = build_constants(constants);

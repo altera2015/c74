@@ -1,9 +1,22 @@
 ; Zero page ram contents for source file test.s
-; Assembled 2019-12-30 09:57:54.779403
+; Assembled 2019-12-30 14:46:52.412722
 
 memory_initialization_radix = 16;
 memory_initialization_vector =
+C1E000FF,
+C55F0038,
 8A110001,
+C2310000,
 A0000002,
 A4000002,
-40FFFFF0;
+19100000,
+19100000,
+C11000FF,
+1D100000,
+1D100000,
+0C000008,
+00000000,
+40FFFFD0,
+8A220001,
+10000000,
+FEFEFEFE;

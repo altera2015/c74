@@ -87,7 +87,20 @@ entity control_logic is
 end control_logic;
 
 architecture behavioral of control_logic is
-
+    
+    COMPONENT adder
+      PORT (
+        a : IN STD_LOGIC_VECTOR(31 DOWNTO 0);
+        b : IN STD_LOGIC_VECTOR(31 DOWNTO 0);
+        clk : IN STD_LOGIC;
+        add : IN STD_LOGIC;
+        c_in : IN STD_LOGIC;
+        ce : IN STD_LOGIC;
+        c_out : OUT STD_LOGIC;
+        s : OUT STD_LOGIC_VECTOR(31 DOWNTO 0)
+      );
+    END COMPONENT;  
+    
 
     COMPONENT memory_interface
         PORT(
@@ -287,31 +300,6 @@ architecture behavioral of control_logic is
 
     -- Primary Signals
     signal stage : integer range 0 to 7 := 7;
-     
-    -- PORT DEFINITIONS
---    constant PORT_STATUS_REG : integer := 0;
---    
---    constant PORT_LED : integer := 5;
---    constant PORT_SEVEN_SEG : integer := 6;
---    
---    constant PORT_UART_FLAGS : integer := 10;
---    constant PORT_UART_TX_DATA : integer := 11;
---    constant PORT_UART_RX_DATA : integer := 12;
---    
---    constant PORT_SD_FLAGS : integer := 20;
---    constant PORT_SD_COMMANDS : integer := 21;
---    constant PORT_SD_ADDRESS : integer := 22;
---    constant PORT_SD_DATA : integer := 23;
-    
-    
-    -- Do not change this order unless you also
-    -- update isa.py
---    constant Z_FLAG_POS : integer := 0;
---    constant V_FLAG_POS : integer := 1;
---    constant C_FLAG_POS : integer := 2;
---    constant N_FLAG_POS : integer := 3;
---    constant I_FLAG_POS : integer := 4;
-    
     signal status_register : std_logic_vector(31 downto 0);
     
     -- Stage Signals
@@ -325,6 +313,16 @@ architecture behavioral of control_logic is
     signal signed_val2 : signed(31 downto 0);
     
     signal opcode : std_logic_vector(7 downto 0);
+    
+    signal reg_value : std_logic_vector(31 downto 0);
+    signal reg_intermediate_value : std_logic_vector(31 downto 0);
+    signal reg_value_mux : std_logic; -- // 0 = ALU, 1 = reg_value.
+    
+    signal data_address_adder_op1 : std_logic_vector(31 downto 0);
+    signal data_address_adder_op2 : std_logic_vector(31 downto 0);
+    signal data_address_adder_S : std_logic_vector(31 downto 0);
+    signal data_address_adder_f : std_logic; -- // 1 = add, 0 = sub
+    
 
     -- Assembler
     --
@@ -454,6 +452,7 @@ begin
                 
                 
                 stage <= 0;
+                reg_value_mux<='0';
                 
                 status_register <= (others=>'0');
                 instruction <= (others=>'0');    
@@ -474,8 +473,12 @@ begin
                 sd_dout_taken <= '0';
                 opgroup := "000";
                 
+                data_address_adder_f <= '1';
+                data_address_adder_op1 <= (others =>'0');
+                data_address_adder_op2 <= (others =>'0');
             else
-            
+                
+                reg_value_mux<='0';
                 sp_inc <= '0';
                 pc_inc <= '0';
                 sp_dec <= '0';
@@ -556,7 +559,101 @@ begin
                             
                             
                             case opgroup is
-                            -- ALU groups
+                            -- Misc
+                            when "000" =>
+                            
+                                case short_code is
+                                when SC_NOP =>
+                                    stage <= 0;
+                                    
+                                when SC_IN =>
+                                
+                                    alu_f <= "10";
+                                    alu_op2 <= "00000000000000000000000000000000";
+
+                                    case to_integer(unsigned(vimm0)) is
+                                    when PORT_STATUS_REG =>
+                                        alu_op1 <= status_register;    
+                                    when PORT_LED =>
+                                        -- alu_op1 <= status_register;    
+                                        -- LED <= regs_Q(va_reg_idx)(7 downto 0);
+                                    when PORT_SEVEN_SEG =>
+                                        -- SevenSeg <= regs_Q(va_reg_idx)(7 downto 0);
+                                    when others =>
+                                        --
+                                    end case;
+                                    
+                                when SC_CALL | SC_PUSH =>
+                                
+                                    alu_f <= "10";                                    
+                                    sp_dec <= '1';
+                                                    
+                                    data_address_adder_f <= '0';
+                                    data_address_adder_op1 <= reg_Qs(REG_SP);
+                                    data_address_adder_op2 <= "00000000000000000000000000000100";
+                                    
+                                    if register_cnt = 1 then
+                                        alu_op1 <= reg_Qs(va_reg_idx);
+                                        alu_op2 <= "00000000000000000000000000000000";
+                                    else                                        
+                                        alu_op1 <= reg_Qs(REG_PC);
+                                        alu_op2 <= std_logic_vector(vsigned_val0);
+                                    end if;
+
+                                when SC_RET | SC_RETI | SC_POP =>
+                                    
+                                    sp_inc <= '1';
+                                    data_address_adder_f <= '0';
+                                    data_address_adder_op1 <= reg_Qs(REG_SP);
+                                    data_address_adder_op2 <= "00000000000000000000000000000000";                                    
+                                    
+                                    
+                                when others =>
+                                
+                                end case;
+                            
+                            -- memory access
+                            when "110" =>
+                                case short_code is
+                                
+                                    when SC_MOV =>
+                                        alu_f <= "10";
+                                        if register_cnt = 1 then
+                                            alu_op1 <= vimm1;
+                                            alu_op2 <= "00000000000000000000000000000000";
+                                        else                                        
+                                            alu_op1 <= reg_Qs(vb_reg_idx);
+                                            alu_op2 <= "00000000000000000000000000000000";
+                                        end if;
+                                        
+                                    when SC_LDR =>
+                                    
+                                        if register_cnt = 1 then
+                                            data_address_adder_f <= '1';
+                                            data_address_adder_op1 <= reg_Qs(REG_PC);
+                                            data_address_adder_op2 <= std_logic_vector(vsigned_val0);
+                                        else
+                                            data_address_adder_f <= '1';
+                                            data_address_adder_op1 <= reg_Qs(vb_reg_idx);
+                                            data_address_adder_op2 <= std_logic_vector(vsigned_val0);
+                                        end if;
+                                        
+                                    when SC_STR =>
+                                    
+                                        if register_cnt = 1 then
+                                            data_address_adder_f <= '1';
+                                            data_address_adder_op1 <= reg_Qs(REG_PC);
+                                            data_address_adder_op2 <= std_logic_vector(vsigned_val0);
+                                        else
+                                            data_address_adder_f <= '1';
+                                            data_address_adder_op1 <= reg_Qs(vb_reg_idx);
+                                            data_address_adder_op2 <= std_logic_vector(vsigned_val0);
+                                        end if;                                        
+                                        
+                                    when others =>
+                                end case;
+                            
+                            -- ALU
                             when "100" =>
                                 
                                 alu_f <= a_Q(27 downto 26);                                
@@ -581,7 +678,7 @@ begin
                                     alu_op1 <= reg_Qs(REG_PC);
                                     alu_op2 <= std_logic_vector(unsigned(vsigned_val0));
                                 when 1 =>
-                                    alu_op1 <= reg_Qs(va_reg_idx);
+                                    alu_op1 <= reg_Qs(vb_reg_idx);
                                     alu_op2 <= "00000000000000000000000000000000";
                                 when others =>
                                     -- nothing.
@@ -596,6 +693,43 @@ begin
                     when 2 =>
                         stage <= 3;
                         case opgroup is
+                        when "000" =>
+                            
+                            case short_code is
+                            
+                                when SC_PUSH =>
+                                
+                                    b_WE <= "1111";                                    
+                                    b_D <= reg_Qs(va_reg_idx);
+                                
+                                when SC_CALL =>
+                                    
+                                    b_WE <= "1111";                                    
+                                    b_D <= reg_Qs(REG_PC);                                
+                                
+                                when SC_POP | SC_RET | SC_RETI =>
+                                
+                                    b_RE <= '1';                                                            
+                            
+                                when SC_OUT =>
+
+                                    case to_integer(unsigned(vimm0)) is
+                                    when PORT_STATUS_REG =>
+                                        status_register <= reg_Qs(va_reg_idx);
+                                    when PORT_LED =>
+                                        LED <= reg_Qs(va_reg_idx)(7 downto 0);
+                                    when PORT_SEVEN_SEG =>
+                                        seven_seg <= reg_Qs(va_reg_idx)(7 downto 0);
+                                    when others =>
+                                        --
+                                    end case;
+                                    
+                                when SC_IN =>
+                                    stage <= 0;
+                                    reg_load(va_reg_idx) <= '1';
+                                when others =>
+                            end case;
+                            
                         -- ALU groups
                         when "100" =>
                             
@@ -641,6 +775,26 @@ begin
                             else
                                 reg_load(REG_PC) <= temp;
                             end if;
+                            
+                        -- memory access
+                        when "110" =>
+                            case short_code is
+                            
+                                when SC_MOV =>
+                                    reg_load(va_reg_idx) <= '1';
+                                    stage <= 0;
+                                when SC_STR =>
+                                    
+                                    b_WE <= "1111";                                    
+                                    b_D <= reg_Qs(va_reg_idx);                                
+                                
+                                when SC_LDR =>
+                                
+                                    b_RE <= '1';                                       
+                                    
+                                when others =>
+                            end case;                            
+                            
                         when others =>
                             -- nothing.
                             
@@ -649,12 +803,94 @@ begin
                     when 3 =>
                         stage <= 0;
                         case opgroup is
+                        
+                        when "000" =>                            
+                            case short_code is
+                                when SC_POP =>
+                                
+                                    if b_ready = '0' then                                        
+                                        stage <= 3;
+                                    else
+                                        reg_value_mux<='1';
+                                        reg_value <= b_Q;
+                                        reg_load(va_reg_idx) <= '1';
+                                        stage <= 0;                                        
+                                                                            
+                                    end if;                                 
+                            
+                                when SC_PUSH =>
+                                
+                                    if b_ready = '0' then
+                                        stage <= 3;
+                                    end if;                            
+                                
+                                when SC_RET =>
+                                
+                                    if b_ready = '0' then                                        
+                                        stage <= 3;
+                                    else
+                                        reg_value_mux<='1';
+                                        reg_value <= b_Q;
+                                        reg_load(REG_PC) <= '1';
+                                        stage <= 0;                                     
+                                    end if;       
+                                
+                                
+                                when SC_RETI =>
+                                
+                                    if b_ready = '0' then                                        
+                                        stage <= 3;
+                                        
+                                    else
+                                        reg_value_mux<='1';
+                                        reg_value <= b_Q;
+                                        reg_load(REG_PC) <= '1';
+                                        stage <= 0;                                        
+                                        status_register(I_FLAG_POS) <= '1';                                        
+                                    end if;       
+                                    
+                                when SC_CALL =>
+                                
+                                    if b_ready = '0' then
+                                        stage <= 3;                                        
+                                    else
+                                        reg_load(REG_PC) <= '1';
+                                    end if;
+                                    
+                                when others =>
+                            end case;                        
+                        
                         when "100" =>
                             
                             status_register(Z_FLAG_POS) <= alu_z;
                             status_register(N_FLAG_POS) <= alu_n;
                             status_register(V_FLAG_POS) <= alu_v;
                             status_register(C_FLAG_POS) <= alu_c;
+                            
+                        -- memory access
+                        when "110" =>
+                            case short_code is
+                            
+                                when SC_STR =>
+                                    
+                                    if b_ready = '0' then
+                                        stage <= 3;
+                                    end if;                             
+                                
+                                when SC_LDR =>
+                                
+                                    if b_ready = '0' then                                        
+                                        stage <= 3;                                        
+                                    else
+                                        reg_value_mux<='1';
+                                        reg_value <= b_Q;
+                                        reg_load(va_reg_idx) <= '1';
+                                        stage <= 0;                                        
+                                    end if;                                      
+                                    
+                                when others =>
+                            end case;                                                        
+                            
                         when others =>
                             -- nothing
                         end case;
@@ -741,23 +977,25 @@ begin
 		sp_dec => sp_dec,		
 		pc_inc => pc_inc
 	);  
-
-    reg_Ds(0) <= alu_result;
-    reg_Ds(1) <= alu_result;
-    reg_Ds(2) <= alu_result;
-    reg_Ds(3) <= alu_result;
-    reg_Ds(4) <= alu_result;
-    reg_Ds(5) <= alu_result;
-    reg_Ds(6) <= alu_result;
-    reg_Ds(7) <= alu_result;
-    reg_Ds(8) <= alu_result;
-    reg_Ds(9) <= alu_result;
-    reg_Ds(10) <= alu_result;
-    reg_Ds(11) <= alu_result;
-    reg_Ds(12) <= alu_result;
-    reg_Ds(13) <= alu_result;
-    reg_Ds(14) <= alu_result;
-    reg_Ds(15) <= alu_result;
+    
+    reg_intermediate_value <= reg_value when reg_value_mux = '1' else alu_result;
+    
+    reg_Ds(0) <= reg_intermediate_value;
+    reg_Ds(1) <= reg_intermediate_value;
+    reg_Ds(2) <= reg_intermediate_value;
+    reg_Ds(3) <= reg_intermediate_value;
+    reg_Ds(4) <= reg_intermediate_value;
+    reg_Ds(5) <= reg_intermediate_value;
+    reg_Ds(6) <= reg_intermediate_value;
+    reg_Ds(7) <= reg_intermediate_value;
+    reg_Ds(8) <= reg_intermediate_value;
+    reg_Ds(9) <= reg_intermediate_value;
+    reg_Ds(10) <= reg_intermediate_value;
+    reg_Ds(11) <= reg_intermediate_value;
+    reg_Ds(12) <= reg_intermediate_value;
+    reg_Ds(13) <= reg_intermediate_value;
+    reg_Ds(14) <= reg_intermediate_value;
+    reg_Ds(15) <= reg_intermediate_value;
 
 	buffered_uart0: buffered_uart PORT MAP(
 		clk => clk,
@@ -815,6 +1053,19 @@ begin
 		z => alu_z,
 		f => alu_f
 	);   
+    
+    b_address <= data_address_adder_S;
+    da_adder : adder
+        PORT MAP (
+            a => data_address_adder_op1,
+            b => data_address_adder_op2,
+            clk => clk,
+            add => data_address_adder_f,
+            c_in => '0',
+            ce => '1',
+            -- c_out => a,
+            s => data_address_adder_S
+        );   
 
 end Behavioral;
 
