@@ -1,0 +1,101 @@
+C74 Instruction Set
+===================
+
+Version 1.0
+12-29-2019
+
+
+Generic Form
+============
+
+3322 2222 2222 1111 1111 1100 0000 0000
+1098 7654 3210 9876 5432 1098 7654 3210
+XXXX XXXX XXXX XXXX XXXX XXXX XXXX XXXX
+oooo oorr #### #### #### #### #### ####
+
+
+Opcode forms
+============
+This ISA has 4 forms of ISA
+o = opcode bits
+r = register count indicator bits
+A = register A bits
+B = register B bits
+C = register C bits
+c = constant bits ( first 4 are roll bits )
+
+
+0 Reg Opcode
+oooo oo00 cccc cccc cccc cccc cccc cccc
+
+1 Reg Opcode
+oooo oo01 AAAA cccc cccc cccc cccc cccc
+
+2 Reg Opcode
+oooo oo10 AAAA BBBB cccc cccc cccc cccc
+
+3 Reg Opcode
+oooo oo11 AAAA BBBB CCCC cccc cccc cccc
+
+
+
+
+
+NOP 0x0000
+
+Jump / Conditional Jumps
+========================
+Encoding
+01Ix xx00cccc cccc cccc cccc cccc cccc
+
+I = invert condition
+xxx = condition
+000 = no condition
+001 = EQ
+010 = CS
+011 = NEG
+100 = VS
+101 = HI
+110 = GE
+111 = GT
+
+Values
+OP_J     = 64
+
+OP_JI    = 2 # unconditional jump
+OP_J     = 3 # unconditional jump
+OP_JEQI  = 4 # equal ( z == 1 )
+OP_JEQ   = 5 # equal ( z == 1 )
+OP_JNEI  = 6 # not equal ( z==0 )
+OP_JNE   = 7 # not equal ( z==0 )
+OP_JCSI  = 8 # unsigned higer or equal ( c == 1 )
+OP_JCS   = 9 # unsigned higer or equal ( c == 1 )
+OP_JCCI  = 10 # unsigned lower ( c == 0 )
+OP_JCC   = 11 # unsigned lower ( c == 0 )
+OP_JNEGI = 12 # negative number ( N == 1 )
+OP_JNEG  = 13 # negative number ( N == 1 )
+OP_JPOSI = 14 # positive number ( N == 0 )
+OP_JPOS  = 15 # positive number ( N == 0 )
+OP_JVSI  = 16 # signed overflow ( V == 1 )
+OP_JVS   = 17 # signed overflow ( V == 1 )
+OP_JVCI  = 18 # signed no overflow ( V == 0 )
+OP_JVC   = 19 # signed no overflow ( V == 0 )
+OP_JHII  = 20 # unsigned higher ( c==1 && z == 0 )
+OP_JHI   = 21 # unsgiend higher ( c==1 && z == 0 )
+OP_JLSI  = 22 # unsigned lower or equal ( c==0 || z==1 )
+OP_JLS   = 23 # unsigned lower or equal ( c==0 || z==1 )
+OP_JGEI  = 24 # signed  greated or equal ( n==v )
+OP_JGE   = 25 # signed  greated or equal ( n==v )
+OP_JLTI  = 26 # signed  less than  ( n!=v )
+OP_JLT   = 27 # signed  less than ( n!=v )
+OP_JGTI  = 28 # signed greater than ( z==0 && n ==v )
+OP_JGT   = 29 # signed greater than ( z==0 && n ==v )
+OP_JLEI  = 30 # signed less or equal ( z==1 || n !=v )
+OP_JLE   = 31 # signed less or equal ( z==1 || n !=v )
+
+
+I = invert
+
+
+
+

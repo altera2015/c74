@@ -1,5 +1,14 @@
-.const LED_OUT 0
-.const SEVEN_SEGMENT_OUT 1
+.const PORT_STATUS_REG 0
+.const PORT_LEDS 5
+.const PORT_SEVEN_SEG 6
+.const PORT_UART_FLAGS 10
+.const PORT_UART_TX_DATA 11
+.const PORT_UART_RX_DATA 12
+.const PORT_SD_FLAGS 20
+.const PORT_SD_COMMAND 21
+.const PORT_SD_ADDRESS 22
+.const PORT_SD_DATA 23
+
 .const UART_OUT 2
 .const UART_FLAGS 3
 
@@ -81,17 +90,17 @@
     mov r1, 0xfe
     mov r2, 65
     
-    out r2, LED_OUT
+    out r2, PORT_LEDS
     mov r5, 0
 :loop
     
-    out r5, LED_OUT
-    in r3, UART_FLAGS
+    out r5, PORT_LEDS
+    in r3, PORT_UART_FLAGS
     cmp r3, 0
     jne loop
     
     inc r5, 1    
-    out r2, UART_OUT    
+    out r2, PORT_UART_TX_DATA    
     
     mov r8, 0xffff
 :wait
@@ -107,5 +116,5 @@
     
 :set_led
 
-    out r2, LED_OUT
+    out r2, PORT_LEDS
     ret

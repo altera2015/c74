@@ -10,6 +10,9 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
+use work.isa_defs.all;
+use work.types.all;
+
 
 entity control_logic is
     port ( 
@@ -72,7 +75,13 @@ entity control_logic is
         
         -- UART Pins.
    		rx_pin : IN std_logic;          
-        tx_pin : OUT std_logic
+        tx_pin : OUT std_logic;
+        
+        -- SD Card
+        SD_MISO             : in std_logic;
+        SD_MOSI             : out std_logic;
+        SD_CS               : out std_logic;
+        SD_CLK              : out std_logic        
 
     );
 end control_logic;
@@ -154,42 +163,17 @@ architecture behavioral of control_logic is
     
 	COMPONENT reg_file
 	PORT(
-           clk             : in  std_logic;
-           reset           : in  std_logic;
-         
-           a_reg_idx       : in  std_logic_vector (3 downto 0);
-           a_load          : in  std_logic;           
-           a_Q             : out std_logic_vector (31 downto 0);
-           a_D             : in std_logic_vector (31 downto 0);
-           a_inc           : in  std_logic;
-           a_dec           : in  std_logic;
-           a_op_value      : in  std_logic_vector(15 downto 0);
-           
-           b_reg_idx       : in  std_logic_vector (3 downto 0);
-           b_load          : in  std_logic;
-           b_Q             : out std_logic_vector (31 downto 0);
-           b_D             : in std_logic_vector (31 downto 0);
-
-           c_reg_idx       : in  std_logic_vector (3 downto 0);
-           c_load          : in  std_logic;
-           c_Q             : out std_logic_vector (31 downto 0);
-           c_D             : in std_logic_vector (31 downto 0);
-           
-           
-           -- idx = 0xe / 14
-           sp_inc          : in std_logic;
-           sp_dec          : in std_logic;
-           sp_load         : in std_logic;
-           sp_Q            : out std_logic_vector (31 downto 0);
-           sp_D            : in std_logic_vector (31 downto 0);
-           -- idx = 0x0f / 15
-           pc_inc          : in std_logic;
-           pc_load         : in std_logic;
-           pc_Q            : out std_logic_vector (31 downto 0);
-           pc_D            : in std_logic_vector (31 downto 0)
+		clk    : IN std_logic;
+		reset  : IN std_logic;
+		sp_inc : IN std_logic;
+		sp_dec : IN std_logic;
+		pc_inc : IN std_logic;
+        Ds     : in register_array;
+        Qs     : out register_array;
+        load   : in std_logic_vector(15 downto 0)
 		);
-	END COMPONENT;    
-    
+	END COMPONENT;
+
     
 	COMPONENT buffered_uart
 	PORT(
@@ -206,8 +190,55 @@ architecture behavioral of control_logic is
 		rx_pin : IN std_logic;          
         tx_pin : OUT std_logic
 		);
-	END COMPONENT;    
+	END COMPONENT;
     
+	COMPONENT sd_controller
+	PORT(
+		miso : IN std_logic;
+		card_present : IN std_logic;
+		card_write_prot : IN std_logic;
+		rd : IN std_logic;
+		rd_multiple : IN std_logic;
+		dout_taken : IN std_logic;
+		wr : IN std_logic;
+		wr_multiple : IN std_logic;
+		din : IN std_logic_vector(7 downto 0);
+		din_valid : IN std_logic;
+		addr : IN std_logic_vector(31 downto 0);
+		erase_count : IN std_logic_vector(7 downto 0);
+		reset : IN std_logic;
+		clk : IN std_logic;          
+		cs : OUT std_logic;
+		mosi : OUT std_logic;
+		sclk : OUT std_logic;
+		dout : OUT std_logic_vector(7 downto 0);
+		dout_avail : OUT std_logic;
+		din_taken : OUT std_logic;
+		sd_error : OUT std_logic;
+		sd_busy : OUT std_logic;
+		sd_error_code : OUT std_logic_vector(2 downto 0);
+		sd_type : OUT std_logic_vector(1 downto 0);
+		sd_fsm : OUT std_logic_vector(7 downto 0)
+		);
+	END COMPONENT; 
+
+	COMPONENT alu
+	PORT(
+		clk : IN std_logic;
+		reset : IN std_logic;
+		op1 : IN std_logic_vector(31 downto 0);
+		op2 : IN std_logic_vector(31 downto 0);
+		c_in : IN std_logic;
+		f : IN std_logic_vector(1 downto 0);          
+		result : OUT std_logic_vector(31 downto 0);
+		c : OUT std_logic;
+		v : OUT std_logic;
+        n : OUT std_logic;
+		z : OUT std_logic
+		);
+	END COMPONENT;
+
+       
     signal tx_enable : std_logic;
     signal rx_enable : std_logic;
     signal tx_full : std_logic;
@@ -236,135 +267,65 @@ architecture behavioral of control_logic is
 
 
     -- Register File Signals
-    signal a_reg_idx : std_logic_vector (3 downto 0);
-    signal a_reg_load : std_logic;           
-    signal a_reg_Q : std_logic_vector (31 downto 0);
-    signal a_reg_D : std_logic_vector (31 downto 0);
-    signal a_reg_inc : std_logic;
-    signal a_reg_dec : std_logic;
-    signal a_reg_op_value : std_logic_vector(15 downto 0);
-
-    signal b_reg_idx : std_logic_vector (3 downto 0);
-    signal b_reg_load : std_logic;
-    signal b_reg_Q : std_logic_vector (31 downto 0);
-    signal b_reg_D : std_logic_vector (31 downto 0);
-
-    signal c_reg_idx : std_logic_vector (3 downto 0);
-    signal c_reg_load : std_logic;
-    signal c_reg_Q : std_logic_vector (31 downto 0);
-    signal c_reg_D : std_logic_vector (31 downto 0);
-
+    constant REG_SP : integer := 14;
+    constant REG_PC : integer := 15;
+    
+    signal reg_Qs : register_array;
+    signal reg_Ds : register_array;
+    signal reg_load : std_logic_vector(15 downto 0);
+    
+    signal a_reg_idx : integer range 0 to 15;
+    signal b_reg_idx : integer range 0 to 15;
+    signal c_reg_idx : integer range 0 to 15;
 
     -- idx = 0xe / 14
     signal sp_inc : std_logic;
-    signal sp_dec : std_logic;
-    signal sp_load : std_logic;
-    signal sp_Q : std_logic_vector (31 downto 0);
-    signal sp_D : std_logic_vector (31 downto 0);
+    signal sp_dec : std_logic;    
+    
     -- idx = 0x0f / 15
     signal pc_inc : std_logic;
-    signal pc_load : std_logic;
-    signal pc_Q : std_logic_vector (31 downto 0);
-    signal pc_D : std_logic_vector (31 downto 0);  
-
 
     -- Primary Signals
     signal stage : integer range 0 to 7 := 7;
-    
-    constant OP_NOP  : integer := 0; --
-    
-    constant OP_JI   : integer := 2; --    
-    constant OP_J    : integer := 3; --
-    constant OP_JEQI : integer := 4; --   
-    constant OP_JEQ  : integer := 5; --   
-    constant OP_JNEI : integer := 6; --   
-    constant OP_JNE  : integer := 7; --   
-    constant OP_JCSI : integer := 8; --   
-    constant OP_JCS  : integer := 9; --   
-    constant OP_JCCI : integer := 10; --   
-    constant OP_JCC  : integer := 11; --   
-    constant OP_JNEGI: integer := 12; --   
-    constant OP_JNEG : integer := 13; --   
-    constant OP_JPOSI: integer := 14; --   
-    constant OP_JPOS : integer := 15; --   
-    constant OP_JVSI : integer := 16; --   
-    constant OP_JVS  : integer := 17; --   
-    constant OP_JVCI : integer := 18; --   
-    constant OP_JVC  : integer := 19; --   
-    constant OP_JHII : integer := 20; --   
-    constant OP_JHI  : integer := 21; --   
-    constant OP_JLSI : integer := 22; --   
-    constant OP_JLS  : integer := 23; --   
-    constant OP_JGEI : integer := 24; --   
-    constant OP_JGE  : integer := 25; --   
-    constant OP_JLTI : integer := 26; --   
-    constant OP_JLT  : integer := 27; --   
-    constant OP_JGTI : integer := 28; --   
-    constant OP_JGT  : integer := 29; --   
-    constant OP_JLEI : integer := 30; --   
-    constant OP_JLE  : integer := 31; --   
-    
-    constant OP_SETZ : integer := 32; -- set zero flag to lowest bit of immediate.
-    constant OP_SETC : integer := 33; -- set carry flag to lowest bit of immediate.
-    constant OP_SETN : integer := 34; -- set negative flag to lowest bit of immediate.
-    constant OP_SETO : integer := 35; -- set negative flag to lowest bit of immediate.
-
-    constant OP_MOVI : integer := 40; --
-    constant OP_MOV  : integer := 41; --    
-    constant OP_LDR  : integer := 42; -- (Load Register) load ra with value at memory location rb + signed    
-    constant OP_STR  : integer := 43; -- (Store Register) store ra value at memory location rb + signed    
-    constant OP_LDA  : integer := 44; -- (Load & Add) load ra with value at memory location rb, post load increment rb + signed
-    constant OP_STA  : integer := 45; -- (Store & Add) store ra value at memory location rb, post store increment rb + signed
-            
-    constant OP_ADDI : integer := 50; --
-    constant OP_ADD  : integer := 51; --    
-    constant OP_ADDCI: integer := 52; --
-    constant OP_ADDC : integer := 53; --
-    constant OP_SUBI : integer := 54; --
-    constant OP_SUB  : integer := 55; --
-    constant OP_SUBCI: integer := 56; --
-    constant OP_SUBC : integer := 57; --
-    constant OP_CMPI : integer := 58; --
-    constant OP_CMP  : integer := 59; --
-    constant OP_INC  : integer := 60; -- 
-    constant OP_DEC  : integer := 61; --
+     
+    -- PORT DEFINITIONS
+--    constant PORT_STATUS_REG : integer := 0;
+--    
+--    constant PORT_LED : integer := 5;
+--    constant PORT_SEVEN_SEG : integer := 6;
+--    
+--    constant PORT_UART_FLAGS : integer := 10;
+--    constant PORT_UART_TX_DATA : integer := 11;
+--    constant PORT_UART_RX_DATA : integer := 12;
+--    
+--    constant PORT_SD_FLAGS : integer := 20;
+--    constant PORT_SD_COMMANDS : integer := 21;
+--    constant PORT_SD_ADDRESS : integer := 22;
+--    constant PORT_SD_DATA : integer := 23;
     
     
-    constant OP_ANDI : integer := 62; --   
-    constant OP_AND  : integer := 63; --   
-    constant OP_ORI  : integer := 64; --   
-    constant OP_OR   : integer := 65; --   
-    constant OP_XORI : integer := 66; --   
-    constant OP_XOR  : integer := 67; --   
+    -- Do not change this order unless you also
+    -- update isa.py
+--    constant Z_FLAG_POS : integer := 0;
+--    constant V_FLAG_POS : integer := 1;
+--    constant C_FLAG_POS : integer := 2;
+--    constant N_FLAG_POS : integer := 3;
+--    constant I_FLAG_POS : integer := 4;
     
-    constant OP_NOT  : integer := 68; --   
-    constant OP_LSL  : integer := 69; --   
-    constant OP_LSR  : integer := 70; --   
-    constant OP_ASL  : integer := 71; --   
-    constant OP_ASR  : integer := 72; --   
-    
-    
-    constant OP_OUT  : integer := 80; --
-    constant OP_IN   : integer := 81; --
-    
-    constant OP_CALLI: integer := 82; --
-    constant OP_CALL : integer := 83; --
-    constant OP_RET  : integer := 84; --
-    constant OP_PUSH : integer := 85; --
-    constant OP_POP  : integer := 86; --
-        
-    signal zero_flag : std_logic;
-    signal carry_flag : std_logic;
-    signal negative_flag : std_logic;
-    signal overflow_flag : std_logic;
+    signal status_register : std_logic_vector(31 downto 0);
     
     -- Stage Signals
     signal instruction : std_logic_vector(31 downto 0);
-    signal imm : std_logic_vector(31 downto 0);
-    signal signed_val : signed(31 downto 0);    
-    signal opcode : integer range 0 to 255;
-    signal alu : std_logic_vector(32 downto 0); -- 33 bits for overflow calc.    
     
+    signal imm0 : std_logic_vector(31 downto 0);
+    signal imm1 : std_logic_vector(31 downto 0);
+    signal imm2 : std_logic_vector(31 downto 0);
+    signal signed_val0 : signed(31 downto 0);
+    signal signed_val1 : signed(31 downto 0);    
+    signal signed_val2 : signed(31 downto 0);
+    
+    signal opcode : std_logic_vector(7 downto 0);
+
     -- Assembler
     --
     -- | 3 3 2 2 2 2 2 2 | 2 2 2 2 1 1 1 1 | 1 1 1 1 1 1 0 0 | 0 0 0 0 0 0 0 0
@@ -440,714 +401,265 @@ architecture behavioral of control_logic is
 
     end;
     signal wait_one : std_logic;
+    signal repeats : integer range 0 to 32;
+    
+    
+    -- SD Card Interface
+    signal sd_rd : std_logic;
+    signal sd_dout : std_logic_vector(7 downto 0);
+    signal sd_dout_avail : std_logic;     
+    signal sd_dout_taken : std_logic;
+    
+    signal sd_address : std_logic_vector(31 downto 0);    
+    signal sd_busy : std_logic;    
+    signal sd_error : std_logic;
+    signal sd_error_code : std_logic_vector(2 downto 0);
+    signal sd_type : std_logic_vector(1 downto 0);
+    
+    
+    -- ALU
+    signal alu_c : std_logic;
+    signal alu_v : std_logic;
+    signal alu_n : std_logic;
+    signal alu_z : std_logic;   
+    signal alu_result : std_logic_vector(31 downto 0);
+    signal alu_op1 : std_logic_vector(31 downto 0);
+    signal alu_op2 : std_logic_vector(31 downto 0);
+    signal alu_f : std_logic_vector(1 downto 0);
+    
 begin
 
-    a_address <= pc_Q;
+    a_address <= reg_Qs(REG_PC);
     
     process(clk)
-        
+        variable jump_use_pc_relative : std_logic;        
+        variable va_reg_idx : integer range 0 to 15;
+        variable vb_reg_idx : integer range 0 to 15;
+        variable vc_reg_idx : integer range 0 to 15;
+        variable vopcode : std_logic_vector(7 downto 0);
+        variable vimm0 : std_logic_vector(31 downto 0);
+        variable vimm1 : std_logic_vector(31 downto 0);
+        variable vimm2 : std_logic_vector(31 downto 0);
+        variable vsigned_val0 : signed(31 downto 0);
+        variable vsigned_val1 : signed(31 downto 0);    
+        variable vsigned_val2 : signed(31 downto 0); 
+        variable opgroup : std_logic_vector(2 downto 0);
+        variable short_code : std_logic_vector(2 downto 0);
+        variable register_cnt : integer range 0 to 3;
+        variable temp : std_logic;
     begin
     
         if rising_edge(clk) then
             if reset = '1' then
-                stage <= 0;
-                zero_flag <= '0';
-                carry_flag <= '0';
-                negative_flag <= '0';
                 
+                
+                stage <= 0;
+                
+                status_register <= (others=>'0');
                 instruction <= (others=>'0');    
-                a_reg_load <= '0';
-                b_reg_load <= '0';
-                c_reg_load <= '0';
-                a_reg_inc <= '0';
-                a_reg_dec <= '0';
 
                 sp_inc <= '0';
                 pc_inc <= '0';
                 sp_dec <= '0';
-                sp_load <= '0';
-                pc_load <= '0';
 
                                 
                 a_RE <= '0';
                 a_WE <= "0000";
                 b_RE <= '0';
                 b_WE <= "0000";         
-                led <= "11110000";
-                --sp_D <= (others=>'0');
-                --pc_D <= (others=>'0');
+                led <= "00000000";
 
+                
+                sd_rd <= '0';
+                sd_dout_taken <= '0';
+                opgroup := "000";
+                
             else
             
-
-                a_reg_load <= '0';
-                b_reg_load <= '0';
-                c_reg_load <= '0';
-                a_reg_inc <= '0';
-                a_reg_dec <= '0';
-
                 sp_inc <= '0';
                 pc_inc <= '0';
-                sp_dec <= '0';                
-                sp_load <= '0';
-                pc_load <= '0';
-
+                sp_dec <= '0';
+                
+                reg_load(0) <= '0';
+                reg_load(1) <= '0';
+                reg_load(2) <= '0';
+                reg_load(3) <= '0';
+                reg_load(4) <= '0';
+                reg_load(5) <= '0';
+                reg_load(6) <= '0';
+                reg_load(7) <= '0';
+                reg_load(8) <= '0';
+                reg_load(9) <= '0';
+                reg_load(10) <= '0';
+                reg_load(11) <= '0';
+                reg_load(12) <= '0';
+                reg_load(13) <= '0';
+                reg_load(REG_SP) <= '0';
+                reg_load(REG_PC) <= '0';                
                                 
                 a_RE <= '0';
                 a_WE <= "0000";
                 b_RE <= '0';
                 b_WE <= "0000";
                 
-                
+                sd_dout_taken <= '0';
                 tx_enable <= '0';
             
                 case stage is
                     
                     when 0 =>
-                    
-                        -- led <= "00000001";
-                        -- Fetch Next Instrction
+
                         a_RE <= '1';
                         instruction <= (others=>'0');
                         stage <= 1;
                         pc_inc <= '1';
-
-                        --wait_one <= '1';
                         
                     when 1 =>             
-                        --led <= "00000010";
-                        
-                        a_RE <= '0';
-                        pc_inc <= '0';                        
-                        
-                        --if wait_one = '1' then
-                          --  wait_one <= '0';
-                        
-                        
+                       
                         -- Wait for instruction to arrive
                         -- and decode as needed.
                         if a_ready = '1' then
                             
                             -- op decode!
                             instruction <= a_Q;                            
-                            imm <= (others => '0' );
-                            a_reg_idx <= a_Q(23 downto 20);
-                            b_reg_idx <= a_Q(19 downto 16);
-                            c_reg_idx <= a_Q(15 downto 12);
-                            stage <= 2;
-                            opcode <= to_integer(unsigned(a_Q(31 downto 24)));
 
-                            case to_integer(unsigned(a_Q(31 downto 24))) is
-                                when OP_NOP =>
-                                    stage <= 0;
-                                    
-                                when OP_SETZ | OP_SETC | OP_SETN | OP_SETO =>
-                                    imm <= immediate(a_Q, 0);
-                                    
-                                when OP_INC | OP_DEC | OP_MOVI | OP_CMPI | OP_OUT | OP_IN |
-                                     OP_ANDI | OP_ORI | OP_XORI | OP_LSL | OP_LSR | OP_ASL |
-                                     OP_ASR =>
-                                    imm <= immediate(a_Q, 1);
-                                                                    
-                                when OP_ADDI | OP_ADDCI | 
-                                     OP_SUBI | OP_SUBCI =>                                
-                                   imm <= immediate(a_Q, 2); 
-                                                                      
-                                when OP_JI | OP_JEQI | OP_JNEI | OP_JCSI | OP_JCCI | 
-                                    OP_JNEGI | OP_JPOSI | OP_JVSI | OP_JVCI | OP_JHII | 
-                                    OP_JLSI | OP_JGEI | OP_JLTI | OP_JGTI | OP_JLEI | 
-                                    OP_CALLI =>
-                                    signed_val <= signed_value(a_Q,0);
-
-                                when OP_LDR | OP_STR | OP_LDA | OP_STA =>
-                                    signed_val <= signed_value(a_Q,2);
-                                  
-                                when others =>
-                                    -- do nothing.
-                            end case;
+                            va_reg_idx := to_integer(unsigned(a_Q(23 downto 20)));
+                            vb_reg_idx := to_integer(unsigned(a_Q(19 downto 16)));
+                            vc_reg_idx := to_integer(unsigned(a_Q(15 downto 12)));
                             
+                            a_reg_idx <= va_reg_idx;
+                            b_reg_idx <= vb_reg_idx;
+                            c_reg_idx <= vc_reg_idx;
+                            
+                            stage <= 2;
+                            vopcode := a_Q(31 downto 24);
+                            opcode <= vopcode;                            
+                            
+                            vimm0 := immediate(a_Q, 0);
+                            vimm1 := immediate(a_Q, 1);
+                            vimm2 := immediate(a_Q, 2);                            
+                            vsigned_val0 := signed_value(a_Q,0);
+                            vsigned_val1 := signed_value(a_Q,1);
+                            vsigned_val2 := signed_value(a_Q,2);
+
+                            imm0 <= vimm0;
+                            imm1 <= vimm1;
+                            imm2 <= vimm2;                            
+                            signed_val0 <= vsigned_val0;
+                            signed_val1 <= vsigned_val1;
+                            signed_val2 <= vsigned_val2;
+                            
+                            opgroup := a_Q(31 downto 29);
+                            short_code := a_Q(28 downto 26);
+                            register_cnt := to_integer(unsigned(a_Q(25 downto 24)));
+                            
+                            
+                            
+                            case opgroup is
+                            -- ALU groups
+                            when "100" =>
+                                
+                                alu_f <= a_Q(27 downto 26);                                
+                                case register_cnt is
+                                when 2 =>
+                                    alu_op1 <= reg_Qs(vb_reg_idx);
+                                    alu_op2 <= vimm2;
+                                when 3 =>
+                                    alu_op1 <= reg_Qs(vb_reg_idx);
+                                    alu_op2 <= reg_Qs(vc_reg_idx);
+                                when others =>
+                                    -- nothing.
+                                end case;
+                                    
+                            
+                            -- Jump groups
+                            when "010" | "011" =>
+                            
+                                alu_f <= "10";
+                                case register_cnt is
+                                when 0 =>
+                                    alu_op1 <= reg_Qs(REG_PC);
+                                    alu_op2 <= std_logic_vector(unsigned(vsigned_val0));
+                                when 1 =>
+                                    alu_op1 <= reg_Qs(va_reg_idx);
+                                    alu_op2 <= "00000000000000000000000000000000";
+                                when others =>
+                                    -- nothing.
+                                end case;
+                                
+                            when others =>
+                             -- nothing.                                
+                            end case;
+
                         end if;
                         
                     when 2 =>
-                        --led <= "00000100";
                         stage <= 3;
-                        case opcode is
-                            when OP_INC =>
-                                a_reg_inc <= '1';
-                                a_reg_op_value <= imm(15 downto 0);                                
-                                
-                            when OP_DEC =>
-                                a_reg_dec <= '1';
-                                a_reg_op_value <= imm(15 downto 0);                                
-
-                            when OP_OUT =>
-                                stage <= 0;
-                                case to_integer(unsigned(imm)) is
-                                when 0 =>
-                                    led <= a_reg_Q(7 downto 0);
-                                when 1 =>
-                                    seven_seg <= a_reg_Q(7 downto 0);
-                                when 2 =>
-                                    tx_data <= a_reg_Q(7 downto 0);
-                                    tx_enable <= '1';
+                        case opgroup is
+                        -- ALU groups
+                        when "100" =>
+                            
+                            reg_load(vb_reg_idx) <= not instruction(28);
+                            
+                        -- Flags
+                        when "101" =>
+                            stage <= 0;
+                            case short_code is
+                                when SC_SET =>
+                                    status_register( to_integer(unsigned(imm0(4 downto 0))) ) <= '1';
+                                when SC_CLR =>
+                                    status_register( to_integer(unsigned(imm0(4 downto 0))) ) <= '0';                                
                                 when others =>
-                                    -- do nothing.
-                                end case;
-                                
-                            when OP_IN =>
-                                stage <= 0;
-                                case to_integer(unsigned(imm)) is
-
-                                when 3 =>
-                                    a_reg_D <= "0000000000000000000000000000000" & tx_full;
-                                    a_reg_load <= '1';
-                                when others =>
-                                    -- do nothing.
-                                end case;
-                                          
+                                    -- nothing.
+                            end case;
                             
-                            when OP_JI =>
-                                pc_D <= std_logic_vector(unsigned(pc_Q) + unsigned(signed_val));
-                                pc_load <= '1';
-                                stage <= 0; -- done!
-                                
-                            when OP_J =>
-                                pc_D <= a_reg_Q;
-                                pc_load <= '1';
-                                stage <= 0; -- done!
-                                
-                            
-                                
-                            when OP_JEQI =>
-                                if zero_flag = '1' then
-                                    pc_D <= std_logic_vector(unsigned(pc_Q) + unsigned(signed_val));
-                                    pc_load <= '1';
-                                end if;
-                                stage <= 0; -- done!
-                                
-                            when OP_JEQ =>
-                                if zero_flag = '1' then
-                                    pc_D <= a_reg_Q;
-                                    pc_load <= '1';
-                                end if;
-                                stage <= 0; -- done!
-                                
-                            when OP_JNEI =>
-                                if zero_flag = '0' then
-                                    pc_D <= std_logic_vector(unsigned(pc_Q) + unsigned(signed_val));
-                                    pc_load <= '1';
-                                end if;
-                                stage <= 0; -- done!
-                                
-                            when OP_JNE =>
-                                if zero_flag = '0' then
-                                    pc_D <= a_reg_Q;
-                                    pc_load <= '1';
-                                end if;
-                                stage <= 0; -- done!
-
-                                
-                            when OP_JCSI =>
-                                if carry_flag = '1' then
-                                    pc_D <= std_logic_vector(unsigned(pc_Q) + unsigned(signed_val));
-                                    pc_load <= '1';
-                                end if;
-                                stage <= 0; -- done!
-                                
-                            when OP_JCS =>
-                                if carry_flag = '1' then
-                                    pc_D <= a_reg_Q;
-                                    pc_load <= '1';
-                                end if;
-                                stage <= 0; -- done!
-
-                            when OP_JCCI =>
-                                if carry_flag = '0' then
-                                    pc_D <= std_logic_vector(unsigned(pc_Q) + unsigned(signed_val));
-                                    pc_load <= '1';
-                                end if;
-                                stage <= 0; -- done!
-                                
-                            when OP_JCC =>
-                                if carry_flag = '0' then
-                                    pc_D <= a_reg_Q;
-                                    pc_load <= '1';
-                                end if;
-                                stage <= 0; -- done!
-
-                            when OP_JNEGI =>
-                                if negative_flag = '1' then
-                                    pc_D <= std_logic_vector(unsigned(pc_Q) + unsigned(signed_val));
-                                    pc_load <= '1';
-                                end if;
-                                stage <= 0; -- done!
-                                
-                            when OP_JNEG =>
-                                if negative_flag = '1' then
-                                    pc_D <= a_reg_Q;
-                                    pc_load <= '1';
-                                end if;
-                                stage <= 0; -- done!
-
-                            when OP_JPOSI =>
-                                if negative_flag = '0' then
-                                    pc_D <= std_logic_vector(unsigned(pc_Q) + unsigned(signed_val));
-                                    pc_load <= '1';
-                                end if;
-                                stage <= 0; -- done!
-                                
-                            when OP_JPOS =>
-                                if negative_flag = '0' then
-                                    pc_D <= a_reg_Q;
-                                    pc_load <= '1';
-                                end if;
-                                stage <= 0; -- done!
-
-                            when OP_JVSI =>
-                                if overflow_flag = '1' then
-                                    pc_D <= std_logic_vector(unsigned(pc_Q) + unsigned(signed_val));
-                                    pc_load <= '1';
-                                end if;
-                                stage <= 0; -- done!
-                                
-                            when OP_JVS =>
-                                if overflow_flag = '1' then
-                                    pc_D <= a_reg_Q;
-                                    pc_load <= '1';
-                                end if;
-                                stage <= 0; -- done!
-
-                            when OP_JVCI =>
-                                if overflow_flag = '0' then
-                                    pc_D <= std_logic_vector(unsigned(pc_Q) + unsigned(signed_val));
-                                    pc_load <= '1';
-                                end if;
-                                stage <= 0; -- done!
-                                
-                            when OP_JVC =>
-                                if overflow_flag = '0' then
-                                    pc_D <= a_reg_Q;
-                                    pc_load <= '1';
-                                end if;
-                                stage <= 0; -- done!
-
-                            when OP_JHII =>
-                                if (carry_flag = '1') and (zero_flag = '0') then
-                                    pc_D <= std_logic_vector(unsigned(pc_Q) + unsigned(signed_val));
-                                    pc_load <= '1';
-                                end if;
-                                stage <= 0; -- done!
-                                
-                            when OP_JHI =>
-                                if (carry_flag = '1') and (zero_flag = '0') then
-                                    pc_D <= a_reg_Q;
-                                    pc_load <= '1';
-                                end if;
-                                stage <= 0; -- done!
-
-                            when OP_JLSI =>
-                                if (carry_flag = '0') or (zero_flag = '1') then
-                                    pc_D <= std_logic_vector(unsigned(pc_Q) + unsigned(signed_val));
-                                    pc_load <= '1';
-                                end if;
-                                stage <= 0; -- done!
-                                
-                            when OP_JLS =>
-                                if (carry_flag = '0') or (zero_flag = '1') then
-                                    pc_D <= a_reg_Q;
-                                    pc_load <= '1';
-                                end if;
-                                stage <= 0; -- done!
-
-
-                            when OP_JGEI =>
-                                if negative_flag = overflow_flag then
-                                    pc_D <= std_logic_vector(unsigned(pc_Q) + unsigned(signed_val));
-                                    pc_load <= '1';
-                                end if;
-                                stage <= 0; -- done!
-                                
-                            when OP_JGE =>
-                                if negative_flag = overflow_flag then
-                                    pc_D <= a_reg_Q;
-                                    pc_load <= '1';
-                                end if;
-                                stage <= 0; -- done!
-
-                            when OP_JLTI =>
-                                if negative_flag /= overflow_flag then
-                                    pc_D <= std_logic_vector(unsigned(pc_Q) + unsigned(signed_val));
-                                    pc_load <= '1';
-                                end if;
-                                stage <= 0; -- done!
-                                
-                            when OP_JLT =>
-                                if negative_flag /= overflow_flag then
-                                    pc_D <= a_reg_Q;
-                                    pc_load <= '1';
-                                end if;
-                                stage <= 0; -- done!
-
-                            when OP_JGTI =>
-                                if ( zero_flag = '0' ) and ( negative_flag = overflow_flag ) then
-                                    pc_D <= std_logic_vector(unsigned(pc_Q) + unsigned(signed_val));
-                                    pc_load <= '1';
-                                end if;
-                                stage <= 0; -- done!
-                                
-                            when OP_JGT =>
-                                if ( zero_flag = '0' ) and ( negative_flag = overflow_flag ) then
-                                    pc_D <= a_reg_Q;
-                                    pc_load <= '1';
-                                end if;
-                                stage <= 0; -- done!
-
-                            when OP_JLEI =>
-                                if ( zero_flag = '1' ) or ( negative_flag /= overflow_flag ) then
-                                    pc_D <= std_logic_vector(unsigned(pc_Q) + unsigned(signed_val));
-                                    pc_load <= '1';
-                                end if;
-                                stage <= 0; -- done!
-                                
-                            when OP_JLE =>
-                                if ( zero_flag = '1' ) or ( negative_flag /= overflow_flag ) then
-                                    pc_D <= a_reg_Q;
-                                    pc_load <= '1';
-                                end if;
-                                stage <= 0; -- done!
-
-
-                            when OP_MOVI =>
-                                a_reg_D <= imm;
-                                a_reg_load <= '1';
-                                stage <= 0; -- done!
-                                
-                            when OP_MOV =>
-                                a_reg_D <= b_reg_Q;
-                                a_reg_load <= '1';
-                                
-                            when OP_LDR =>
-                                b_RE <= '1';
-                                b_address <= std_logic_vector(unsigned(b_reg_Q) + unsigned(signed_val));
-                                
-                            when OP_STR =>
-                                b_WE <= "1111";
-                                b_address <= std_logic_vector(unsigned(b_reg_Q) + unsigned(signed_val));
-                                b_D <= a_reg_Q;                  
-                                
-                            when OP_LDA =>
-                                b_RE <= '1';
-                                b_address <= b_reg_Q;
-                                
-                            when OP_STA =>
-                                b_WE <= "1111";
-                                b_address <= b_reg_Q;
-                                b_D <= a_reg_Q;                                    
-                                
-                            when OP_CALLI | OP_CALL =>
-                                b_WE <= "1111";                                
-                                b_address <= std_logic_vector(unsigned(sp_Q) - 4);
-                                b_D <= pc_Q;
-                                sp_dec <= '1';
-                                                                
-                            when OP_RET =>
-                                b_RE <= '1';
-                                b_address <= sp_Q;
-                                sp_inc <= '1';                             
-                                
-                            when OP_PUSH =>
-                                b_WE <= "1111";
-                                b_address <= std_logic_vector(unsigned(sp_Q) - 4);
-                                b_D <= a_reg_Q;
-                                sp_dec <= '1';
-                                
-                            when OP_POP =>
-                                b_RE <= '1';
-                                b_address <= sp_Q;
-                                sp_inc <= '1';
-                                
-                            when OP_SETZ =>
-                                zero_flag <= imm(0);
-                                stage <= 0;
-                            when OP_SETc =>
-                                carry_flag <= imm(0);
-                                stage <= 0;
-                            when OP_SETN =>
-                                negative_flag <= imm(0);
-                                stage <= 0;
-                            when OP_SETO =>
-                                overflow_flag <= imm(0);
-                                stage <= 0;
-                                
-                            when OP_ADD =>
-                                alu <= std_logic_vector(unsigned('0' & b_reg_Q) + unsigned('0' & c_reg_Q));
-                                
-                            when OP_ADDC =>
-                                alu <= std_logic_vector(unsigned('0' & b_reg_Q) + unsigned('0' & c_reg_Q) + ("00000000000000000000000000000000" & carry_flag) );
-                                
-                            when OP_ADDI =>
-                                alu <= std_logic_vector(unsigned('0' & b_reg_Q) + unsigned('0' & imm));
-                                
-                            when OP_ADDCI =>
-                                alu <= std_logic_vector(unsigned('0' & b_reg_Q) + unsigned('0' & imm) + ("00000000000000000000000000000000" & carry_flag));
-
-                            when OP_SUB =>
-                                alu <= std_logic_vector(unsigned('0' & b_reg_Q) - unsigned('0' & c_reg_Q));
-                                
-                            when OP_SUBC =>
-                                alu <= std_logic_vector(unsigned('0' & b_reg_Q) - unsigned('0' & c_reg_Q) - ("00000000000000000000000000000000" & carry_flag));
-                                
-                            when OP_SUBI =>
-                                alu <= std_logic_vector(unsigned('0' & b_reg_Q) - unsigned('0' & imm));
-                                
-                            when OP_SUBCI =>
-                                alu <= std_logic_vector(unsigned('0' & b_reg_Q) - unsigned('0' & imm) - ("00000000000000000000000000000000" & carry_flag));
-                                
-                            when OP_CMPI =>
-                                alu <= std_logic_vector(unsigned('0' & a_reg_Q) - unsigned('0' & imm));
-
-                            when OP_CMP =>
-                                alu <= std_logic_vector(unsigned('0' & a_reg_Q) - unsigned('0' & b_reg_Q));
-                            
-                            when OP_ANDI =>
-                                a_reg_D <= b_reg_Q and imm;
-                                a_reg_load <= '1';
-                                stage <= 0;
-                                
-                            when OP_AND =>
-                                a_reg_D <= b_reg_Q and c_reg_Q;
-                                a_reg_load <= '1';
-                                stage <= 0;                                
-                                
-                            when OP_ORI =>
-                                a_reg_D <= b_reg_Q or imm;
-                                a_reg_load <= '1';
-                                stage <= 0;
-                                
-                            when OP_OR =>
-                                a_reg_D <= b_reg_Q or c_reg_Q;
-                                a_reg_load <= '1';
-                                stage <= 0;
-                                
-                            when OP_XORI =>
-                                a_reg_D <= b_reg_Q xor imm;
-                                a_reg_load <= '1';
-                                stage <= 0;
-                                
-                            when OP_XOR =>
-                                a_reg_D <= b_reg_Q xor c_reg_Q;
-                                a_reg_load <= '1';
-                                stage <= 0;                                
-                                
-                            when OP_NOT =>
-                                a_reg_D <= not b_reg_Q;
-                                a_reg_load <= '1';
-                                stage <= 0;
-
-                            -- change shift to use one clock per shift 
-                            -- the logic generated otherwise overwhelms the
-                            -- FPGA
-                            when OP_LSL =>
-                                --a_reg_D <= std_logic_vector(shift_left(unsigned(b_reg_Q), to_integer(unsigned(imm(4 downto 0)))));
-                                a_reg_D <= std_logic_vector(shift_left(unsigned(b_reg_Q), 1));
-                                a_reg_load <= '1';
-                                stage <= 0;
-                            
-                            when OP_LSR =>
-                                -- a_reg_D <= std_logic_vector(shift_right(unsigned(b_reg_Q), to_integer(unsigned(imm(4 downto 0)))));
-                                a_reg_D <= std_logic_vector(shift_right(unsigned(b_reg_Q), 1));
-                                a_reg_load <= '1';
-                                stage <= 0;
-                                                        
-                            when OP_ASL =>
-                                -- a_reg_D <= std_logic_vector(shift_left(signed(b_reg_Q), to_integer(unsigned(imm(4 downto 0)))));
-                                a_reg_D <= std_logic_vector(shift_left(signed(b_reg_Q), 1));
-                                a_reg_load <= '1';
-                                stage <= 0;
-                            
-                            when OP_ASR =>
-                                --a_reg_D <= std_logic_vector(shift_right(signed(b_reg_Q), to_integer(unsigned(imm(4 downto 0)))));
-                                a_reg_D <= std_logic_vector(shift_right(signed(b_reg_Q), 1));
-                                a_reg_load <= '1';
-                                stage <= 0;                            
-                            
+                        when "010" | "011" =>
+                            stage <= 0;
+                            case short_code is
+                            when SC_J =>
+                                temp := '1';
+                            when SC_JEQ =>
+                                temp := status_register(Z_FLAG_POS);
+                            when SC_JCS =>
+                                temp := status_register(C_FLAG_POS);
+                            when SC_JNEG =>
+                                temp := status_register(N_FLAG_POS);
+                            when SC_JVS =>
+                                temp := status_register(V_FLAG_POS);
+                            when SC_JHI =>                                
+                                temp := (status_register(C_FLAG_POS)) and (not status_register(Z_FLAG_POS));
+                            when SC_JGE =>                                
+                                temp := not (status_register(N_FLAG_POS) xor status_register(V_FLAG_POS));
+                            when SC_JGT =>     
+                                temp := status_register(Z_FLAG_POS) or ( status_register(N_FLAG_POS)  xor status_register(V_FLAG_POS) );
                             when others =>
-                                -- do nothing.
-                        end case;
-                            
-                    when 3 =>
-                        --led <= "00001000";   
-                        stage <= 0;                        
-                        case opcode is
-                        
-                            when OP_INC =>
-                            
-                                if a_reg_Q = "00000000000000000000000000000000" then
-                                    zero_flag <= '1';
-                                else
-                                    zero_flag <= '0';
-                                end if;
-                                
-                            when OP_DEC =>
-                            
-                                if a_reg_Q = "00000000000000000000000000000000" then
-                                    zero_flag <= '1';
-                                else
-                                    zero_flag <= '0';
-                                end if;
-                        
-                        
-                        when OP_LDR =>
-                            if b_READY = '1' then
-                                a_reg_D <= b_Q;
-                                a_reg_load <= '1';
+                                temp := '0';
+                            end case;
+                                                        
+                            if instruction(29) = '1' then
+                                reg_load(REG_PC) <= not temp;
                             else
-                                -- stick around for results.
-                                stage <= 3;
+                                reg_load(REG_PC) <= temp;
                             end if;
-                            
-                        when OP_LDA =>
-                            if b_READY = '1' then
-                                a_reg_D <= b_Q;
-                                a_reg_load <= '1';
-                                b_reg_D <= std_logic_vector(unsigned(b_reg_Q) + unsigned(signed_val));
-                                b_reg_load <= '1';
-                            else
-                                -- stick around for results.
-                                stage <= 3;
-                            end if;
-                            
-                        when OP_STR =>
-                            if b_ready = '0' then
-                                stage <= 3; -- stick around a bit.
-                            end if; 
-
-                        when OP_STA =>
-                        
-                            if b_ready = '1' then
-                                b_reg_D <= std_logic_vector(unsigned(b_reg_Q) + unsigned(signed_val));
-                                b_reg_load <= '1';
-                            else
-                                stage <= 3;
-                            end if;
-
-                        when OP_CALL =>                            
-                            
-                            if b_ready = '0' then
-                                stage <= 3; -- stick around a bit.
-                            else
-                                pc_D <= a_reg_Q;
-                                pc_load <= '1';                                
-                            end if;
-
-                        when OP_CALLI =>                            
-                                
-                            if b_ready = '0' then
-                                stage <= 3; -- stick around a bit.
-                            else
-                                pc_D <= std_logic_vector(unsigned(pc_Q) + unsigned(signed_val));
-                                pc_load <= '1';                                
-                            end if;
-                            
-                        when OP_RET =>
-                        
-                            if b_READY = '1' then
-                                pc_D <= b_Q;
-                                pc_load <= '1';
-                            else
-                                -- stick around for results.
-                                stage <= 3;
-                            end if;                            
-                            
-                        when OP_PUSH =>
-                            
-                            if b_ready = '0' then
-                                stage <= 3; -- stick around a bit.
-                            end if;                        
-                            
-                        when OP_POP =>
-                        
-                            if b_READY = '1' then
-                                a_reg_D <= b_Q;
-                                a_reg_load <= '1';
-                            else
-                                -- stick around for results.
-                                stage <= 3;
-                            end if;
-                            
-
-                            
-                        when OP_ADD | OP_ADDC | OP_ADDI | OP_ADDCI =>
-
-                            carry_flag <= alu(32);
-                            negative_flag <= alu(31);
-                            if alu = "000000000000000000000000000000000" then
-                                zero_flag <= '1';
-                            else
-                                zero_flag <= '0';
-                            end if;
-                            negative_flag <= alu(31);
-                            
-                            -- when adding two positive numbers 
-                            -- and the result is negative 
-                            -- or
-                            -- when adding two negative numbers
-                            -- and the results is positive 
-                            -- then overflow occured.
-                            if a_reg_Q(31) = b_reg_Q(31) and a_reg_Q(31) /= alu(31) then
-                                overflow_flag <= '1';
-                            else
-                                overflow_flag <= '0';
-                            end if;
-                            a_reg_D <= alu(31 downto 0);
-                            a_reg_load <= '1';
-                            stage <= 0;
-                             
-
-                            
-                        when OP_SUB | OP_SUBC | OP_SUBI | OP_SUBCI =>                                
-                                                                                      
-                            carry_flag <= alu(32);
-                            negative_flag <= alu(31);
-                            if alu = "000000000000000000000000000000000" then
-                                zero_flag <= '1';
-                            else
-                                zero_flag <= '0';
-                            end if;
-                            negative_flag <= alu(31);
-                            
-                            if a_reg_Q(31) /= b_reg_Q(31) and a_reg_Q(31) /= alu(31) then
-                                overflow_flag <= '1';
-                            else
-                                overflow_flag <= '0';
-                            end if;                  
-                            
-                            a_reg_D <= alu(31 downto 0);
-                            a_reg_load <= '1';
-                            stage <= 0;
-                            
-                        when OP_CMP | OP_CMPI =>
-                             
-                            stage <= 0;                             
-                            carry_flag <= alu(32);
-                            negative_flag <= alu(31);
-                            if alu = "000000000000000000000000000000000" then
-                                zero_flag <= '1';
-                            else
-                                zero_flag <= '0';
-                            end if;
-                            negative_flag <= alu(31);
-                            
-                            if a_reg_Q(31) /= b_reg_Q(31) and a_reg_Q(31) /= alu(31) then
-                                overflow_flag <= '1';
-                            else
-                                overflow_flag <= '0';
-                            end if;
-
                         when others =>
-                            -- do nothing.
+                            -- nothing.
+                            
                         end case;
-                        
+ 
+                    when 3 =>
+                        stage <= 0;
+                        case opgroup is
+                        when "100" =>
+                            
+                            status_register(Z_FLAG_POS) <= alu_z;
+                            status_register(N_FLAG_POS) <= alu_n;
+                            status_register(V_FLAG_POS) <= alu_v;
+                            status_register(C_FLAG_POS) <= alu_c;
+                        when others =>
+                            -- nothing
+                        end case;
+                    
+                    
                     when others =>
                         stage <= 0;
                         
@@ -1163,9 +675,9 @@ begin
 		clk => clk,
 		reset => reset,
 		a_address => a_address,
-		a_D => a_D,
+		a_D => (others=>'0'),
 		a_RE => a_RE,
-		a_WE => a_WE,
+		a_WE => "0000",
 		a_ready => a_ready,
 		a_Q => a_Q,
 		b_address => b_address,
@@ -1222,33 +734,30 @@ begin
     reg_file0: reg_file PORT MAP(
 		clk => clk,
 		reset => reset,
-		a_reg_idx => a_reg_idx,
-		a_load => a_reg_load,
-		a_Q => a_reg_Q,
-		a_D => a_reg_D ,
-		a_inc => a_reg_inc,
-		a_dec => a_reg_dec,
-		a_op_value => a_reg_op_value,
-		b_reg_idx => b_reg_idx,
-		b_load => b_reg_load,
-		b_Q => b_reg_Q,
-		b_D => b_reg_D,
-		c_reg_idx => c_reg_idx,
-		c_load => c_reg_load,
-		c_Q => c_reg_Q,
-		c_D => c_reg_D,
+		Qs => reg_Qs,
+        Ds => reg_Ds,
+        load => reg_load,
 		sp_inc => sp_inc,
-		sp_dec => sp_dec,
-		sp_load => sp_load,
-		sp_Q => sp_Q,
-		sp_D => sp_D,
-		pc_inc => pc_inc,
-		pc_load => pc_load,
-		pc_Q => pc_Q,
-		pc_D => pc_D
-	);    
-    
-    
+		sp_dec => sp_dec,		
+		pc_inc => pc_inc
+	);  
+
+    reg_Ds(0) <= alu_result;
+    reg_Ds(1) <= alu_result;
+    reg_Ds(2) <= alu_result;
+    reg_Ds(3) <= alu_result;
+    reg_Ds(4) <= alu_result;
+    reg_Ds(5) <= alu_result;
+    reg_Ds(6) <= alu_result;
+    reg_Ds(7) <= alu_result;
+    reg_Ds(8) <= alu_result;
+    reg_Ds(9) <= alu_result;
+    reg_Ds(10) <= alu_result;
+    reg_Ds(11) <= alu_result;
+    reg_Ds(12) <= alu_result;
+    reg_Ds(13) <= alu_result;
+    reg_Ds(14) <= alu_result;
+    reg_Ds(15) <= alu_result;
 
 	buffered_uart0: buffered_uart PORT MAP(
 		clk => clk,
@@ -1263,7 +772,49 @@ begin
 		rx_pin => rx_pin,
 		tx_pin => tx_pin
 	);
+      
+	sd_controller0: sd_controller 
+    PORT MAP(
+		cs => SD_CS,
+		mosi => SD_MOSI,
+		miso => SD_MISO,
+		sclk => SD_CLK,
+		card_present => '1',
+		card_write_prot => '1',
+		rd => sd_rd,
+		rd_multiple => '0',
+		dout => sd_dout,
+		dout_avail => sd_dout_avail,
+		dout_taken => sd_dout_taken,
+		wr => '0',
+		wr_multiple => '0',
+		din => "00000000",
+		din_valid => '0',
+		-- din_taken => '0',
+		addr => sd_address,
+		erase_count => "00000000",
+		sd_error => sd_error,
+		sd_busy => sd_busy,
+		sd_error_code => sd_error_code,
+		reset => reset,
+		clk => clk,
+		sd_type => sd_type
+
+	);
     
+    alu0: alu PORT MAP(
+		clk => clk,
+		reset => reset,
+		op1 => alu_op1,
+		op2 => alu_op2,
+		result => alu_result,
+		c_in => status_register(C_FLAG_POS),
+		c => alu_c,
+        n => alu_n,
+		v => alu_v,
+		z => alu_z,
+		f => alu_f
+	);   
 
 end Behavioral;
 

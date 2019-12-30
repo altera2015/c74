@@ -196,12 +196,12 @@ NET "LED[0]" SLEW = FAST;
 ###################################################################################################################################################
 #                                                   Micro SD Card                                                                                 #
 ###################################################################################################################################################
-#NET "DAT0"                       LOC = K14     | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ; #MISO
+NET "SD_MISO"                     LOC = K14     | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ; #MISO
 #NET "DAT1"                       LOC = G18     | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ;
 #NET "DAT2"                       LOC = J13     | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ;
-#NET "DAT3"                       LOC = L13     | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ; #CS
-#NET "CMD"                        LOC = G16     | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ; #MOSI
-#NET "CLK"                        LOC = L12     | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ; #CLK
+NET "SD_CS"                       LOC = L13     | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ; #CS
+NET "SD_MOSI"                     LOC = G16     | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ; #MOSI
+NET "SD_CLK"                      LOC = L12     | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ; #CLK
 ###################################################################################################################################################
 #                                               Seven Segment Display                                                                             #
 ################################################################################################################################################### 

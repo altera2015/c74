@@ -4,9 +4,16 @@ import sys
 import re
 import argparse
 from datetime import datetime
+from isa_defs import *
 
 labels = {}
 constants = {}
+
+for constant in predef_constants:
+    constants[ constant.lower() ] = predef_constants[constant]
+               
+
+
 
 ###############################################################################
 ###############################################################################
@@ -16,101 +23,14 @@ constants = {}
 ###############################################################################
 ###############################################################################
 OP_LITERAL = -1
-OP_NOP  = 0
-
-# Branch Instructions
-#####################
-OP_JI   = 2 # unconditional jump
-OP_J    = 3 # unconditional jump
-OP_JEQI  = 4 # equal ( z == 1 )
-OP_JEQ   = 5 # equal ( z == 1 )
-OP_JNEI  = 6 # not equal ( z==0 )
-OP_JNE   = 7 # not equal ( z==0 )
-OP_JCSI  = 8 # unsigned higer or equal ( c == 1 )
-OP_JCS   = 9 # unsigned higer or equal ( c == 1 )
-OP_JCCI  = 10 # unsigned lower ( c == 0 )
-OP_JCC   = 11 # unsigned lower ( c == 0 )
-OP_JNEGI = 12 # negative number ( N == 1 )
-OP_JNEG  = 13 # negative number ( N == 1 )
-OP_JPOSI = 14 # positive number ( N == 0 )
-OP_JPOS  = 15 # positive number ( N == 0 )
-OP_JVSI  = 16 # signed overflow ( V == 1 )
-OP_JVS   = 17 # signed overflow ( V == 1 )
-OP_JVCI  = 18 # signed no overflow ( V == 0 )
-OP_JVC   = 19 # signed no overflow ( V == 0 )
-OP_JHII  = 20 # unsigned higher ( c==1 && z == 0 )
-OP_JHI   = 21 # unsgiend higher ( c==1 && z == 0 )
-OP_JLSI  = 22 # unsigned lower or equal ( c==0 || z==1 )
-OP_JLS   = 23 # unsigned lower or equal ( c==0 || z==1 )
-OP_JGEI  = 24 # signed  greated or equal ( n==v )
-OP_JGE   = 25 # signed  greated or equal ( n==v )
-OP_JLTI  = 26 # signed  less than  ( n!=v )
-OP_JLT   = 27 # signed  less than ( n!=v )
-OP_JGTI  = 28 # signed greater than ( z==0 && n ==v )
-OP_JGT   = 29 # signed greater than ( z==0 && n ==v )
-OP_JLEI  = 30 # signed less or equal ( z==1 || n !=v )
-OP_JLE   = 31 # signed less or equal ( z==1 || n !=v )
-
-# Flag Instructions
-###################
-
-OP_SETZ = 32 # Z
-OP_SETC = 33 # C
-OP_SETN = 34 # N
-OP_SETV = 35 # V (overflow)
-
-# Data Loading
-##############
-OP_MOVI = 40
-OP_MOV  = 41
-OP_LDR  = 42 # (Load Register) load ra with value at memory location rb + signed    
-OP_STR  = 43 # (Store Register) store ra value at memory location rb + signed    
-OP_LDA  = 44 # (Load & Add) load ra with value at memory location rb, post load increment rb + signed
-OP_STA  = 45 # (Store & Add) store ra value at memory location rb, post store increment rb + signed
-
-
-# ALU
-#####################
-OP_ADDI  = 50 # CZN
-OP_ADD   = 51 # CZN
-OP_ADDCI = 52 # CZN
-OP_ADDC  = 53 # CZN
-OP_SUBI  = 54 # CZN
-OP_SUB   = 55 # CZN
-OP_SUBCI = 56 # CZN
-OP_SUBC  = 57 # CZN
-OP_CMPI  = 58 # CZN
-OP_CMP   = 59 # CZN
-OP_INC   = 60 # no flags changed
-OP_DEC   = 61 # no flags changed
-
-OP_ANDI  = 62
-OP_AND   = 63
-OP_ORI   = 64
-OP_OR    = 65
-OP_XORI  = 66
-OP_XOR   = 67
-OP_NOT   = 68
-OP_LSL   = 69
-OP_LSR   = 70
-OP_ASL   = 71
-OP_ASR   = 72
-
-
-OP_OUT   = 80
-OP_IN    = 81
-OP_CALLI = 82
-OP_CALL  = 83
-OP_RET   = 84
-OP_PUSH  = 85
-OP_POP   = 86
-
 
 REG_NONE = 0
 REG_A = 1
 REG_A_B = 2
 REG_A_B_C = 3
 REG_A_PC = 4
+REG_I_A = 5 #hidden first
+REG_I_A_B = 6 #hidden first
 
 ARG_NONE = 0
 ARG_UNSIGNED_OR_LABEL = 1
@@ -144,18 +64,17 @@ op_defs = {
     "lda": [[OP_LDA, REG_A_B, ARG_SIGNED]],
     "sta": [[OP_STA, REG_A_B, ARG_SIGNED]],
     
-    "setz":[[OP_SETZ, REG_NONE, ARG_UNSIGNED]],
-    "setc":[[OP_SETC, REG_NONE, ARG_UNSIGNED]],
-    "setn":[[OP_SETN, REG_NONE, ARG_UNSIGNED]],
-    "setv":[[OP_SETV, REG_NONE, ARG_UNSIGNED]],
+    "set":[[OP_SET, REG_NONE, ARG_UNSIGNED]],
+    "clr":[[OP_CLR, REG_NONE, ARG_UNSIGNED]],
+    
+    
     
     "add": [[OP_ADDI, REG_A_B, ARG_UNSIGNED],[OP_ADD, REG_A_B_C, ARG_NONE]],
     "addc":[[OP_ADDCI, REG_A_B, ARG_UNSIGNED],[OP_ADDC, REG_A_B_C, ARG_NONE]],
     "sub": [[OP_SUBI, REG_A_B, ARG_UNSIGNED],[OP_SUB, REG_A_B_C, ARG_NONE]],
     "subc":[[OP_SUBCI, REG_A_B, ARG_UNSIGNED],[OP_SUBC, REG_A_B_C, ARG_NONE]],
-    "cmp": [[OP_CMPI, REG_A, ARG_UNSIGNED],[OP_CMP, REG_A_B, ARG_NONE]],
-    "inc": [[OP_INC, REG_A, ARG_UNSIGNED]],
-    "dec": [[OP_DEC, REG_A, ARG_UNSIGNED]],
+    "cmp": [[OP_CMPI, REG_I_A, ARG_UNSIGNED],[OP_CMP, REG_I_A_B, ARG_NONE]],
+
     
     "and": [[OP_ANDI, REG_A_B, ARG_UNSIGNED],[OP_AND, REG_A_B_C, ARG_NONE]],
     "or":  [[OP_ORI, REG_A_B, ARG_UNSIGNED],[OP_OR, REG_A_B_C, ARG_NONE]],
@@ -173,6 +92,7 @@ op_defs = {
     "pop": [[OP_POP, REG_A, ARG_NONE]],
     "call": [[OP_CALLI, REG_NONE, ARG_SIGNED, True], [OP_CALL, REG_A, ARG_NONE]],
     "ret": [[OP_RET, REG_NONE, ARG_NONE]],
+    "reti": [[OP_RETI, REG_NONE, ARG_NONE]],
     
     ".word":[[OP_LITERAL, REG_NONE, ARG_32BIT] ]   
 }
@@ -306,6 +226,11 @@ def encode_op( rec, op, reg, arg, pcrelative = False):
         arg_count += 1
     elif reg == REG_A_B_C:
         arg_count += 3
+    elif reg == REG_I_A:
+        arg_count += 1
+    elif reg == REG_I_A_B:
+        arg_count += 2
+    
         
     if arg == ARG_SIGNED:
         arg_count += 1
@@ -334,6 +259,12 @@ def encode_op( rec, op, reg, arg, pcrelative = False):
         ra = parse_reg(args[index], source_line)
         index += 1
         cmd += "{0:X}".format( ra )
+    elif reg == REG_I_A:
+        bits -= 8
+        ra = 0
+        rb = parse_reg(args[index], source_line)
+        index += 1
+        cmd += "{0:X}{1:X}".format(ra, rb)        
     elif reg == REG_A_B:
         bits -= 8
         ra = parse_reg(args[index], source_line)
@@ -346,6 +277,13 @@ def encode_op( rec, op, reg, arg, pcrelative = False):
         rb = 15
         index += 1
         cmd += "{0:X}{1:X}".format(ra, rb)
+    elif reg == REG_I_A_B:
+        bits -= 12
+        ra = 0
+        rb = parse_reg(args[index+0], source_line)
+        rc = parse_reg(args[index+1], source_line)
+        index += 2
+        cmd += "{0:X}{1:X}{2:X}".format(ra, rb, rc)        
     elif reg == REG_A_B_C:
         bits -= 12
         ra = parse_reg(args[index], source_line)

@@ -73,9 +73,16 @@ entity machine is
         mcb3_dram_ck        : out std_logic;
         mcb3_dram_ck_n      : out std_logic;        
         c3_rst0             : out std_logic ;
-
+    
+        -- UART
         UART_TX             : out std_logic;
-        UART_RX             : in std_logic
+        UART_RX             : in std_logic;
+        
+        -- SD Card
+        SD_MISO             : in std_logic;
+        SD_MOSI             : out std_logic;
+        SD_CS               : out std_logic;
+        SD_CLK              : out std_logic
     );
 end machine;
 
@@ -139,7 +146,13 @@ architecture machine_arch of machine is
         
         -- UART Pins.
    		rx_pin : IN std_logic;          
-        tx_pin : OUT std_logic
+        tx_pin : OUT std_logic;
+        
+        -- SD Card
+        SD_MISO             : in std_logic;
+        SD_MOSI             : out std_logic;
+        SD_CS               : out std_logic;
+        SD_CLK              : out std_logic        
 	);
 	END COMPONENT;
 
@@ -657,7 +670,11 @@ begin
 		lpddr_pB_rd_error => c3_p1_rd_error,
         led=>led,
         tx_pin => UART_TX,
-        rx_pin => UART_RX
+        rx_pin => UART_RX,
+        SD_MISO => SD_MISO,
+        SD_MOSI => SD_MOSI,
+        SD_CS => SD_CS,
+        SD_CLK => SD_CLK
      );
 
 

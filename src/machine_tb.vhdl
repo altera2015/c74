@@ -52,7 +52,12 @@ ARCHITECTURE behavior OF machine_tb IS
          mcb3_dram_ck_n : OUT  std_logic;
          c3_rst0 : OUT  std_logic;
          UART_TX             : out std_logic;
-         UART_RX             : in std_logic
+         UART_RX             : in std_logic;
+         SD_MISO             : in std_logic;
+         SD_MOSI             : out std_logic;
+         SD_CS               : out std_logic;
+         SD_CLK              : out std_logic
+         
         );
     END COMPONENT;
    
@@ -114,6 +119,11 @@ ARCHITECTURE behavior OF machine_tb IS
    
    signal UART_TX : std_logic;
    signal UART_RX : std_logic;
+
+   signal SD_MISO    : std_logic;
+   signal SD_MOSI    : std_logic;
+   signal SD_CS      : std_logic;
+   signal SD_CLK     : std_logic;
 
    -- Clock period definitions
    constant clk_100mhz_period : time := 10 ns;
@@ -204,7 +214,12 @@ BEGIN
           mcb3_dram_ck_n => mcb3_dram_ck_n,
           c3_rst0 => c3_rst0,
           UART_TX => UART_TX,
-          UART_RX => UART_RX          
+          UART_RX => UART_RX,
+          SD_MISO => SD_MISO,
+          SD_MOSI => SD_MOSI,
+          SD_CS   => SD_CS,
+          SD_CLK => SD_CLK
+          
         );
 
    -- Clock process definitions

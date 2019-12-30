@@ -14,6 +14,10 @@ use ieee.numeric_std.alL;
 
 
 entity memory_interface_port is
+    generic (
+        read_only : boolean := false
+    
+    );
     port ( 
         clk : in  std_logic;
         reset : in  std_logic;
@@ -74,7 +78,10 @@ begin
     -- mark Q to bank as multi cycle
     Q <= fr_dout when bank='0' else lpddr_data;
     fr_din <= D;
-
+                            
+--    fr_addr <= address(10 downto 2);
+--    fr_en <= '1';
+    
     process(clk)
         constant bank_cutoff : integer := 2048;
         variable state_address : std_logic_vector(31 downto 0);
@@ -110,8 +117,10 @@ begin
                         
                         if unsigned(address) < bank_cutoff then
                             bank <= '0';
-                            state := B0_R_START;
                             
+                            -- ready <= '1';
+                            --state := CLEAR_READY;
+                            state := B0_R_START;
                             fr_addr <= state_address(10 downto 2);
                             fr_en <= '1';                        
                             
@@ -139,7 +148,7 @@ begin
                             state := B0_W_START;                        
                             fr_addr <= state_address(10 downto 2);
                             fr_en <= '1';
-                            fr_we <= WE;                        
+                            fr_we <= WE;
                         else 
                             bank <= '1';
                                    
