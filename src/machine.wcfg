@@ -32,7 +32,7 @@
          </top_modules>
       </db_ref>
    </db_ref_list>
-   <WVObjectSize size="13" />
+   <WVObjectSize size="14" />
    <wvobject fp_name="/machine_tb/machine0/control_logic0/clk" type="logic" db_ref_id="1">
       <obj_property name="ElementShortName">clk</obj_property>
       <obj_property name="ObjectShortName">clk</obj_property>
@@ -52,6 +52,18 @@
    <wvobject fp_name="group149" type="group">
       <obj_property name="label">Decoded Opcode</obj_property>
       <obj_property name="DisplayName">label</obj_property>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/imm0" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">imm0[31:0]</obj_property>
+         <obj_property name="ObjectShortName">imm0[31:0]</obj_property>
+      </wvobject>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/imm1" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">imm1[31:0]</obj_property>
+         <obj_property name="ObjectShortName">imm1[31:0]</obj_property>
+      </wvobject>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/imm2" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">imm2[31:0]</obj_property>
+         <obj_property name="ObjectShortName">imm2[31:0]</obj_property>
+      </wvobject>
       <wvobject fp_name="/machine_tb/machine0/control_logic0/a_q" type="array" db_ref_id="1">
          <obj_property name="DisplayName">label</obj_property>
          <obj_property name="ElementShortName">a_q[31:0]</obj_property>
@@ -60,11 +72,6 @@
          <obj_property name="label">Instruction</obj_property>
          <obj_property name="UseCustomSignalColor">true</obj_property>
          <obj_property name="CustomSignalColor">#ffff00</obj_property>
-      </wvobject>
-      <wvobject fp_name="/machine_tb/machine0/control_logic0/opcode" type="array" db_ref_id="1">
-         <obj_property name="ElementShortName">opcode[7:0]</obj_property>
-         <obj_property name="ObjectShortName">opcode[7:0]</obj_property>
-         <obj_property name="Radix">HEXRADIX</obj_property>
       </wvobject>
    </wvobject>
    <wvobject fp_name="group41" type="group">
@@ -111,6 +118,19 @@
    <wvobject fp_name="group49" type="group">
       <obj_property name="label">Registers</obj_property>
       <obj_property name="DisplayName">label</obj_property>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/reg_file0/load" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">load[15:0]</obj_property>
+         <obj_property name="ObjectShortName">load[15:0]</obj_property>
+      </wvobject>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/reg_value_mux" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">reg_value_mux</obj_property>
+         <obj_property name="ObjectShortName">reg_value_mux</obj_property>
+      </wvobject>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/reg_intermediate_value" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">reg_intermediate_value[31:0]</obj_property>
+         <obj_property name="ObjectShortName">reg_intermediate_value[31:0]</obj_property>
+         <obj_property name="Radix">HEXRADIX</obj_property>
+      </wvobject>
       <wvobject fp_name="/machine_tb/machine0/control_logic0/reg_file0/sp_dec" type="logic" db_ref_id="1">
          <obj_property name="ElementShortName">sp_dec</obj_property>
          <obj_property name="ObjectShortName">sp_dec</obj_property>
@@ -242,147 +262,35 @@
    <wvobject fp_name="group85" type="group">
       <obj_property name="label">CPU Flags</obj_property>
       <obj_property name="DisplayName">label</obj_property>
-      <wvobject fp_name="/machine_tb/machine0/control_logic0/status_register" type="array" db_ref_id="1">
-         <obj_property name="ElementShortName">status_register[31:0]</obj_property>
-         <obj_property name="ObjectShortName">status_register[31:0]</obj_property>
-         <wvobject fp_name="/machine_tb/machine0/control_logic0/status_register[31]" type="logic" db_ref_id="1">
-            <obj_property name="ElementShortName">[31]</obj_property>
-            <obj_property name="ObjectShortName">status_register[31]</obj_property>
-         </wvobject>
-         <wvobject fp_name="/machine_tb/machine0/control_logic0/status_register[30]" type="logic" db_ref_id="1">
-            <obj_property name="ElementShortName">[30]</obj_property>
-            <obj_property name="ObjectShortName">status_register[30]</obj_property>
-         </wvobject>
-         <wvobject fp_name="/machine_tb/machine0/control_logic0/status_register[29]" type="logic" db_ref_id="1">
-            <obj_property name="ElementShortName">[29]</obj_property>
-            <obj_property name="ObjectShortName">status_register[29]</obj_property>
-         </wvobject>
-         <wvobject fp_name="/machine_tb/machine0/control_logic0/status_register[28]" type="logic" db_ref_id="1">
-            <obj_property name="ElementShortName">[28]</obj_property>
-            <obj_property name="ObjectShortName">status_register[28]</obj_property>
-         </wvobject>
-         <wvobject fp_name="/machine_tb/machine0/control_logic0/status_register[27]" type="logic" db_ref_id="1">
-            <obj_property name="ElementShortName">[27]</obj_property>
-            <obj_property name="ObjectShortName">status_register[27]</obj_property>
-         </wvobject>
-         <wvobject fp_name="/machine_tb/machine0/control_logic0/status_register[26]" type="logic" db_ref_id="1">
-            <obj_property name="ElementShortName">[26]</obj_property>
-            <obj_property name="ObjectShortName">status_register[26]</obj_property>
-         </wvobject>
-         <wvobject fp_name="/machine_tb/machine0/control_logic0/status_register[25]" type="logic" db_ref_id="1">
-            <obj_property name="ElementShortName">[25]</obj_property>
-            <obj_property name="ObjectShortName">status_register[25]</obj_property>
-         </wvobject>
-         <wvobject fp_name="/machine_tb/machine0/control_logic0/status_register[24]" type="logic" db_ref_id="1">
-            <obj_property name="ElementShortName">[24]</obj_property>
-            <obj_property name="ObjectShortName">status_register[24]</obj_property>
-         </wvobject>
-         <wvobject fp_name="/machine_tb/machine0/control_logic0/status_register[23]" type="logic" db_ref_id="1">
-            <obj_property name="ElementShortName">[23]</obj_property>
-            <obj_property name="ObjectShortName">status_register[23]</obj_property>
-         </wvobject>
-         <wvobject fp_name="/machine_tb/machine0/control_logic0/status_register[22]" type="logic" db_ref_id="1">
-            <obj_property name="ElementShortName">[22]</obj_property>
-            <obj_property name="ObjectShortName">status_register[22]</obj_property>
-         </wvobject>
-         <wvobject fp_name="/machine_tb/machine0/control_logic0/status_register[21]" type="logic" db_ref_id="1">
-            <obj_property name="ElementShortName">[21]</obj_property>
-            <obj_property name="ObjectShortName">status_register[21]</obj_property>
-         </wvobject>
-         <wvobject fp_name="/machine_tb/machine0/control_logic0/status_register[20]" type="logic" db_ref_id="1">
-            <obj_property name="ElementShortName">[20]</obj_property>
-            <obj_property name="ObjectShortName">status_register[20]</obj_property>
-         </wvobject>
-         <wvobject fp_name="/machine_tb/machine0/control_logic0/status_register[19]" type="logic" db_ref_id="1">
-            <obj_property name="ElementShortName">[19]</obj_property>
-            <obj_property name="ObjectShortName">status_register[19]</obj_property>
-         </wvobject>
-         <wvobject fp_name="/machine_tb/machine0/control_logic0/status_register[18]" type="logic" db_ref_id="1">
-            <obj_property name="ElementShortName">[18]</obj_property>
-            <obj_property name="ObjectShortName">status_register[18]</obj_property>
-         </wvobject>
-         <wvobject fp_name="/machine_tb/machine0/control_logic0/status_register[17]" type="logic" db_ref_id="1">
-            <obj_property name="ElementShortName">[17]</obj_property>
-            <obj_property name="ObjectShortName">status_register[17]</obj_property>
-         </wvobject>
-         <wvobject fp_name="/machine_tb/machine0/control_logic0/status_register[16]" type="logic" db_ref_id="1">
-            <obj_property name="ElementShortName">[16]</obj_property>
-            <obj_property name="ObjectShortName">status_register[16]</obj_property>
-         </wvobject>
-         <wvobject fp_name="/machine_tb/machine0/control_logic0/status_register[15]" type="logic" db_ref_id="1">
-            <obj_property name="ElementShortName">[15]</obj_property>
-            <obj_property name="ObjectShortName">status_register[15]</obj_property>
-         </wvobject>
-         <wvobject fp_name="/machine_tb/machine0/control_logic0/status_register[14]" type="logic" db_ref_id="1">
-            <obj_property name="ElementShortName">[14]</obj_property>
-            <obj_property name="ObjectShortName">status_register[14]</obj_property>
-         </wvobject>
-         <wvobject fp_name="/machine_tb/machine0/control_logic0/status_register[13]" type="logic" db_ref_id="1">
-            <obj_property name="ElementShortName">[13]</obj_property>
-            <obj_property name="ObjectShortName">status_register[13]</obj_property>
-         </wvobject>
-         <wvobject fp_name="/machine_tb/machine0/control_logic0/status_register[12]" type="logic" db_ref_id="1">
-            <obj_property name="ElementShortName">[12]</obj_property>
-            <obj_property name="ObjectShortName">status_register[12]</obj_property>
-         </wvobject>
-         <wvobject fp_name="/machine_tb/machine0/control_logic0/status_register[11]" type="logic" db_ref_id="1">
-            <obj_property name="ElementShortName">[11]</obj_property>
-            <obj_property name="ObjectShortName">status_register[11]</obj_property>
-         </wvobject>
-         <wvobject fp_name="/machine_tb/machine0/control_logic0/status_register[10]" type="logic" db_ref_id="1">
-            <obj_property name="ElementShortName">[10]</obj_property>
-            <obj_property name="ObjectShortName">status_register[10]</obj_property>
-         </wvobject>
-         <wvobject fp_name="/machine_tb/machine0/control_logic0/status_register[9]" type="logic" db_ref_id="1">
-            <obj_property name="ElementShortName">[9]</obj_property>
-            <obj_property name="ObjectShortName">status_register[9]</obj_property>
-         </wvobject>
-         <wvobject fp_name="/machine_tb/machine0/control_logic0/status_register[8]" type="logic" db_ref_id="1">
-            <obj_property name="ElementShortName">[8]</obj_property>
-            <obj_property name="ObjectShortName">status_register[8]</obj_property>
-         </wvobject>
-         <wvobject fp_name="/machine_tb/machine0/control_logic0/status_register[7]" type="logic" db_ref_id="1">
-            <obj_property name="ElementShortName">[7]</obj_property>
-            <obj_property name="ObjectShortName">status_register[7]</obj_property>
-         </wvobject>
-         <wvobject fp_name="/machine_tb/machine0/control_logic0/status_register[6]" type="logic" db_ref_id="1">
-            <obj_property name="ElementShortName">[6]</obj_property>
-            <obj_property name="ObjectShortName">status_register[6]</obj_property>
-         </wvobject>
-         <wvobject fp_name="/machine_tb/machine0/control_logic0/status_register[5]" type="logic" db_ref_id="1">
-            <obj_property name="ElementShortName">[5]</obj_property>
-            <obj_property name="ObjectShortName">status_register[5]</obj_property>
-         </wvobject>
-         <wvobject fp_name="/machine_tb/machine0/control_logic0/status_register[4]" type="logic" db_ref_id="1">
-            <obj_property name="DisplayName">label</obj_property>
-            <obj_property name="ElementShortName">[4]</obj_property>
-            <obj_property name="ObjectShortName">status_register[4]</obj_property>
-            <obj_property name="label">I</obj_property>
-         </wvobject>
-         <wvobject fp_name="/machine_tb/machine0/control_logic0/status_register[3]" type="logic" db_ref_id="1">
-            <obj_property name="DisplayName">label</obj_property>
-            <obj_property name="ElementShortName">[3]</obj_property>
-            <obj_property name="ObjectShortName">status_register[3]</obj_property>
-            <obj_property name="label">V</obj_property>
-         </wvobject>
-         <wvobject fp_name="/machine_tb/machine0/control_logic0/status_register[2]" type="logic" db_ref_id="1">
-            <obj_property name="DisplayName">label</obj_property>
-            <obj_property name="ElementShortName">[2]</obj_property>
-            <obj_property name="ObjectShortName">status_register[2]</obj_property>
-            <obj_property name="label">C</obj_property>
-         </wvobject>
-         <wvobject fp_name="/machine_tb/machine0/control_logic0/status_register[1]" type="logic" db_ref_id="1">
-            <obj_property name="DisplayName">label</obj_property>
-            <obj_property name="ElementShortName">[1]</obj_property>
-            <obj_property name="ObjectShortName">status_register[1]</obj_property>
-            <obj_property name="label">N</obj_property>
-         </wvobject>
-         <wvobject fp_name="/machine_tb/machine0/control_logic0/status_register[0]" type="logic" db_ref_id="1">
-            <obj_property name="DisplayName">label</obj_property>
-            <obj_property name="ElementShortName">[0]</obj_property>
-            <obj_property name="ObjectShortName">status_register[0]</obj_property>
-            <obj_property name="label">Z</obj_property>
-         </wvobject>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/status_register[4]" type="logic" db_ref_id="1">
+         <obj_property name="DisplayName">label</obj_property>
+         <obj_property name="ElementShortName">[4]</obj_property>
+         <obj_property name="ObjectShortName">status_register[4]</obj_property>
+         <obj_property name="label">I</obj_property>
+      </wvobject>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/status_register[3]" type="logic" db_ref_id="1">
+         <obj_property name="DisplayName">label</obj_property>
+         <obj_property name="ElementShortName">[3]</obj_property>
+         <obj_property name="ObjectShortName">status_register[3]</obj_property>
+         <obj_property name="label">N</obj_property>
+      </wvobject>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/status_register[2]" type="logic" db_ref_id="1">
+         <obj_property name="DisplayName">label</obj_property>
+         <obj_property name="ElementShortName">[2]</obj_property>
+         <obj_property name="ObjectShortName">status_register[2]</obj_property>
+         <obj_property name="label">C</obj_property>
+      </wvobject>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/status_register[1]" type="logic" db_ref_id="1">
+         <obj_property name="DisplayName">label</obj_property>
+         <obj_property name="ElementShortName">[1]</obj_property>
+         <obj_property name="ObjectShortName">status_register[1]</obj_property>
+         <obj_property name="label">V</obj_property>
+      </wvobject>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/status_register[0]" type="logic" db_ref_id="1">
+         <obj_property name="DisplayName">label</obj_property>
+         <obj_property name="ElementShortName">[0]</obj_property>
+         <obj_property name="ObjectShortName">status_register[0]</obj_property>
+         <obj_property name="label">Z</obj_property>
       </wvobject>
    </wvobject>
    <wvobject fp_name="group89" type="group">
@@ -404,6 +312,10 @@
    <wvobject fp_name="group101" type="group">
       <obj_property name="label">ALU</obj_property>
       <obj_property name="DisplayName">label</obj_property>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/alu0/c_in" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">c_in</obj_property>
+         <obj_property name="ObjectShortName">c_in</obj_property>
+      </wvobject>
       <wvobject fp_name="/machine_tb/machine0/control_logic0/alu0/f" type="array" db_ref_id="1">
          <obj_property name="ElementShortName">f[1:0]</obj_property>
          <obj_property name="ObjectShortName">f[1:0]</obj_property>
@@ -419,6 +331,7 @@
       <wvobject fp_name="/machine_tb/machine0/control_logic0/alu0/result" type="array" db_ref_id="1">
          <obj_property name="ElementShortName">result[31:0]</obj_property>
          <obj_property name="ObjectShortName">result[31:0]</obj_property>
+         <obj_property name="Radix">HEXRADIX</obj_property>
       </wvobject>
       <wvobject fp_name="/machine_tb/machine0/control_logic0/alu0/c" type="logic" db_ref_id="1">
          <obj_property name="ElementShortName">c</obj_property>
@@ -437,20 +350,55 @@
          <obj_property name="ObjectShortName">z</obj_property>
       </wvobject>
    </wvobject>
+   <wvobject fp_name="group99" type="group">
+      <obj_property name="label">BLU</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/blu_f" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">blu_f[2:0]</obj_property>
+         <obj_property name="ObjectShortName">blu_f[2:0]</obj_property>
+      </wvobject>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/blu_op1" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">blu_op1[31:0]</obj_property>
+         <obj_property name="ObjectShortName">blu_op1[31:0]</obj_property>
+      </wvobject>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/blu_op2" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">blu_op2[31:0]</obj_property>
+         <obj_property name="ObjectShortName">blu_op2[31:0]</obj_property>
+      </wvobject>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/blu_r" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">blu_r[31:0]</obj_property>
+         <obj_property name="ObjectShortName">blu_r[31:0]</obj_property>
+      </wvobject>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/blu_repeats_in" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">blu_repeats_in[4:0]</obj_property>
+         <obj_property name="ObjectShortName">blu_repeats_in[4:0]</obj_property>
+      </wvobject>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/blu_repeats_out" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">blu_repeats_out[4:0]</obj_property>
+         <obj_property name="ObjectShortName">blu_repeats_out[4:0]</obj_property>
+      </wvobject>
+   </wvobject>
    <wvobject fp_name="group136" type="group">
       <obj_property name="label">Adder0</obj_property>
       <obj_property name="DisplayName">label</obj_property>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/da_adder/bypass" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">bypass</obj_property>
+         <obj_property name="ObjectShortName">bypass</obj_property>
+      </wvobject>
       <wvobject fp_name="/machine_tb/machine0/control_logic0/data_address_adder_op1" type="array" db_ref_id="1">
          <obj_property name="ElementShortName">data_address_adder_op1[31:0]</obj_property>
          <obj_property name="ObjectShortName">data_address_adder_op1[31:0]</obj_property>
+         <obj_property name="Radix">HEXRADIX</obj_property>
       </wvobject>
       <wvobject fp_name="/machine_tb/machine0/control_logic0/data_address_adder_op2" type="array" db_ref_id="1">
          <obj_property name="ElementShortName">data_address_adder_op2[31:0]</obj_property>
          <obj_property name="ObjectShortName">data_address_adder_op2[31:0]</obj_property>
+         <obj_property name="Radix">HEXRADIX</obj_property>
       </wvobject>
       <wvobject fp_name="/machine_tb/machine0/control_logic0/data_address_adder_s" type="array" db_ref_id="1">
          <obj_property name="ElementShortName">data_address_adder_s[31:0]</obj_property>
          <obj_property name="ObjectShortName">data_address_adder_s[31:0]</obj_property>
+         <obj_property name="Radix">HEXRADIX</obj_property>
       </wvobject>
       <wvobject fp_name="/machine_tb/machine0/control_logic0/data_address_adder_f" type="logic" db_ref_id="1">
          <obj_property name="ElementShortName">data_address_adder_f</obj_property>

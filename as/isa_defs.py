@@ -47,10 +47,13 @@ OP_ADDI  = 138 ; # 8A
 OP_ADD   = 139 ; # 8B
 OP_ADDCI = 142 ; # 8E
 OP_ADDC  = 143 ; # 8F
-OP_CMPI  = 145 ; # 91
-OP_CMP   = 146 ; # 92
+OP_CMPI  = 146 ; # 92
+OP_CMP   = 147 ; # 93
 OP_SET   = 160 ; # A0
 OP_CLR   = 164 ; # A4
+OP_HLT   = 168 ; # A8
+OP_INT   = 172 ; # AC
+OP_TST   = 177 ; # B1
 OP_MOVI  = 193 ; # C1
 OP_MOV   = 194 ; # C2
 OP_LDRI  = 197 ; # C5
@@ -73,22 +76,28 @@ OP_ASLI  = 245 ; # F5
 OP_ASL   = 246 ; # F6
 OP_ASRI  = 249 ; # F9
 OP_ASR   = 250 ; # FA
+OP_NOTI  = 253 ; # FD
 OP_NOT   = 254 ; # FE
 
 predef_constants = {
-	"C_FLAG": 2,
-	"I_FLAG": 4,
-	"V_FLAG": 1,
-	"N_FLAG": 3,
-	"Z_FLAG": 0,
-	"PORT_UART_FLAGS" : 10,
+	"I_FLAG_BIT": 4,
+	"C_FLAG_BIT": 2,
+	"N_FLAG_BIT": 3,
+	"Z_FLAG_BIT": 0,
+	"V_FLAG_BIT": 1,
+	"I_FLAG": 16,
+	"C_FLAG": 4,
+	"N_FLAG": 8,
+	"Z_FLAG": 1,
+	"V_FLAG": 2,
 	"PORT_SD_ADDRESS" : 22,
-	"PORT_SEVEN_SEG" : 6,
-	"PORT_LED" : 5,
-	"PORT_SD_FLAGS" : 20,
-	"PORT_STATUS_REG" : 0,
 	"PORT_SD_DATA" : 23,
-	"PORT_UART_RX_DATA" : 12,
+	"PORT_UART_FLAGS" : 10,
+	"PORT_LED" : 5,
 	"PORT_SD_COMMANDS" : 21,
 	"PORT_UART_TX_DATA" : 11,
+	"PORT_STATUS_REG" : 0,
+	"PORT_UART_RX_DATA" : 12,
+	"PORT_SD_FLAGS" : 20,
+	"PORT_SEVEN_SEG" : 6,
 }

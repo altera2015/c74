@@ -1,3 +1,5 @@
+import operator
+
 # ISA Code generator
 # Generate VHDL and Python definitions for the C74.000 ISA
 
@@ -11,6 +13,23 @@
 # 101 Flags   N
 # 110 Memory  N
 # 111 Boolean Y
+
+op_groups = {
+    "MISC": 0,
+    "UNSD": 1,
+    "JMP1": 2,
+    "JMP2": 3,
+    "ALU": 4,
+    "FLGS": 5,
+    "MEM": 6,
+    "BOOL": 7
+}
+
+def generate_group_defs():
+    for g in op_groups:
+        globals()[g] = "{0:03b}".format(op_groups[g])
+       
+generate_group_defs()
 
 op_codes = {}
 
@@ -41,8 +60,9 @@ PORT_DEFINITIONS = {
 ################################################
 # Misc
 ################################################
+
 misc_codes = [
-    [ "NOP", 0, 0 ],
+    [ "NOP", 0, 0 ],    
     [ "OUT", 1, 1 ],
     [ "IN",  1, 2 ],
     [ "CALL", 1, 3 ],
@@ -54,7 +74,7 @@ misc_codes = [
 ]
 
 def generate_misc( registers, op ):
-    b = "000{1:03b}{0:02b}".format( registers, op )
+    b = MISC + "{1:03b}{0:02b}".format( registers, op )
     return int(b, 2)
 
 def generate_misc_opcodes():
@@ -83,7 +103,7 @@ alu_codes = [
 
 def generate_alu( registers, f, carry, dont_store_result ):
     #b = "100{3:b}{1:b}{2:b}{0:02b}".format( registers, f, carry, dont_store_result )
-    b = "100{0:b}{1:b}{2:b}{3:02b}".format( dont_store_result, f, carry, registers  )
+    b = ALU + "{0:b}{1:b}{2:b}{3:02b}".format( dont_store_result, f, carry, registers  )
     # 28 = don't store
     # 27 = Add/Sub 
     # 26 = Carry
@@ -91,8 +111,8 @@ def generate_alu( registers, f, carry, dont_store_result ):
 
 def generate_alu_opcodes():
     
-    op_codes[ "CMP" ] = generate_alu( 2, 0, 0, 1 )
-    op_codes[ "CMPI" ] = generate_alu( 1, 0, 0, 1 )
+    op_codes[ "CMP" ] = generate_alu( 3, 0, 0, 1 )
+    op_codes[ "CMPI" ] = generate_alu( 2, 0, 0, 1 )
     
     for code in alu_codes:        
         op_codes[ code[0] ] = generate_alu( 3, code[1], 0, 0 )
@@ -107,10 +127,13 @@ def generate_alu_opcodes():
 flag_codes = [
     [ "SET", 0, 0 ],
     [ "CLR", 0, 1 ],
+    [ "HLT", 0, 2 ],
+    [ "INT", 0, 3 ],
+    [ "TST", 1, 4 ],
 ]
 
 def generate_flag( registers, op ):
-    b = "101{1:03b}{0:02b}".format( registers, op )
+    b = FLGS + "{1:03b}{0:02b}".format( registers, op )
     return int(b, 2)
 
 # 101 group 101X XXRR
@@ -177,13 +200,11 @@ boolean_codes_binary = [
     [ "LSR", 2, 4 ],
     [ "ASL", 2, 5 ],    
     [ "ASR", 2, 6 ],
-]
-memory_unary = [    
     [ "NOT", 2, 7 ]
 ]
 
 def generate_boolean( registers, op ):
-    b = "111{1:03b}{0:02b}".format( registers, op )
+    b = BOOL + "{1:03b}{0:02b}".format( registers, op )
     return int(b, 2)
 
 # 101 group 101X XXRR
@@ -193,8 +214,6 @@ def generate_boolean_opcodes():
         op_codes[ code[0] ] = generate_boolean( code[1], code[2] )
         op_codes[ code[0] + "I" ] = generate_boolean( code[1] - 1, code[2] )
 
-    for code in memory_unary:        
-        op_codes[ code[0] ] = generate_boolean( code[1], code[2] )        
 
 ###############################################
 # Memory Codes
@@ -219,7 +238,7 @@ memory_codes = [
 ]
 
 def generate_memory( registers, op ):
-    b = "110{1:03b}{0:02b}".format( registers, op )
+    b = MEM + "{1:03b}{0:02b}".format( registers, op )
     return int(b, 2)
 
 # 101 group 101X XXRR
@@ -276,26 +295,41 @@ def write_vhdl(fn):
     f.write("library ieee;\n");
     f.write("use ieee.std_logic_1164.all;\n\n");
     
-    f.write("package isa_defs is\n");
+    f.write("package isa_defs is\n")
+
+    f.write("\n\t-- Op Code Groups\n")    
+    for og in sorted(op_groups.items(), key=operator.itemgetter(1)):
+        f.write("\tconstant GRP_{0:<4} : std_logic_vector(2 downto 0) := \"{1:03b}\";\n".format(og[0], og[1]))        
+
+    f.write("\n\t-- Op Codes\n")
     for op_code in sorted(mnemonic_by_op_code.keys()):
         mnemonic = mnemonic_by_op_code[op_code]
         f.write("\tconstant OP_{0:<5} : std_logic_vector(7 downto 0) := \"{1:08b}\"; -- {1:02X}\n".format(mnemonic, op_code))    
+        
+        
+    f.write("\n\t-- Short Codes\n")
+    for op_code in sorted(mnemonic_by_op_code.keys()):
+        mnemonic = mnemonic_by_op_code[op_code]        
         short_code = op_code & 28
         short_code = short_code >> 2
         f.write("\tconstant SC_{0:<5} : std_logic_vector(2 downto 0) := \"{1:03b}\"; -- {1:02X}\n".format(mnemonic, short_code))    
         # 000{1:03b}{0:02b}
         
         
-    f.write("\n");
+    f.write("\n\t-- Status Register Flags\n")
     
-    for flag in STATUS_FLAGS:
-        f.write("\tconstant {0}_POS : integer := {1};\n".format(flag, STATUS_FLAGS[flag]))    
+    for flag in sorted(STATUS_FLAGS.items(), key=operator.itemgetter(1)):
+        f.write("\tconstant {0}_POS : integer := {1};\n".format(flag[0], flag[1]))
 
-    for port in PORT_DEFINITIONS:
-        f.write("\tconstant {0} : integer := {1};\n".format(port, PORT_DEFINITIONS[port]))    
+
+    f.write("\n\t-- Port Definitions\n")
+
+    for port in sorted(PORT_DEFINITIONS.items(), key=operator.itemgetter(1)):
+        f.write("\tconstant {0:<20} : integer := {1};\n".format(port[0], port[1]))    
 
         
-    f.write("end isa_defs;\n")
+        
+    f.write("\nend isa_defs;\n")
     f.close()    
 
 def write_python(fn):
@@ -310,7 +344,10 @@ def write_python(fn):
     f.write("\n")
     f.write("predef_constants = {\n")
     for flag in STATUS_FLAGS:
-        f.write("\t\"{0}\": {1},\n".format(flag, STATUS_FLAGS[flag]))    
+        f.write("\t\"{0}_BIT\": {1},\n".format(flag, STATUS_FLAGS[flag]))    
+        
+    for flag in STATUS_FLAGS:
+        f.write("\t\"{0}\": {1},\n".format(flag, 1<<STATUS_FLAGS[flag]))         
         
     for port in PORT_DEFINITIONS:
         f.write("\t\"{0}\" : {1},\n".format(port, PORT_DEFINITIONS[port]))    
@@ -321,3 +358,6 @@ def write_python(fn):
     
 write_vhdl("../src/isa_defs.vhdl")
 write_python("isa_defs.py")
+
+print("C74 ISA has {} opcodes".format(len(mnemonic_by_op_code)))
+

@@ -44,7 +44,7 @@ op_defs = {
     "nop": [[OP_NOP, REG_NONE, ARG_NONE]],
     
     "j":   [[OP_JI, REG_NONE, ARG_SIGNED, True], [OP_J, REG_A, ARG_NONE]],
-    "jeq": [[OP_JEQI, REG_NONE, ARG_SIGNED, True], [OP_JEQ, REG_A, ARG_NONE]],
+    "jeq": [[OP_JEQI, REG_NONE, ARG_SIGNED, True]],
     "jne": [[OP_JNEI, REG_NONE, ARG_SIGNED, True], [OP_JNE, REG_A, ARG_NONE]],
     "jcs": [[OP_JCSI, REG_NONE, ARG_SIGNED, True], [OP_JCS, REG_A, ARG_NONE]],
     "jcc": [[OP_JCCI, REG_NONE, ARG_SIGNED, True], [OP_JCC, REG_A, ARG_NONE]],
@@ -60,15 +60,17 @@ op_defs = {
     "jle": [[OP_JLEI, REG_NONE, ARG_SIGNED, True], [OP_JLE, REG_A, ARG_NONE]],
     
     "mov": [[OP_MOV, REG_A_B, ARG_NONE], [OP_MOVI, REG_A, ARG_UNSIGNED]],    
-    "ldr": [[OP_LDR, REG_A_B, ARG_SIGNED], [OP_LDRI, REG_A_PC, ARG_SIGNED, True]],
-    "str": [[OP_STR, REG_A_B, ARG_SIGNED], [OP_STRI, REG_A_PC, ARG_SIGNED, True]],
+    "ldr": [[OP_LDR, REG_A_B, ARG_SIGNED], [OP_LDRI, REG_A, ARG_SIGNED, True]],
+    "str": [[OP_STR, REG_A_B, ARG_SIGNED], [OP_STRI, REG_A, ARG_SIGNED, True]],
     "lda": [[OP_LDA, REG_A_B, ARG_SIGNED]],
     "sta": [[OP_STA, REG_A_B, ARG_SIGNED]],
     
     "set":[[OP_SET, REG_NONE, ARG_UNSIGNED]],
     "clr":[[OP_CLR, REG_NONE, ARG_UNSIGNED]],
-    
-    
+    "hlt": [[OP_HLT, REG_NONE, ARG_NONE]],
+    "int": [[OP_INT, REG_NONE, ARG_UNSIGNED]],
+    "tst": [[OP_TST, REG_A, ARG_UNSIGNED]],
+        
     
     "add": [[OP_ADDI, REG_A_B, ARG_UNSIGNED],[OP_ADD, REG_A_B_C, ARG_NONE]],
     "addc":[[OP_ADDCI, REG_A_B, ARG_UNSIGNED],[OP_ADDC, REG_A_B_C, ARG_NONE]],
@@ -80,7 +82,7 @@ op_defs = {
     "and": [[OP_ANDI, REG_A_B, ARG_UNSIGNED],[OP_AND, REG_A_B_C, ARG_NONE]],
     "or":  [[OP_ORI, REG_A_B, ARG_UNSIGNED],[OP_OR, REG_A_B_C, ARG_NONE]],
     "xor": [[OP_XORI, REG_A_B, ARG_UNSIGNED],[OP_XOR, REG_A_B_C, ARG_NONE]],
-    "not": [[OP_NOT, REG_A_B, ARG_NONE]],
+    "not": [[OP_NOTI, REG_A, ARG_UNSIGNED], [OP_NOT, REG_A_B, ARG_NONE]],
     "lsl": [[OP_LSL, REG_A_B, ARG_UNSIGNED]],
     "lsr": [[OP_LSR, REG_A_B, ARG_UNSIGNED]],
     "asl": [[OP_ASL, REG_A_B, ARG_UNSIGNED]],
@@ -94,6 +96,7 @@ op_defs = {
     "call": [[OP_CALLI, REG_NONE, ARG_SIGNED, True], [OP_CALL, REG_A, ARG_NONE]],
     "ret": [[OP_RET, REG_NONE, ARG_NONE]],
     "reti": [[OP_RETI, REG_NONE, ARG_NONE]],
+    
     
     ".word":[[OP_LITERAL, REG_NONE, ARG_32BIT] ]   
 }
@@ -310,7 +313,14 @@ def encode_op( rec, op, reg, arg, pcrelative = False):
             num = parse_address(args[index], source_line)
             cmd += encode_value(num, bits, source_line)
         elif arg == ARG_SIGNED:
-            num = parse_address(args[index], source_line)
+            
+            addr = args[index]
+            if addr.startswith("!"):
+                pcrelative = False
+                addr = int(addr[1:],0)
+                num = addr - rec["size"]
+            else:
+                num = parse_address(addr, source_line)
             if pcrelative:    
                 num -= ( rec["pc"] + rec["size"] )
             cmd += encode_signed(num, bits, source_line)
@@ -527,7 +537,7 @@ def build_labels(labels):
     dump  = "Label             | Address\n"
     dump += "------------------+----------------\n"
     for label in sorted(labels.keys()):
-        dump += "{0:17} | {1:08X}\n".format(label, labels[label])
+        dump += "{0:17} | {1:08X}\n".format(label.upper(), labels[label])
     dump += "\n"
     return dump
 
@@ -537,7 +547,7 @@ def build_constants(constants):
     dump  = "Constant          | Value \n"
     dump += "------------------+----------------\n"
     for label in sorted(constants.keys()):
-        dump += "{0:17} | {1:X}\n".format(label, constants[label])
+        dump += "{0:17} | {1:X}\n".format(label.upper(), constants[label])
     dump += "\n"
     return dump
 

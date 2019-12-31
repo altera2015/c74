@@ -49,7 +49,7 @@ end alu;
 
 architecture Behavioral of alu is
 
-    COMPONENT adder
+    COMPONENT alu_adder
       PORT (
         a : IN STD_LOGIC_VECTOR(31 DOWNTO 0);
         b : IN STD_LOGIC_VECTOR(31 DOWNTO 0);
@@ -67,7 +67,7 @@ architecture Behavioral of alu is
 begin
     
     gated_carry <= c_in and f(0);        
-    adder0 : adder
+    alu_adder0 : alu_adder
         PORT MAP (
             a => op1,
             b => op2,

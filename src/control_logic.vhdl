@@ -86,8 +86,23 @@ entity control_logic is
     );
 end control_logic;
 
+
 architecture behavioral of control_logic is
     
+	COMPONENT blu
+	PORT(
+		clk : IN std_logic;
+		reset : IN std_logic;
+		f : IN std_logic_vector(2 downto 0);
+		op1 : IN std_logic_vector(31 downto 0);
+		op2 : IN std_logic_vector(31 downto 0);          
+		r : OUT std_logic_vector(31 downto 0);
+        repeats_in : in std_logic_vector(4 downto 0);
+        repeats_out : out std_logic_vector(4 downto 0)
+        
+		);
+	END COMPONENT;
+
     COMPONENT adder
       PORT (
         a : IN STD_LOGIC_VECTOR(31 DOWNTO 0);
@@ -97,7 +112,8 @@ architecture behavioral of control_logic is
         c_in : IN STD_LOGIC;
         ce : IN STD_LOGIC;
         c_out : OUT STD_LOGIC;
-        s : OUT STD_LOGIC_VECTOR(31 DOWNTO 0)
+        s : OUT STD_LOGIC_VECTOR(31 DOWNTO 0);
+        bypass : in STD_LOGIC
       );
     END COMPONENT;  
     
@@ -252,77 +268,7 @@ architecture behavioral of control_logic is
 	END COMPONENT;
 
        
-    signal tx_enable : std_logic;
-    signal rx_enable : std_logic;
-    signal tx_full : std_logic;
-    signal tx_busy : std_logic;
-    signal rx_empty : std_logic;
-    signal rx_data : std_logic_vector(7 downto 0);
-    signal tx_data : std_logic_vector(7 downto 0);    
-
-    -- Memory Interface
-    -- PORT_A
-    signal a_address : std_logic_vector(31 downto 0);
-    signal a_D : std_logic_vector(31 downto 0);
-    signal a_RE: std_logic;
-    signal a_WE: std_logic_vector(3 downto 0);
-    signal a_ready : std_logic;
-    signal a_Q : std_logic_vector(31 downto 0);
-
-    -- PORT_B
-    signal b_address : std_logic_vector(31 downto 0);
-    signal b_D : std_logic_vector(31 downto 0);
-    signal b_RE: std_logic;
-    signal b_WE: std_logic_vector(3 downto 0);
-    signal b_ready : std_logic;
-    signal b_Q : std_logic_vector(31 downto 0);
-
-
-
-    -- Register File Signals
-    constant REG_SP : integer := 14;
-    constant REG_PC : integer := 15;
-    
-    signal reg_Qs : register_array;
-    signal reg_Ds : register_array;
-    signal reg_load : std_logic_vector(15 downto 0);
-    
-    signal a_reg_idx : integer range 0 to 15;
-    signal b_reg_idx : integer range 0 to 15;
-    signal c_reg_idx : integer range 0 to 15;
-
-    -- idx = 0xe / 14
-    signal sp_inc : std_logic;
-    signal sp_dec : std_logic;    
-    
-    -- idx = 0x0f / 15
-    signal pc_inc : std_logic;
-
-    -- Primary Signals
-    signal stage : integer range 0 to 7 := 7;
-    signal status_register : std_logic_vector(31 downto 0);
-    
-    -- Stage Signals
-    signal instruction : std_logic_vector(31 downto 0);
-    
-    signal imm0 : std_logic_vector(31 downto 0);
-    signal imm1 : std_logic_vector(31 downto 0);
-    signal imm2 : std_logic_vector(31 downto 0);
-    signal signed_val0 : signed(31 downto 0);
-    signal signed_val1 : signed(31 downto 0);    
-    signal signed_val2 : signed(31 downto 0);
-    
-    signal opcode : std_logic_vector(7 downto 0);
-    
-    signal reg_value : std_logic_vector(31 downto 0);
-    signal reg_intermediate_value : std_logic_vector(31 downto 0);
-    signal reg_value_mux : std_logic; -- // 0 = ALU, 1 = reg_value.
-    
-    signal data_address_adder_op1 : std_logic_vector(31 downto 0);
-    signal data_address_adder_op2 : std_logic_vector(31 downto 0);
-    signal data_address_adder_S : std_logic_vector(31 downto 0);
-    signal data_address_adder_f : std_logic; -- // 1 = add, 0 = sub
-    
+        
 
     -- Assembler
     --
@@ -398,9 +344,85 @@ architecture behavioral of control_logic is
         end case;        
 
     end;
-    signal wait_one : std_logic;
-    signal repeats : integer range 0 to 32;
+
+
+
+    -- UART
+    signal tx_enable : std_logic;
+    signal rx_enable : std_logic;
+    signal tx_full : std_logic;
+    signal tx_busy : std_logic;
+    signal rx_empty : std_logic;
+    signal rx_data : std_logic_vector(7 downto 0);
+    signal tx_data : std_logic_vector(7 downto 0);    
+
+    -- Memory Interface
+    -- PORT_A
+    signal a_address : std_logic_vector(31 downto 0);
+    signal a_D : std_logic_vector(31 downto 0);
+    signal a_RE: std_logic;
+    signal a_WE: std_logic_vector(3 downto 0);
+    signal a_ready : std_logic;
+    signal a_Q : std_logic_vector(31 downto 0);
+
+    -- PORT_B
+    signal b_address : std_logic_vector(31 downto 0);
+    signal b_D : std_logic_vector(31 downto 0);
+    signal b_RE: std_logic;
+    signal b_WE: std_logic_vector(3 downto 0);
+    signal b_ready : std_logic;
+    signal b_Q : std_logic_vector(31 downto 0);
+
+
+
+    -- Register File Signals
+    constant REG_SP : integer := 14;
+    constant REG_PC : integer := 15;
     
+    signal reg_Qs : register_array;
+    signal reg_Ds : register_array;
+    signal reg_load : std_logic_vector(15 downto 0);
+
+    signal a_reg_idx : integer range 0 to 15;
+    signal b_reg_idx : integer range 0 to 15;
+    signal c_reg_idx : integer range 0 to 15;
+
+    -- idx = 0xe / 14
+    signal sp_inc : std_logic;
+    signal sp_dec : std_logic;    
+    
+    -- idx = 0x0f / 15
+    signal pc_inc : std_logic;
+
+    -- Primary Signals    
+    signal status_register : std_logic_vector(31 downto 0);
+    
+    -- Stage Signals
+    signal stage : integer range 0 to 7 := 7;
+    signal instruction : std_logic_vector(31 downto 0);
+    signal opcode : std_logic_vector(7 downto 0);
+    
+    signal imm0 : std_logic_vector(31 downto 0);
+    signal imm1 : std_logic_vector(31 downto 0);
+    signal imm2 : std_logic_vector(31 downto 0);
+    signal signed_val0 : signed(31 downto 0);
+    signal signed_val1 : signed(31 downto 0);    
+    signal signed_val2 : signed(31 downto 0);
+    
+    
+    
+    -- Register Input Mux
+    signal reg_value : std_logic_vector(31 downto 0);
+    signal reg_intermediate_value : std_logic_vector(31 downto 0);
+    signal reg_value_mux : std_logic; -- // 0 = ALU, 1 = reg_value.
+    
+    -- Address Add/Sub logic
+    signal data_address_adder_op1 : std_logic_vector(31 downto 0);
+    signal data_address_adder_op2 : std_logic_vector(31 downto 0);
+    signal data_address_adder_S : std_logic_vector(31 downto 0);
+    signal data_address_adder_f : std_logic; -- // 1 = add, 0 = sub
+    signal data_address_adder_bypass : std_logic;
+
     
     -- SD Card Interface
     signal sd_rd : std_logic;
@@ -425,6 +447,14 @@ architecture behavioral of control_logic is
     signal alu_op2 : std_logic_vector(31 downto 0);
     signal alu_f : std_logic_vector(1 downto 0);
     
+    -- BLU
+    signal blu_f : std_logic_vector(2 downto 0);
+    signal blu_op1 : std_logic_vector(31 downto 0);
+    signal blu_op2 : std_logic_vector(31 downto 0);
+    signal blu_r : std_logic_vector(31 downto 0);
+    signal blu_repeats_in : std_logic_vector(4 downto 0);    
+    signal blu_repeats_out : std_logic_vector(4 downto 0);    
+    	
 begin
 
     a_address <= reg_Qs(REG_PC);
@@ -445,6 +475,8 @@ begin
         variable short_code : std_logic_vector(2 downto 0);
         variable register_cnt : integer range 0 to 3;
         variable temp : std_logic;
+        variable temp_idx : integer range 0 to 31;
+        variable temp_word : std_logic_vector(31 downto 0);
     begin
     
         if rising_edge(clk) then
@@ -471,12 +503,15 @@ begin
                 
                 sd_rd <= '0';
                 sd_dout_taken <= '0';
-                opgroup := "000";
+                opgroup := GRP_MISC;
                 
                 data_address_adder_f <= '1';
                 data_address_adder_op1 <= (others =>'0');
                 data_address_adder_op2 <= (others =>'0');
+                data_address_adder_bypass <= '0';
             else
+                
+                data_address_adder_bypass <= '0';
                 
                 reg_value_mux<='0';
                 sp_inc <= '0';
@@ -510,13 +545,18 @@ begin
             
                 case stage is
                     
+                    -- ***********************************************************************
+                    -- STAGE 0
+                    -- ***********************************************************************                    
                     when 0 =>
 
                         a_RE <= '1';
                         instruction <= (others=>'0');
                         stage <= 1;
                         pc_inc <= '1';
-                        
+                    -- ***********************************************************************
+                    -- STAGE 1
+                    -- ***********************************************************************                        
                     when 1 =>             
                        
                         -- Wait for instruction to arrive
@@ -559,8 +599,8 @@ begin
                             
                             
                             case opgroup is
-                            -- Misc
-                            when "000" =>
+
+                            when GRP_MISC =>
                             
                                 case short_code is
                                 when SC_NOP =>
@@ -613,7 +653,7 @@ begin
                                 end case;
                             
                             -- memory access
-                            when "110" =>
+                            when GRP_MEM =>
                                 case short_code is
                                 
                                     when SC_MOV =>
@@ -626,35 +666,43 @@ begin
                                             alu_op2 <= "00000000000000000000000000000000";
                                         end if;
                                         
-                                    when SC_LDR =>
+                                    when SC_LDR | SC_LDA =>
                                     
                                         if register_cnt = 1 then
                                             data_address_adder_f <= '1';
-                                            data_address_adder_op1 <= reg_Qs(REG_PC);
-                                            data_address_adder_op2 <= std_logic_vector(vsigned_val0);
+                                            data_address_adder_op1 <= std_logic_vector(vsigned_val1);
+                                            data_address_adder_op2 <= reg_Qs(REG_PC);
                                         else
                                             data_address_adder_f <= '1';
-                                            data_address_adder_op1 <= reg_Qs(vb_reg_idx);
-                                            data_address_adder_op2 <= std_logic_vector(vsigned_val0);
+                                            data_address_adder_op1 <= std_logic_vector(vsigned_val2);
+                                            data_address_adder_op2 <= reg_Qs(vb_reg_idx);
                                         end if;
                                         
-                                    when SC_STR =>
+                                    when SC_STR | SC_STA =>
                                     
                                         if register_cnt = 1 then
                                             data_address_adder_f <= '1';
-                                            data_address_adder_op1 <= reg_Qs(REG_PC);
-                                            data_address_adder_op2 <= std_logic_vector(vsigned_val0);
+                                            data_address_adder_op1 <= std_logic_vector(vsigned_val1);
+                                            data_address_adder_op2 <= reg_Qs(REG_PC);
                                         else
                                             data_address_adder_f <= '1';
-                                            data_address_adder_op1 <= reg_Qs(vb_reg_idx);
-                                            data_address_adder_op2 <= std_logic_vector(vsigned_val0);
+                                            data_address_adder_op1 <= std_logic_vector(vsigned_val2);
+                                            data_address_adder_op2 <= reg_Qs(vb_reg_idx);
                                         end if;                                        
-                                        
+
                                     when others =>
+                                    
+
                                 end case;
-                            
+                                
+                                if short_code = SC_STA or short_code = SC_LDA then
+                                    -- we read from the address before the offset calculation
+                                    data_address_adder_bypass <= '1';
+                                end if;               
+
+                     
                             -- ALU
-                            when "100" =>
+                            when GRP_ALU =>
                                 
                                 alu_f <= a_Q(27 downto 26);                                
                                 case register_cnt is
@@ -667,10 +715,10 @@ begin
                                 when others =>
                                     -- nothing.
                                 end case;
-                                    
+
                             
                             -- Jump groups
-                            when "010" | "011" =>
+                            when GRP_JMP1 | GRP_JMP2 =>
                             
                                 alu_f <= "10";
                                 case register_cnt is
@@ -684,16 +732,57 @@ begin
                                     -- nothing.
                                 end case;
                                 
+                            -- FLAGS
+                            when GRP_FLGS =>
+                            
+                                case short_code is
+                                    when SC_HLT =>
+                                        stage <= 1;
+                                    when SC_TST =>
+                                        temp_idx := to_integer(unsigned(vimm1(4 downto 0)) );
+                                        status_register(Z_FLAG_POS) <= reg_Qs(va_reg_idx)( temp_idx );
+                                        stage <= 0;
+                                        
+                                    when others =>
+                                        -- nothing.
+                                end case;
+                                
+                                
+                            -- BLU
+                            when GRP_BOOL =>
+                                
+                                blu_f <= a_Q(28 downto 26);                                
+                                case register_cnt is
+                                when 1 =>
+                                    blu_op1 <= vimm1;
+                                    blu_op2 <= "00000000000000000000000000000000";
+                                    blu_repeats_in <= "00001";
+                                when 2 =>
+                                    blu_op1 <= reg_Qs(vb_reg_idx);
+                                    blu_op2 <= vimm2;
+                                    blu_repeats_in <= vimm2(4 downto 0);
+                                when 3 =>
+                                    blu_op1 <= reg_Qs(vb_reg_idx);
+                                    blu_op2 <= reg_Qs(vc_reg_idx);
+                                    blu_repeats_in <= reg_Qs(vc_reg_idx)(4 downto 0);                                    
+                                when others =>
+                                    -- nothing.
+                                end case;                                
+                                
                             when others =>
                              -- nothing.                                
                             end case;
 
                         end if;
                         
+                        
+                    -- ***********************************************************************
+                    -- STAGE 2
+                    -- ***********************************************************************                    
                     when 2 =>
                         stage <= 3;
                         case opgroup is
-                        when "000" =>
+                        when GRP_MISC =>
                             
                             case short_code is
                             
@@ -731,12 +820,12 @@ begin
                             end case;
                             
                         -- ALU groups
-                        when "100" =>
+                        when GRP_ALU =>
                             
-                            reg_load(vb_reg_idx) <= not instruction(28);
+                            reg_load(va_reg_idx) <= not instruction(28);
                             
                         -- Flags
-                        when "101" =>
+                        when GRP_FLGS =>
                             stage <= 0;
                             case short_code is
                                 when SC_SET =>
@@ -747,7 +836,8 @@ begin
                                     -- nothing.
                             end case;
                             
-                        when "010" | "011" =>
+                        -- Jump
+                        when GRP_JMP1 | GRP_JMP2 =>
                             stage <= 0;
                             case short_code is
                             when SC_J =>
@@ -777,12 +867,13 @@ begin
                             end if;
                             
                         -- memory access
-                        when "110" =>
+                        when GRP_MEM =>
                             case short_code is
                             
                                 when SC_MOV =>
                                     reg_load(va_reg_idx) <= '1';
                                     stage <= 0;
+                                    
                                 when SC_STR =>
                                     
                                     b_WE <= "1111";                                    
@@ -790,21 +881,45 @@ begin
                                 
                                 when SC_LDR =>
                                 
-                                    b_RE <= '1';                                       
+                                    b_RE <= '1'; 
+
+                                when SC_STA =>
+                                    
+                                    b_WE <= "1111";                                    
+                                    b_D <= reg_Qs(va_reg_idx); 
+                                    
+                                    reg_load(vb_reg_idx) <= '1';
+                                    reg_value_mux<='1';
+                                    reg_value <= data_address_adder_S;
+                                    
+                                when SC_LDA =>
+                                    
+                                    reg_load(vb_reg_idx) <= '1';
+                                    reg_value_mux<='1';
+                                    reg_value <= data_address_adder_S;
+                                    b_RE <= '1'; 
+                                    
+
                                     
                                 when others =>
-                            end case;                            
+                            end case; 
                             
+                        when GRP_BOOL => 
+                            -- wait wait...     
+                        
                         when others =>
                             -- nothing.
                             
                         end case;
- 
+                        
+                    -- ***********************************************************************
+                    -- STAGE 3
+                    -- *********************************************************************** 
                     when 3 =>
                         stage <= 0;
                         case opgroup is
                         
-                        when "000" =>                            
+                        when GRP_MISC =>                            
                             case short_code is
                                 when SC_POP =>
                                 
@@ -860,24 +975,24 @@ begin
                                 when others =>
                             end case;                        
                         
-                        when "100" =>
+                        when GRP_ALU =>
                             
                             status_register(Z_FLAG_POS) <= alu_z;
                             status_register(N_FLAG_POS) <= alu_n;
                             status_register(V_FLAG_POS) <= alu_v;
                             status_register(C_FLAG_POS) <= alu_c;
                             
-                        -- memory access
-                        when "110" =>
+                        
+                        when GRP_MEM =>
                             case short_code is
                             
-                                when SC_STR =>
+                                when SC_STR | SC_STA =>
                                     
                                     if b_ready = '0' then
                                         stage <= 3;
                                     end if;                             
                                 
-                                when SC_LDR =>
+                                when SC_LDR | SC_LDA =>
                                 
                                     if b_ready = '0' then                                        
                                         stage <= 3;                                        
@@ -889,8 +1004,34 @@ begin
                                     end if;                                      
                                     
                                 when others =>
-                            end case;                                                        
+                            end case;
+                          
+                        
+                        when GRP_BOOL =>
+                        
+                            reg_value_mux<='1';
+                            reg_value <= blu_R;
+                            reg_load(va_reg_idx) <= '1';
                             
+                            case short_code is
+                            when SC_LSL | SC_LSR | SC_ASL | SC_ASR =>
+                            
+                                if blu_repeats_out = "00000" then
+                                    stage <= 0; 
+                                else
+                                    -- we can't do multiple shifts in
+                                    -- once go, back up and redo.
+                                    blu_repeats_in <= blu_repeats_out;
+                                    blu_op1 <= blu_r;
+                                    stage <= 2;
+                                end if;
+                                
+                            when others =>
+                                stage <= 0;
+                            end case;
+                            
+                        
+                        
                         when others =>
                             -- nothing
                         end case;
@@ -1064,9 +1205,22 @@ begin
             c_in => '0',
             ce => '1',
             -- c_out => a,
-            s => data_address_adder_S
+            s => data_address_adder_S,
+            bypass => data_address_adder_bypass
         );   
 
+
+	blu0: blu PORT MAP(
+		clk => clk,
+		reset => reset,
+		f => blu_f,
+		op1 => blu_op1,
+		op2 => blu_op2,
+		r => blu_r,
+        repeats_in => blu_repeats_in,
+        repeats_out => blu_repeats_out        
+	);
+    
 end Behavioral;
 
 
