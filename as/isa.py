@@ -129,7 +129,11 @@ flag_codes = [
     [ "CLR", 0, 1 ],
     [ "HLT", 0, 2 ],
     [ "INT", 0, 3 ],
-    [ "TST", 1, 4 ],
+    [ "TST", 1, 4 ]
+]
+
+flag_codes_I = [
+    [ "MOV", 2, 5 ],
 ]
 
 def generate_flag( registers, op ):
@@ -141,6 +145,12 @@ def generate_flag_opcodes():
        
     for code in flag_codes:        
         op_codes[ code[0] ] = generate_flag( code[1], code[2] )
+        
+    for code in flag_codes_I:        
+        op_codes[ code[0] ] = generate_flag( code[1], code[2] )
+        op_codes[ code[0] + "I" ] = generate_flag( code[1] - 1, code[2] )
+
+        
 
 ################################################
 # Jump
@@ -227,14 +237,18 @@ def generate_boolean_opcodes():
 # LDA R1, R2, 4
 # STA R1, R2, 4
 
-memory_codes_I = [
-    [ "MOV", 2, 0 ],    
-    [ "LDR", 2, 1 ],
-    [ "STR", 2, 2 ]
+memory_codes_I = [    
+    [ "LDR", 2, 0 ],
+    [ "STR", 2, 1 ],
+    [ "LDRB", 2, 2 ],
+    [ "STRB", 2, 3 ]    
 ]
+
 memory_codes = [    
-    [ "LDA", 2, 3 ],
-    [ "STA", 2, 4 ]
+    [ "LDA", 2, 4 ],
+    [ "STA", 2, 5 ],
+    [ "LDAB", 2, 6 ],
+    [ "STAB", 2, 7 ]
 ]
 
 def generate_memory( registers, op ):

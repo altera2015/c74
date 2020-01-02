@@ -68,6 +68,12 @@ op_defs = {
     "str": [[OP_STR, REG_A_B, ARG_SIGNED], [OP_STRI, REG_A, ARG_SIGNED, True]],
     "lda": [[OP_LDA, REG_A_B, ARG_SIGNED]],
     "sta": [[OP_STA, REG_A_B, ARG_SIGNED]],
+
+    "ldrb": [[OP_LDRB, REG_A_B, ARG_SIGNED], [OP_LDRBI, REG_A, ARG_SIGNED, True]],
+    "strb": [[OP_STRB, REG_A_B, ARG_SIGNED], [OP_STRBI, REG_A, ARG_SIGNED, True]],
+    "ldab": [[OP_LDAB, REG_A_B, ARG_SIGNED]],
+    "stab": [[OP_STAB, REG_A_B, ARG_SIGNED]],
+
     
     "set":[[OP_SET, REG_NONE, ARG_UNSIGNED]],
     "clr":[[OP_CLR, REG_NONE, ARG_UNSIGNED]],
@@ -530,7 +536,6 @@ def load_ops(filename):
             orig = line.rstrip()
             # line = orig.lower()
             line = line.strip('\n')
-            #args = line.split(' ')
             args = re.split(',| ',line)
             
             source_args = list(filter(None, args))
@@ -544,8 +549,11 @@ def load_ops(filename):
                 if not in_str:
                     
                     if arg.startswith('"'):
-                        in_str = True
-                        cstr.append( arg.rstrip("\"") )
+                        if arg.endswith('"'):
+                            args.append(arg.rstrip("\"").strip("\""))
+                        else:
+                            in_str = True
+                            cstr.append( arg.rstrip("\"") )
                     elif arg.startswith(';') or arg.startswith('#'):                        
                         break;
                     else:

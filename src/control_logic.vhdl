@@ -372,9 +372,8 @@ architecture behavioral of control_logic is
     signal b_WE: std_logic_vector(3 downto 0);
     signal b_ready : std_logic;
     signal b_Q : std_logic_vector(31 downto 0);
-
-
-
+    signal bar: std_logic_vector(1 downto 0);
+    
     -- Register File Signals
     constant REG_SP : integer := 14;
     constant REG_PC : integer := 15;
@@ -423,6 +422,9 @@ architecture behavioral of control_logic is
     signal data_address_adder_f : std_logic; -- // 1 = add, 0 = sub
     signal data_address_adder_bypass : std_logic;
 
+    
+    
+    
     
     -- SD Card Interface
     signal sd_rd : std_logic;
@@ -477,6 +479,7 @@ begin
         variable temp : std_logic;
         variable temp_idx : integer range 0 to 31;
         variable temp_word : std_logic_vector(31 downto 0);
+        variable byte_access_remainder : std_logic_vector(1 downto 0);    
     begin
     
         if rising_edge(clk) then
@@ -654,50 +657,44 @@ begin
                                 
                                 end case;
                             
+                            
                             -- memory access
                             when GRP_MEM =>
                                 case short_code is
-                                
-                                    when SC_MOV =>
-                                        alu_f <= "10";
-                                        if register_cnt = 1 then
-                                            alu_op1 <= vimm1;
-                                            alu_op2 <= "00000000000000000000000000000000";
+ 
+                                    when SC_LDR | SC_LDRB | 
+                                         SC_STR | SC_STRB  =>                                        
+                                        data_address_adder_f <= '1';
+                                        if register_cnt = 1 then                                            
+                                            data_address_adder_op1 <= std_logic_vector(vsigned_val1);
+                                            data_address_adder_op2 <= reg_Qs(REG_PC);
+                                            byte_access_remainder := std_logic_vector(unsigned(reg_Qs(REG_PC)(1 downto 0)) + unsigned(vsigned_val1(1 downto 0)));
                                         else                                        
-                                            alu_op1 <= reg_Qs(vb_reg_idx);
-                                            alu_op2 <= "00000000000000000000000000000000";
-                                        end if;
-                                        
-                                    when SC_LDR | SC_LDA =>
-                                    
-                                        if register_cnt = 1 then
-                                            data_address_adder_f <= '1';
-                                            data_address_adder_op1 <= std_logic_vector(vsigned_val1);
-                                            data_address_adder_op2 <= reg_Qs(REG_PC);
-                                        else
-                                            data_address_adder_f <= '1';
                                             data_address_adder_op1 <= std_logic_vector(vsigned_val2);
                                             data_address_adder_op2 <= reg_Qs(vb_reg_idx);
+                                            byte_access_remainder := std_logic_vector(unsigned(reg_Qs(vb_reg_idx)(1 downto 0)) + unsigned(vsigned_val2(1 downto 0)));
                                         end if;
                                         
-                                    when SC_STR | SC_STA =>
-                                    
+                                    when SC_LDA | SC_LDAB |
+                                         SC_STA | SC_STAB =>                                        
+                                        data_address_adder_f <= '1';
                                         if register_cnt = 1 then
-                                            data_address_adder_f <= '1';
                                             data_address_adder_op1 <= std_logic_vector(vsigned_val1);
                                             data_address_adder_op2 <= reg_Qs(REG_PC);
-                                        else
-                                            data_address_adder_f <= '1';
+                                            byte_access_remainder := reg_Qs(REG_PC)(1 downto 0);
+                                        else                                        
                                             data_address_adder_op1 <= std_logic_vector(vsigned_val2);
                                             data_address_adder_op2 <= reg_Qs(vb_reg_idx);
-                                        end if;                                        
-
+                                            byte_access_remainder := reg_Qs(vb_reg_idx)(1 downto 0);
+                                        end if;
+                                                                          
                                     when others =>
                                     
 
                                 end case;
                                 
-                                if short_code = SC_STA or short_code = SC_LDA then
+                                if short_code = SC_STA  or short_code = SC_LDA or 
+                                   short_code = SC_STAB or short_code = SC_LDAB then
                                     -- we read from the address before the offset calculation
                                     data_address_adder_bypass <= '1';
                                 end if;               
@@ -738,6 +735,17 @@ begin
                             when GRP_FLGS =>
                             
                                 case short_code is
+                                
+                                    when SC_MOV =>
+                                        alu_f <= "10";
+                                        if register_cnt = 1 then
+                                            alu_op1 <= vimm1;
+                                            alu_op2 <= "00000000000000000000000000000000";
+                                        else                                        
+                                            alu_op1 <= reg_Qs(vb_reg_idx);
+                                            alu_op2 <= "00000000000000000000000000000000";
+                                        end if;
+                                        
                                     when SC_HLT =>
                                         stage <= 1;
                                     when SC_TST =>
@@ -833,6 +841,8 @@ begin
                         when GRP_FLGS =>
                             stage <= 0;
                             case short_code is
+                                when SC_MOV =>
+                                    reg_load(va_reg_idx) <= '1';                                    
                                 when SC_SET =>
                                     status_register( to_integer(unsigned(imm0(4 downto 0))) ) <= '1';
                                 when SC_CLR =>
@@ -873,39 +883,40 @@ begin
                             
                         -- memory access
                         when GRP_MEM =>
-                            case short_code is
-                            
-                                when SC_MOV =>
-                                    reg_load(va_reg_idx) <= '1';
-                                    stage <= 0;
+                        
+                            case short_code is                           
                                     
-                                when SC_STR =>
+                                when SC_STR | SC_STA =>
                                     
                                     b_WE <= "1111";                                    
-                                    b_D <= reg_Qs(va_reg_idx);                                
-                                
-                                when SC_LDR =>
-                                
-                                    b_RE <= '1'; 
-
-                                when SC_STA =>
+                                    b_D <= reg_Qs(va_reg_idx);                                    
                                     
-                                    b_WE <= "1111";                                    
-                                    b_D <= reg_Qs(va_reg_idx); 
+                                when SC_STRB | SC_STAB =>
+                                                                        
+                                    b_D <= reg_Qs(va_reg_idx);
+                                    -- this is wrong, we don't know the address until stage 3 :(
+                                    -- byte_access_remainder := data_address_adder_S(1 downto 0);
                                     
-
-                                when SC_LDA =>
+                                    case byte_access_remainder is
+                                    when "11" =>
+                                        b_WE <= "0001";
+                                    when "10" =>
+                                        b_WE <= "0010";
+                                    when "01" =>
+                                        b_WE <= "0100";
+                                    when "00" =>
+                                        b_WE <= "1000";
+                                    when others =>
+                                        b_WE <= "0001";
+                                    end case;
                                     
---                                    reg_load(vb_reg_idx) <= '1';
---                                    reg_value_mux<='1';
---                                    reg_value <= data_address_adder_S;
-                                    b_RE <= '1'; 
-                                    
-
+                                when SC_LDR | SC_LDA | SC_LDRB | SC_LDAB =>
+                                                                    
+                                    b_RE <= '1';
                                     
                                 when others =>
                             end case; 
-                            
+
                         when GRP_BOOL => 
                             -- wait wait...     
                         
@@ -986,9 +997,14 @@ begin
                             
                         
                         when GRP_MEM =>
+                            
+--                            if b_re='1' then
+--                                byte_access_remainder := data_address_adder_S(1 downto 0);
+--                            end if;                            
+--                            
                             case short_code is
                             
-                                when SC_STR =>
+                                when SC_STR | SC_STRB =>
                                     
                                     if b_ready = '0' then
                                         stage <= 3;
@@ -1005,8 +1021,32 @@ begin
                                         stage <= 0;                                        
                                     end if;                                      
                                     
+                                when SC_LDRB =>
+                                    
+                                    -- byte_access_remainder := data_address_adder_S(1 downto 0);
+                                    
+                                    if b_ready = '0' then                                        
+                                        stage <= 3;                                        
+                                    else
+                                        reg_value_mux<='1';
+                                        case byte_access_remainder is
+                                        when "11" =>
+                                            reg_value <= "000000000000000000000000" & b_Q(7 downto 0);
+                                        when "10" =>
+                                            reg_value <= "000000000000000000000000" & b_Q(15 downto 8);
+                                        when "01" =>
+                                            reg_value <= "000000000000000000000000" & b_Q(23 downto 16);
+                                        when "00" =>
+                                            reg_value <= "000000000000000000000000" & b_Q(31 downto 24);
+                                        when others =>
+                                            reg_value <= "000000000000000000000000" & b_Q(7 downto 0);
+                                        end case;                                        
+                                        reg_load(va_reg_idx) <= '1';
+                                        stage <= 0;                                        
+                                    end if;                                      
+                                                                
                             
-                                when SC_STA =>
+                                when SC_STA | SC_STAB =>
                                     
                                     if b_ready = '0' then
                                         stage <= 3;
@@ -1015,7 +1055,7 @@ begin
                                     end if;                             
                                 
                                 when SC_LDA =>
-                                
+                                                                    
                                     if b_ready = '0' then                                        
                                         stage <= 3;                                        
                                     else
@@ -1025,12 +1065,35 @@ begin
                                                                               
                                         stage <= 4;
                                     end if;                                      
+                          
+                                when SC_LDAB =>
+                                
+
+
+                                    if b_ready = '0' then                                        
+                                        stage <= 3;                                        
+                                    else
+                                        reg_value_mux<='1';
+                                        case byte_access_remainder is
+                                        when "11" =>
+                                            reg_value <= "000000000000000000000000" & b_Q(7 downto 0);
+                                        when "10" =>
+                                            reg_value <= "000000000000000000000000" & b_Q(15 downto 8);
+                                        when "01" =>
+                                            reg_value <= "000000000000000000000000" & b_Q(23 downto 16);
+                                        when "00" =>
+                                            reg_value <= "000000000000000000000000" & b_Q(31 downto 24);
+                                        when others =>
+                                            reg_value <= "000000000000000000000000" & b_Q(7 downto 0);                                            
+                                        end case;                                        
+                                        reg_load(va_reg_idx) <= '1';
+                                        stage <= 4;                                        
+                                    end if;                                      
                                     
                                 when others =>
                                     -- do nothing.
                             end case;
-                          
-                        
+
                         when GRP_BOOL =>
                         
                             reg_value_mux<='1';
@@ -1067,7 +1130,7 @@ begin
                         when GRP_MEM =>
                             case short_code is
                                                            
-                                when SC_STA | SC_LDA =>
+                                when SC_STA | SC_LDA | SC_STAB | SC_LDAB =>
                                     
                                         reg_load(vb_reg_idx) <= '1';
                                         reg_value_mux<='1';
@@ -1083,8 +1146,10 @@ begin
 
                         
                 end case;    
-                            
+                bar <= byte_access_remainder;
             end if;        
+            
+            
         end if;
         
     end process;
@@ -1237,7 +1302,8 @@ begin
 		f => alu_f
 	);   
     
-    b_address <= data_address_adder_S;
+    b_address <= data_address_adder_S(31 downto 2) & "00"; -- memory access is ALWAYS 32 bit aligned.
+    
     da_adder : adder
         PORT MAP (
             a => data_address_adder_op1,

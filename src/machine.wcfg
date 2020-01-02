@@ -32,7 +32,7 @@
          </top_modules>
       </db_ref>
    </db_ref_list>
-   <WVObjectSize size="14" />
+   <WVObjectSize size="15" />
    <wvobject fp_name="/machine_tb/machine0/control_logic0/clk" type="logic" db_ref_id="1">
       <obj_property name="ElementShortName">clk</obj_property>
       <obj_property name="ObjectShortName">clk</obj_property>
@@ -229,9 +229,40 @@
          <obj_property name="label">PC</obj_property>
       </wvobject>
    </wvobject>
+   <wvobject fp_name="group136" type="group">
+      <obj_property name="label">Adder0</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/da_adder/bypass" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">bypass</obj_property>
+         <obj_property name="ObjectShortName">bypass</obj_property>
+      </wvobject>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/data_address_adder_op1" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">data_address_adder_op1[31:0]</obj_property>
+         <obj_property name="ObjectShortName">data_address_adder_op1[31:0]</obj_property>
+         <obj_property name="Radix">HEXRADIX</obj_property>
+      </wvobject>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/data_address_adder_op2" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">data_address_adder_op2[31:0]</obj_property>
+         <obj_property name="ObjectShortName">data_address_adder_op2[31:0]</obj_property>
+         <obj_property name="Radix">HEXRADIX</obj_property>
+      </wvobject>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/data_address_adder_s" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">data_address_adder_s[31:0]</obj_property>
+         <obj_property name="ObjectShortName">data_address_adder_s[31:0]</obj_property>
+         <obj_property name="Radix">HEXRADIX</obj_property>
+      </wvobject>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/data_address_adder_f" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">data_address_adder_f</obj_property>
+         <obj_property name="ObjectShortName">data_address_adder_f</obj_property>
+      </wvobject>
+   </wvobject>
    <wvobject fp_name="group111" type="group">
       <obj_property name="label">Data Ram</obj_property>
       <obj_property name="DisplayName">label</obj_property>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/bar" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">bar[1:0]</obj_property>
+         <obj_property name="ObjectShortName">bar[1:0]</obj_property>
+      </wvobject>
       <wvobject fp_name="/machine_tb/machine0/control_logic0/clk" type="logic" db_ref_id="1">
          <obj_property name="ElementShortName">clk</obj_property>
          <obj_property name="ObjectShortName">clk</obj_property>
@@ -361,10 +392,12 @@
       <wvobject fp_name="/machine_tb/machine0/control_logic0/alu0/op1" type="array" db_ref_id="1">
          <obj_property name="ElementShortName">op1[31:0]</obj_property>
          <obj_property name="ObjectShortName">op1[31:0]</obj_property>
+         <obj_property name="Radix">HEXRADIX</obj_property>
       </wvobject>
       <wvobject fp_name="/machine_tb/machine0/control_logic0/alu0/op2" type="array" db_ref_id="1">
          <obj_property name="ElementShortName">op2[31:0]</obj_property>
          <obj_property name="ObjectShortName">op2[31:0]</obj_property>
+         <obj_property name="Radix">HEXRADIX</obj_property>
       </wvobject>
       <wvobject fp_name="/machine_tb/machine0/control_logic0/alu0/result" type="array" db_ref_id="1">
          <obj_property name="ElementShortName">result[31:0]</obj_property>
@@ -416,31 +449,50 @@
          <obj_property name="ObjectShortName">blu_repeats_out[4:0]</obj_property>
       </wvobject>
    </wvobject>
-   <wvobject fp_name="group136" type="group">
-      <obj_property name="label">Adder0</obj_property>
+   <wvobject fp_name="group93" type="group">
+      <obj_property name="label">UART0</obj_property>
       <obj_property name="DisplayName">label</obj_property>
-      <wvobject fp_name="/machine_tb/machine0/control_logic0/da_adder/bypass" type="logic" db_ref_id="1">
-         <obj_property name="ElementShortName">bypass</obj_property>
-         <obj_property name="ObjectShortName">bypass</obj_property>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/buffered_uart0/tx_enable" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">tx_enable</obj_property>
+         <obj_property name="ObjectShortName">tx_enable</obj_property>
       </wvobject>
-      <wvobject fp_name="/machine_tb/machine0/control_logic0/data_address_adder_op1" type="array" db_ref_id="1">
-         <obj_property name="ElementShortName">data_address_adder_op1[31:0]</obj_property>
-         <obj_property name="ObjectShortName">data_address_adder_op1[31:0]</obj_property>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/buffered_uart0/tx_full" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">tx_full</obj_property>
+         <obj_property name="ObjectShortName">tx_full</obj_property>
+      </wvobject>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/buffered_uart0/tx_busy" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">tx_busy</obj_property>
+         <obj_property name="ObjectShortName">tx_busy</obj_property>
+      </wvobject>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/buffered_uart0/fifo_rd_en" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">fifo_rd_en</obj_property>
+         <obj_property name="ObjectShortName">fifo_rd_en</obj_property>
+      </wvobject>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/buffered_uart0/fifo_rd_empty" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">fifo_rd_empty</obj_property>
+         <obj_property name="ObjectShortName">fifo_rd_empty</obj_property>
+      </wvobject>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/buffered_uart0/fifo_rd_data" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">fifo_rd_data[7:0]</obj_property>
+         <obj_property name="ObjectShortName">fifo_rd_data[7:0]</obj_property>
          <obj_property name="Radix">HEXRADIX</obj_property>
       </wvobject>
-      <wvobject fp_name="/machine_tb/machine0/control_logic0/data_address_adder_op2" type="array" db_ref_id="1">
-         <obj_property name="ElementShortName">data_address_adder_op2[31:0]</obj_property>
-         <obj_property name="ObjectShortName">data_address_adder_op2[31:0]</obj_property>
-         <obj_property name="Radix">HEXRADIX</obj_property>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/buffered_uart0/uart_tx_en" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">uart_tx_en</obj_property>
+         <obj_property name="ObjectShortName">uart_tx_en</obj_property>
       </wvobject>
-      <wvobject fp_name="/machine_tb/machine0/control_logic0/data_address_adder_s" type="array" db_ref_id="1">
-         <obj_property name="ElementShortName">data_address_adder_s[31:0]</obj_property>
-         <obj_property name="ObjectShortName">data_address_adder_s[31:0]</obj_property>
-         <obj_property name="Radix">HEXRADIX</obj_property>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/buffered_uart0/uart_tx_busy" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">uart_tx_busy</obj_property>
+         <obj_property name="ObjectShortName">uart_tx_busy</obj_property>
       </wvobject>
-      <wvobject fp_name="/machine_tb/machine0/control_logic0/data_address_adder_f" type="logic" db_ref_id="1">
-         <obj_property name="ElementShortName">data_address_adder_f</obj_property>
-         <obj_property name="ObjectShortName">data_address_adder_f</obj_property>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/buffered_uart0/tx_state" type="other" db_ref_id="1">
+         <obj_property name="ElementShortName">tx_state</obj_property>
+         <obj_property name="ObjectShortName">tx_state</obj_property>
+      </wvobject>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/buffered_uart0/tx_data" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">tx_data[7:0]</obj_property>
+         <obj_property name="ObjectShortName">tx_data[7:0]</obj_property>
+         <obj_property name="Radix">HEXRADIX</obj_property>
       </wvobject>
    </wvobject>
 </wave_config>
