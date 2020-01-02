@@ -611,7 +611,7 @@ begin
                                     alu_f <= "10";
                                     alu_op2 <= "00000000000000000000000000000000";
 
-                                    case to_integer(unsigned(vimm0)) is
+                                    case to_integer(unsigned(vimm1)) is
                                     when PORT_STATUS_REG =>
                                         alu_op1 <= status_register;    
                                     when PORT_LED =>
@@ -619,6 +619,8 @@ begin
                                         -- LED <= regs_Q(va_reg_idx)(7 downto 0);
                                     when PORT_SEVEN_SEG =>
                                         -- SevenSeg <= regs_Q(va_reg_idx)(7 downto 0);
+                                    when PORT_UART_FLAGS =>
+                                        alu_op1 <= "0000000000000000000000000000000" & tx_full;                                        
                                     when others =>
                                         --
                                     end case;
@@ -802,13 +804,16 @@ begin
                             
                                 when SC_OUT =>
 
-                                    case to_integer(unsigned(vimm0)) is
+                                    case to_integer(unsigned(vimm1)) is
                                     when PORT_STATUS_REG =>
                                         status_register <= reg_Qs(va_reg_idx);
                                     when PORT_LED =>
                                         LED <= reg_Qs(va_reg_idx)(7 downto 0);
                                     when PORT_SEVEN_SEG =>
                                         seven_seg <= reg_Qs(va_reg_idx)(7 downto 0);
+                                    when PORT_UART_TX_DATA =>
+                                        tx_data <= reg_Qs(va_reg_idx)(7 downto 0);
+                                        tx_enable <= '1';                                        
                                     when others =>
                                         --
                                     end case;
@@ -888,15 +893,12 @@ begin
                                     b_WE <= "1111";                                    
                                     b_D <= reg_Qs(va_reg_idx); 
                                     
-                                    reg_load(vb_reg_idx) <= '1';
-                                    reg_value_mux<='1';
-                                    reg_value <= data_address_adder_S;
-                                    
+
                                 when SC_LDA =>
                                     
-                                    reg_load(vb_reg_idx) <= '1';
-                                    reg_value_mux<='1';
-                                    reg_value <= data_address_adder_S;
+--                                    reg_load(vb_reg_idx) <= '1';
+--                                    reg_value_mux<='1';
+--                                    reg_value <= data_address_adder_S;
                                     b_RE <= '1'; 
                                     
 
@@ -986,13 +988,13 @@ begin
                         when GRP_MEM =>
                             case short_code is
                             
-                                when SC_STR | SC_STA =>
+                                when SC_STR =>
                                     
                                     if b_ready = '0' then
                                         stage <= 3;
                                     end if;                             
                                 
-                                when SC_LDR | SC_LDA =>
+                                when SC_LDR =>
                                 
                                     if b_ready = '0' then                                        
                                         stage <= 3;                                        
@@ -1003,7 +1005,29 @@ begin
                                         stage <= 0;                                        
                                     end if;                                      
                                     
+                            
+                                when SC_STA =>
+                                    
+                                    if b_ready = '0' then
+                                        stage <= 3;
+                                    else
+                                        stage <= 4;
+                                    end if;                             
+                                
+                                when SC_LDA =>
+                                
+                                    if b_ready = '0' then                                        
+                                        stage <= 3;                                        
+                                    else
+                                        reg_value_mux<='1';
+                                        reg_value <= b_Q;
+                                        reg_load(va_reg_idx) <= '1';
+                                                                              
+                                        stage <= 4;
+                                    end if;                                      
+                                    
                                 when others =>
+                                    -- do nothing.
                             end case;
                           
                         
@@ -1036,9 +1060,27 @@ begin
                             -- nothing
                         end case;
                     
+                    when 4 =>
+                    
+                        stage <= 0;
+                        case opgroup is                        
+                        when GRP_MEM =>
+                            case short_code is
+                                                           
+                                when SC_STA | SC_LDA =>
+                                    
+                                        reg_load(vb_reg_idx) <= '1';
+                                        reg_value_mux<='1';
+                                        reg_value <= data_address_adder_S;
+                                when others =>
+                                    -- nothing.
+                            end case;
+                        when others =>
+                            -- do nothing.
+                        end case;
                     
                     when others =>
-                        stage <= 0;
+
                         
                 end case;    
                             

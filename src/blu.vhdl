@@ -26,9 +26,7 @@ entity blu is
 end blu;
 
 architecture Behavioral of blu is
-
 begin
-    
     process(clk)
     begin
         
@@ -48,7 +46,12 @@ begin
             when SC_LSL =>
                 r <= std_logic_vector(shift_left( unsigned(op1), 1 )) ;
             when SC_LSR =>
-                r <= std_logic_vector(shift_right( unsigned(op1), 1 )) ;
+                if op2 = "00000000000000000000000000001000" then
+                    r <= std_logic_vector(shift_right( unsigned(op1), 8 )) ;
+                    repeats_out <= "00000";
+                else
+                    r <= std_logic_vector(shift_right( unsigned(op1), 1 )) ;
+                end if;
             when SC_ASL =>
                 r <= std_logic_vector(shift_left( signed(op1), 1 )) ;
             when SC_ASR =>

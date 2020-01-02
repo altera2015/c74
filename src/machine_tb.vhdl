@@ -50,7 +50,7 @@ ARCHITECTURE behavior OF machine_tb IS
          mcb3_dram_dqs : INOUT  std_logic;
          mcb3_dram_ck : OUT  std_logic;
          mcb3_dram_ck_n : OUT  std_logic;
-         c3_rst0 : OUT  std_logic;
+         --c3_rst0 : OUT  std_logic;
          UART_TX             : out std_logic;
          UART_RX             : in std_logic;
          SD_MISO             : in std_logic;
@@ -109,7 +109,7 @@ ARCHITECTURE behavior OF machine_tb IS
    signal mcb3_dram_udm : std_logic;
    signal mcb3_dram_ck : std_logic;
    signal mcb3_dram_ck_n : std_logic;
-   signal c3_rst0 : std_logic;
+   -- signal c3_rst0 : std_logic;
 
    signal mcb3_dram_dqs_vector : std_logic_vector(1 downto 0);  
    signal mcb3_dram_dm_vector : std_logic_vector(1 downto 0);
@@ -212,7 +212,7 @@ BEGIN
           mcb3_dram_dqs => mcb3_dram_dqs,
           mcb3_dram_ck => mcb3_dram_ck,
           mcb3_dram_ck_n => mcb3_dram_ck_n,
-          c3_rst0 => c3_rst0,
+          --c3_rst0 => c3_rst0,
           UART_TX => UART_TX,
           UART_RX => UART_RX,
           SD_MISO => SD_MISO,

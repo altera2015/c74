@@ -72,7 +72,7 @@ entity machine is
         mcb3_dram_dqs       : inout  std_logic;
         mcb3_dram_ck        : out std_logic;
         mcb3_dram_ck_n      : out std_logic;        
-        c3_rst0             : out std_logic ;
+        -- c3_rst0             : out std_logic ;
     
         -- UART
         UART_TX             : out std_logic;
@@ -329,7 +329,7 @@ architecture machine_arch of machine is
     signal master_reset : std_logic;
     signal reset : std_logic;
     signal pattern_generate_done : std_logic;
-
+    signal c3_rst0             : std_logic ;
     -- Memory Connectivity.    
     signal  c3_calib_done                            : std_logic;
     signal  clk                                      : std_logic;

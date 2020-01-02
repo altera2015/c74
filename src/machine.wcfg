@@ -122,6 +122,11 @@
          <obj_property name="ElementShortName">load[15:0]</obj_property>
          <obj_property name="ObjectShortName">load[15:0]</obj_property>
       </wvobject>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/reg_value" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">reg_value[31:0]</obj_property>
+         <obj_property name="ObjectShortName">reg_value[31:0]</obj_property>
+         <obj_property name="Radix">HEXRADIX</obj_property>
+      </wvobject>
       <wvobject fp_name="/machine_tb/machine0/control_logic0/reg_value_mux" type="logic" db_ref_id="1">
          <obj_property name="ElementShortName">reg_value_mux</obj_property>
          <obj_property name="ObjectShortName">reg_value_mux</obj_property>
@@ -304,9 +309,42 @@
    <wvobject fp_name="group93" type="group">
       <obj_property name="label">UART</obj_property>
       <obj_property name="DisplayName">label</obj_property>
-      <wvobject fp_name="group117" type="group">
-         <obj_property name="label">UART</obj_property>
-         <obj_property name="DisplayName">label</obj_property>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/buffered_uart0/tx_state" type="other" db_ref_id="1">
+         <obj_property name="ElementShortName">tx_state</obj_property>
+         <obj_property name="ObjectShortName">tx_state</obj_property>
+      </wvobject>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/buffered_uart0/reset" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">reset</obj_property>
+         <obj_property name="ObjectShortName">reset</obj_property>
+      </wvobject>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/buffered_uart0/tx_data" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">tx_data[7:0]</obj_property>
+         <obj_property name="ObjectShortName">tx_data[7:0]</obj_property>
+         <obj_property name="Radix">HEXRADIX</obj_property>
+      </wvobject>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/buffered_uart0/tx_enable" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">tx_enable</obj_property>
+         <obj_property name="ObjectShortName">tx_enable</obj_property>
+      </wvobject>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/buffered_uart0/tx_full" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">tx_full</obj_property>
+         <obj_property name="ObjectShortName">tx_full</obj_property>
+      </wvobject>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/buffered_uart0/fifo_rd_en" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">fifo_rd_en</obj_property>
+         <obj_property name="ObjectShortName">fifo_rd_en</obj_property>
+      </wvobject>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/buffered_uart0/tx_busy" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">tx_busy</obj_property>
+         <obj_property name="ObjectShortName">tx_busy</obj_property>
+      </wvobject>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/buffered_uart0/uart_tx_busy" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">uart_tx_busy</obj_property>
+         <obj_property name="ObjectShortName">uart_tx_busy</obj_property>
+      </wvobject>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/buffered_uart0/tx_pin" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">tx_pin</obj_property>
+         <obj_property name="ObjectShortName">tx_pin</obj_property>
       </wvobject>
    </wvobject>
    <wvobject fp_name="group101" type="group">

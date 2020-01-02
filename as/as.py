@@ -5,6 +5,9 @@ import re
 import argparse
 from datetime import datetime
 from isa_defs import *
+import shlex
+import math
+
 
 labels = {}
 constants = {}
@@ -38,6 +41,7 @@ ARG_UNSIGNED_OR_LABEL = 1
 ARG_UNSIGNED = 2
 ARG_SIGNED = 3
 ARG_32BIT = 4
+ARG_STR = 5
 
 op_defs = {
     
@@ -98,7 +102,7 @@ op_defs = {
     "reti": [[OP_RETI, REG_NONE, ARG_NONE]],
     
     
-    ".word":[[OP_LITERAL, REG_NONE, ARG_32BIT] ]   
+    ".word":[[OP_LITERAL, REG_NONE, ARG_32BIT] ]
 }
 
 ###############################################################################
@@ -137,6 +141,7 @@ REGISTERS = {
 
 def parse_address( param, source_line ):
     
+    param = param.lower()
     try:
         address = int(param, 0)
         return address
@@ -148,7 +153,12 @@ def parse_address( param, source_line ):
         elif param in predefined:
             return predefined[param]        
         else:
-            raise Exception("Line {} | ERROR: Could not find label or constant by name {}".format(source_line, param))            
+            d = build_constants(predefined)                        
+            d = d + "\n"
+            d = d + build_labels(labels)    
+            d = d + "\n"            
+            d = d + build_constants(constants);                        
+            raise Exception("Line {} | ERROR: Could not find label or constant by name {}\n\nAvailable Labels:{}\n".format(source_line, param,d))
 
 def parse_value( param, source_line):
 
@@ -219,7 +229,7 @@ def encode_32(value):
 
 
 def encode_op( rec, op, reg, arg, pcrelative = False):
-
+    
     args = rec["op"]
     source_line = rec["source"]
 
@@ -353,6 +363,7 @@ def encode_op( rec, op, reg, arg, pcrelative = False):
 
 def process_op(op, memory):
     
+    
     source_line = op[ len(op) - 2 ]
     source_text = op[ len(op) - 1 ]
     op.pop()
@@ -365,21 +376,66 @@ def process_op(op, memory):
         "source": source_line,
         "text": source_text
     }
+    #print(op[0])
     
-    if op[0] in op_defs:
+    first = op[0].lower()
+    if first == ".str":        
         
-        m["args"] = op_defs[op[0]]
+        if len(op)==2:
+            str = op[1]
+            ba = bytes(str, "ASCII").decode("unicode_escape").encode("ASCII")
+            
+            l = len(ba)            
+            storage_size = int(math.ceil(l / 4.0) * 4)
+            
+            hexstr = ""
+            i = 0
+            
+            while i < storage_size:
+                hexstr = ""
+                src_str = ""
+                for j in range(4):
+                    if i+j < l:
+                        c = ba[i+j]
+                        src_str += str[i+j]
+                    else:
+                        c = 0
+                    hexstr += "{0:02X}".format(c)
+                t = source_text
+                if i > 0:
+                    t = "# str storage continued"
+                m={                
+                    "op": op,                        
+                    "size": 4,
+                    "source": source_line,
+                    "text": t,
+                    "encoded": hexstr
+                }
+                memory.append(m) 
+                i += 4                                   
+                
+            
+        else:
+            print("Line {} | Error, .str expect 1 string".format(source_line));
+            exit(-1);
+        
+        
+    elif first in op_defs:
+        
+        m["args"] = op_defs[first]
         memory.append(m)
+        
 
-    elif op[0] == ("EXAMPLE"):
+        
+    elif first == ("EXAMPLE"):
         
         # m["args"] = [OP_LITERAL, REG_NONE, ARG_32BIT]
         # memory.append(m)
         print("INTERNAL ERROR")
         exit(-1)
-    elif op[0].startswith(".const"):
+    elif first.startswith(".const"):
         
-        constant = op[1]
+        constant = op[1].lower()
         
         if constant in constants:            
             print("Line {} | Error, reuse of constant: {}".format(source_line, constant));
@@ -393,7 +449,8 @@ def process_op(op, memory):
     
     elif op[0].startswith(":"):
         
-        label = op[0].strip(":")
+        label = op[0].strip(":").lower()
+        
         if label in RESERVED_LABEL_NAMES:
             print("Line {} | Error, {} is a reserved name and cannot be used as a label\n{}".format(source_line,label, source_text))
             exit(-1)
@@ -418,7 +475,7 @@ def process_op(op, memory):
         exit(-1)
 
 def assemble(ops):
-
+    
     memory = [
         
     ]
@@ -447,8 +504,11 @@ def assemble(ops):
                 print(m["text"])
                 exit(-1)
                 
-        else:
+        elif "encode" in m:
             values.append(m["encode"](m))            
+        elif "encoded" in m:            
+            values.append(m["encoded"])
+        
         
         pc = pc + m["size"]
 
@@ -461,28 +521,45 @@ def load_ops(filename):
         cnt = 1
         line = fp.readline()
         
+        
+        
         while line:
-
+            
+            in_str = False
+            cstr = []
             orig = line.rstrip()
-            line = orig.lower()
+            # line = orig.lower()
             line = line.strip('\n')
             #args = line.split(' ')
             args = re.split(',| ',line)
             
-            args = list(filter(None, args))
+            source_args = list(filter(None, args))
+            args = []
             
-            removeComments = -1
-            for i in range(len(args)):
-                arg = args[i]
-                if arg.startswith(';') or arg.startswith('#'):
-                    removeComments = i
-                    break;
-            if removeComments >= 0:
-                for i in range( len(args) - removeComments ) :
-                    args.pop()
+            
+            
+            for i in range(len(source_args)):
+                arg = source_args[i]
+                
+                if not in_str:
+                    
+                    if arg.startswith('"'):
+                        in_str = True
+                        cstr.append( arg.rstrip("\"") )
+                    elif arg.startswith(';') or arg.startswith('#'):                        
+                        break;
+                    else:
+                        args.append(arg)
+                    
+                else:
+                    cstr.append( arg )
+                    
+                    if arg.endswith('"') and not arg.endswith("\\\""):
+                        in_str = False                         
+                        cstr = " ".join(cstr)
+                        args.append(cstr.strip("\""))
 
-
-
+            
             if len(args)>0:
                 args.append(cnt)
                 args.append(orig)                    
