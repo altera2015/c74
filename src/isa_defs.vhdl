@@ -194,10 +194,24 @@ package isa_defs is
 	constant N_FLAG_POS : integer := 3;
 	constant I_FLAG_POS : integer := 4;
 
+	-- IRQ Flags
+	constant IRQ_BUTTON0 : integer := 1;
+	constant IRQ_BUTTON1 : integer := 2;
+	constant IRQ_BUTTON2 : integer := 4;
+	constant IRQ_BUTTON3 : integer := 8;
+	constant IRQ_BUTTON4 : integer := 16;
+	constant IRQ_VBLANK : integer := 32;
+	constant IRQ_UART_RX : integer := 64;
+	constant IRQ_KEYBOARD : integer := 128;
+
 	-- Port Definitions
 	constant PORT_STATUS_REG      : integer := 0;
+	constant PORT_IRQ_CLEAR       : integer := 1;
+	constant PORT_IRQ_MASK        : integer := 2;
 	constant PORT_LED             : integer := 5;
 	constant PORT_SEVEN_SEG       : integer := 6;
+	constant PORT_BUTTONS         : integer := 7;
+	constant PORT_SWITCHES        : integer := 8;
 	constant PORT_UART_FLAGS      : integer := 10;
 	constant PORT_UART_TX_DATA    : integer := 11;
 	constant PORT_UART_RX_DATA    : integer := 12;

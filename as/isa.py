@@ -42,10 +42,25 @@ STATUS_FLAGS = {
     "I_FLAG" : 4,
 }
 
+IRQ_PORTS = {
+    "IRQ_BUTTON0": 1,   #0
+    "IRQ_BUTTON1": 2,   #1
+    "IRQ_BUTTON2": 4,   #2
+    "IRQ_BUTTON3": 8,   #3
+    "IRQ_BUTTON4": 16,  #4
+    "IRQ_VBLANK": 32,   #5
+    "IRQ_UART_RX": 64,  #6
+    "IRQ_KEYBOARD": 128 #7
+}
+
 PORT_DEFINITIONS = {
     "PORT_STATUS_REG": 0,
+    "PORT_IRQ_CLEAR": 1,
+    "PORT_IRQ_MASK": 2,
     "PORT_LED": 5,
     "PORT_SEVEN_SEG": 6,
+    "PORT_BUTTONS": 7,
+    "PORT_SWITCHES": 8,
     "PORT_UART_FLAGS": 10,
     "PORT_UART_TX_DATA": 11,    
     "PORT_UART_RX_DATA": 12,   
@@ -336,6 +351,14 @@ def write_vhdl(fn):
         f.write("\tconstant {0}_POS : integer := {1};\n".format(flag[0], flag[1]))
 
 
+    f.write("\n\t-- IRQ Flags\n")
+    
+    for flag in sorted(IRQ_PORTS.items(), key=operator.itemgetter(1)):
+        f.write("\tconstant {0} : integer := {1};\n".format(flag[0], flag[1]))
+
+
+
+
     f.write("\n\t-- Port Definitions\n")
 
     for port in sorted(PORT_DEFINITIONS.items(), key=operator.itemgetter(1)):
@@ -362,6 +385,13 @@ def write_python(fn):
         
     for flag in STATUS_FLAGS:
         f.write("\t\"{0}\": {1},\n".format(flag, 1<<STATUS_FLAGS[flag]))         
+    
+    f.write("\n");
+    for flag in IRQ_PORTS:
+        f.write("\t\"{0}\": {1},\n".format(flag, IRQ_PORTS[flag]))         
+
+
+        
         
     for port in PORT_DEFINITIONS:
         f.write("\t\"{0}\" : {1},\n".format(port, PORT_DEFINITIONS[port]))    

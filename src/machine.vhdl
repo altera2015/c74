@@ -45,6 +45,7 @@ entity machine is
     port ( 
         clk_100mhz          : in std_logic;        
         reset_button        : in std_logic; -- button is high when not pressed.
+        buttons             : in std_logic_vector(4 downto 0);
                 
         LED                 : out std_logic_vector(7 downto 0);
         SevenSegment        : out  std_logic_vector (7 downto 0);
@@ -142,7 +143,8 @@ architecture machine_arch of machine is
         lpddr_pB_rd_overflow                       : in std_logic;
         lpddr_pB_rd_error                          : in std_logic;
         led                                        : out std_logic_vector(7 downto 0);
-        seven_seg                                  : out std_logic_vector( 7 downto 0);
+        seven_seg                                  : out std_logic_vector(11 downto 0);
+        buttons                                    : in std_logic_vector(4 downto 0);
         
         -- UART Pins.
    		rx_pin : IN std_logic;          
@@ -155,6 +157,17 @@ architecture machine_arch of machine is
         SD_CLK              : out std_logic        
 	);
 	END COMPONENT;
+    
+	COMPONENT sevenseg
+	PORT(
+		value : IN std_logic_vector(11 downto 0);
+		clk : IN std_logic;
+		en : IN std_logic;          
+		segments : OUT std_logic_vector(6 downto 0);
+		digits : OUT std_logic_vector(2 downto 0)
+		);
+	END COMPONENT;
+
 
     
     component lpddr
@@ -326,10 +339,20 @@ architecture machine_arch of machine is
     	END COMPONENT;
         
 
+	COMPONENT input_sync
+	PORT(
+		clk : IN std_logic;
+		reset : IN std_logic;
+		input : IN std_logic;          
+		output : OUT std_logic
+		);
+	END COMPONENT;
+    
     signal master_reset : std_logic;
     signal reset : std_logic;
     signal pattern_generate_done : std_logic;
     signal c3_rst0             : std_logic ;
+    signal seven_seg                                 : std_logic_vector(11 downto 0);
     -- Memory Connectivity.    
     signal  c3_calib_done                            : std_logic;
     signal  clk                                      : std_logic;
@@ -406,7 +429,12 @@ architecture machine_arch of machine is
     signal  c3_p3_rd_error                           : std_logic; 
     signal  user_clk                                 : std_logic;
     signal  framebuffer_reset                        : std_logic;
+    
+
 begin
+   
+   
+
    
     master_reset <= not reset_button;
 
@@ -626,6 +654,8 @@ begin
 	control_logic0: control_logic PORT MAP(
 		clk => user_clk,
 		reset => reset,
+        buttons => buttons,
+        seven_seg => seven_seg,
 		lpddr_pA_cmd_en => c3_p0_cmd_en,
 		lpddr_pA_cmd_instr => c3_p0_cmd_instr,
 		lpddr_pA_cmd_bl => c3_p0_cmd_bl,
@@ -677,10 +707,18 @@ begin
         SD_CLK => SD_CLK
      );
 
+	sevenseg0: sevenseg PORT MAP(
+		value => seven_seg,
+		clk => user_clk,
+		en => '1',
+		segments => SevenSegment(7 downto 1),
+		digits => SevenSegmentEnable
+	);
+
 
     -- disable 7 segment displays
-    SevenSegmentEnable <= "111";
-    SevenSegment <= "11111111";
+    -- SevenSegmentEnable <= "111";
+    SevenSegment(0) <= '1';
 
     -- LED outputs
 --    LED(0) <= c3_calib_done;    

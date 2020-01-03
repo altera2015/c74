@@ -32,7 +32,7 @@
          </top_modules>
       </db_ref>
    </db_ref_list>
-   <WVObjectSize size="15" />
+   <WVObjectSize size="16" />
    <wvobject fp_name="/machine_tb/machine0/control_logic0/clk" type="logic" db_ref_id="1">
       <obj_property name="ElementShortName">clk</obj_property>
       <obj_property name="ObjectShortName">clk</obj_property>
@@ -118,32 +118,6 @@
    <wvobject fp_name="group49" type="group">
       <obj_property name="label">Registers</obj_property>
       <obj_property name="DisplayName">label</obj_property>
-      <wvobject fp_name="/machine_tb/machine0/control_logic0/reg_file0/load" type="array" db_ref_id="1">
-         <obj_property name="ElementShortName">load[15:0]</obj_property>
-         <obj_property name="ObjectShortName">load[15:0]</obj_property>
-      </wvobject>
-      <wvobject fp_name="/machine_tb/machine0/control_logic0/reg_value" type="array" db_ref_id="1">
-         <obj_property name="ElementShortName">reg_value[31:0]</obj_property>
-         <obj_property name="ObjectShortName">reg_value[31:0]</obj_property>
-         <obj_property name="Radix">HEXRADIX</obj_property>
-      </wvobject>
-      <wvobject fp_name="/machine_tb/machine0/control_logic0/reg_value_mux" type="logic" db_ref_id="1">
-         <obj_property name="ElementShortName">reg_value_mux</obj_property>
-         <obj_property name="ObjectShortName">reg_value_mux</obj_property>
-      </wvobject>
-      <wvobject fp_name="/machine_tb/machine0/control_logic0/reg_intermediate_value" type="array" db_ref_id="1">
-         <obj_property name="ElementShortName">reg_intermediate_value[31:0]</obj_property>
-         <obj_property name="ObjectShortName">reg_intermediate_value[31:0]</obj_property>
-         <obj_property name="Radix">HEXRADIX</obj_property>
-      </wvobject>
-      <wvobject fp_name="/machine_tb/machine0/control_logic0/reg_file0/sp_dec" type="logic" db_ref_id="1">
-         <obj_property name="ElementShortName">sp_dec</obj_property>
-         <obj_property name="ObjectShortName">sp_dec</obj_property>
-      </wvobject>
-      <wvobject fp_name="/machine_tb/machine0/control_logic0/reg_file0/sp_inc" type="logic" db_ref_id="1">
-         <obj_property name="ElementShortName">sp_inc</obj_property>
-         <obj_property name="ObjectShortName">sp_inc</obj_property>
-      </wvobject>
       <wvobject fp_name="/machine_tb/machine0/control_logic0/reg_file0/qs[0]" type="array" db_ref_id="1">
          <obj_property name="ElementShortName">[0]</obj_property>
          <obj_property name="ObjectShortName">qs[0]</obj_property>
@@ -493,6 +467,52 @@
          <obj_property name="ElementShortName">tx_data[7:0]</obj_property>
          <obj_property name="ObjectShortName">tx_data[7:0]</obj_property>
          <obj_property name="Radix">HEXRADIX</obj_property>
+      </wvobject>
+   </wvobject>
+   <wvobject fp_name="group98" type="group">
+      <obj_property name="label">IRQ</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/irq_controller0/irq_lines" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">irq_lines[15:0]</obj_property>
+         <obj_property name="ObjectShortName">irq_lines[15:0]</obj_property>
+         <obj_property name="UseCustomSignalColor">true</obj_property>
+         <obj_property name="CustomSignalColor">#ff0000</obj_property>
+      </wvobject>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/irq_controller0/rising" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">rising[15:0]</obj_property>
+         <obj_property name="ObjectShortName">rising[15:0]</obj_property>
+      </wvobject>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/irq_controller0/irq_previous" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">irq_previous[15:0]</obj_property>
+         <obj_property name="ObjectShortName">irq_previous[15:0]</obj_property>
+      </wvobject>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/irq_controller0/irq_ready" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">irq_ready[15:0]</obj_property>
+         <obj_property name="ObjectShortName">irq_ready[15:0]</obj_property>
+      </wvobject>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/irq_controller0/irq_clear" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">irq_clear[15:0]</obj_property>
+         <obj_property name="ObjectShortName">irq_clear[15:0]</obj_property>
+      </wvobject>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/irq_controller0/irq_en" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">irq_en</obj_property>
+         <obj_property name="ObjectShortName">irq_en</obj_property>
+      </wvobject>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/irq_controller0/irq_mask" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">irq_mask[15:0]</obj_property>
+         <obj_property name="ObjectShortName">irq_mask[15:0]</obj_property>
+      </wvobject>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/irq_controller0/irq" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">irq</obj_property>
+         <obj_property name="ObjectShortName">irq</obj_property>
+      </wvobject>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/irq_controller0/irq_table_entry" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">irq_table_entry[31:0]</obj_property>
+         <obj_property name="ObjectShortName">irq_table_entry[31:0]</obj_property>
+      </wvobject>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/irq_controller0/irq_active_line" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">irq_active_line[15:0]</obj_property>
+         <obj_property name="ObjectShortName">irq_active_line[15:0]</obj_property>
       </wvobject>
    </wvobject>
 </wave_config>

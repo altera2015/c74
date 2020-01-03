@@ -66,9 +66,19 @@ set I_FLAG_BIT
 :start
     mov r0, welcome 
     call uart_print
-    j start
-    mov r0, 0xff
-    out r0, PORT_LED
+    
+    # Wait for data
+    :wait_for_data
+    in r1, PORT_UART_FLAGS
+    #out r1, PORT_LED
+    tst r1, 1 # empty bit    
+    jeq wait_for_data
+    
+    in r1, PORT_UART_RX_DATA
+    out r1, PORT_SEVEN_SEG
+    out r1, PORT_UART_TX_DATA
+    j wait_for_data
+    
     hlt
     
 # address pointer in r0
@@ -80,7 +90,7 @@ set I_FLAG_BIT
     :uart_print_wait
             in r1, PORT_UART_FLAGS
             tst r1, 0
-        jeq uart_print_wait        
+        jeq uart_print_wait
         ldab r1, r0, 1    
         cmp r1, 0
     jeq uart_print_done
@@ -93,4 +103,4 @@ set I_FLAG_BIT
     ret
     
 :welcome
-    .str "C74.000\r\nCopyright (c) 2020 Ron Bessems\r\n\0"
+    .str "C74====\nC74.000\nCopyright (c) 2020 Ron Bessems\nRevision 0.0.2\n\0"

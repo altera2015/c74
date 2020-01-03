@@ -28,6 +28,7 @@ ARCHITECTURE behavior OF machine_tb IS
     PORT(
          clk_100mhz : IN  std_logic;
          reset_button : IN  std_logic;
+         buttons : in std_logic_vector(4 downto 0);
          LED : OUT  std_logic_vector(7 downto 0);
          SevenSegment : OUT  std_logic_vector(7 downto 0);
          SevenSegmentEnable : OUT  std_logic_vector(2 downto 0);
@@ -83,6 +84,7 @@ ARCHITECTURE behavior OF machine_tb IS
    --Inputs
    signal clk_100mhz : std_logic := '0';
    signal reset_button : std_logic := '0';
+   signal buttons : std_logic_vector(4 downto 0) := "11111";
 
 	--BiDirs
    signal mcb3_dram_dq : std_logic_vector(15 downto 0);
@@ -190,6 +192,7 @@ BEGIN
    ) PORT MAP (
           clk_100mhz => clk_100mhz,
           reset_button => reset_button,
+          buttons => buttons,
           LED => LED,
           SevenSegment => SevenSegment,
           SevenSegmentEnable => SevenSegmentEnable,
@@ -241,6 +244,10 @@ BEGIN
       reset_button <= '1';
 
       wait for clk_100mhz_period*10;
+
+      wait for 14000 ns;
+      buttons(0) <= '0';
+
 
       -- insert stimulus here 
 

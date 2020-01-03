@@ -7,6 +7,7 @@
 -- 
 -- Copyright (c) 2019 Ron Bessems
 
+
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
@@ -71,7 +72,9 @@ entity control_logic is
         lpddr_pB_rd_error                          : in std_logic;
         
         led : out std_logic_vector(7 downto 0);
-        seven_seg : out std_logic_vector( 7 downto 0);
+        seven_seg : out std_logic_vector(11 downto 0);
+        buttons : in std_logic_vector(4 downto 0);
+        
         
         -- UART Pins.
    		rx_pin : IN std_logic;          
@@ -89,6 +92,33 @@ end control_logic;
 
 architecture behavioral of control_logic is
     
+    
+    
+
+	COMPONENT input_sync
+	PORT(
+		clk : IN std_logic;
+		reset : IN std_logic;
+		input : IN std_logic;          
+		output : OUT std_logic
+		);
+	END COMPONENT;
+
+	COMPONENT irq_controller
+	PORT(
+		clk : IN std_logic;
+		reset : IN std_logic;
+		irq_en : IN std_logic;
+		irq_mask : IN std_logic_vector(15 downto 0);
+		irq_clear : IN std_logic_vector(15 downto 0);
+		irq_lines : in  STD_LOGIC_VECTOR(15 downto 0);
+		
+        irq : OUT std_logic;
+		irq_table_entry : out  STD_LOGIC_VECTOR (31 downto 0);
+        irq_active_line : out  STD_LOGIC_VECTOR (15 downto 0)
+		);
+	END COMPONENT;
+        
 	COMPONENT blu
 	PORT(
 		clk : IN std_logic;
@@ -346,7 +376,15 @@ architecture behavioral of control_logic is
     end;
 
 
-
+    -- IRQ 
+    signal irq_clear : std_logic_vector(15 downto 0);
+    signal irq_asserted : std_logic;
+    signal irq_table_entry : std_logic_vector(31 downto 0);
+    signal buttons_sync : std_logic_vector(4 downto 0);
+    signal irq_lines : std_logic_vector(15 downto 0);
+    signal irq_active_line : std_logic_vector (15 downto 0);
+    signal irq_mask : std_logic_vector (15 downto 0);
+    
     -- UART
     signal tx_enable : std_logic;
     signal rx_enable : std_logic;
@@ -397,7 +435,7 @@ architecture behavioral of control_logic is
     signal status_register : std_logic_vector(31 downto 0);
     
     -- Stage Signals
-    signal stage : integer range 0 to 7 := 7;
+    signal stage : integer range 0 to 9 := 9;
     signal instruction : std_logic_vector(31 downto 0);
     signal opcode : std_logic_vector(7 downto 0);
     
@@ -512,8 +550,12 @@ begin
                 data_address_adder_op1 <= (others =>'0');
                 data_address_adder_op2 <= (others =>'0');
                 data_address_adder_bypass <= '0';
-            else
                 
+                irq_mask <= (others => '0');                
+                irq_clear <= (others=>'0');
+                
+            else
+            
                 data_address_adder_bypass <= '0';
                 
                 reg_value_mux<='0';
@@ -545,18 +587,33 @@ begin
                 
                 sd_dout_taken <= '0';
                 tx_enable <= '0';
-            
+                rx_enable <= '0';
+                irq_clear <= (others=>'0');
+
                 case stage is
                     
                     -- ***********************************************************************
                     -- STAGE 0
                     -- ***********************************************************************                    
                     when 0 =>
+                        if irq_asserted = '1' then
+                                                        
+                            stage <= 6;  
+                                                       
+                            data_address_adder_f <= '0';
+                            data_address_adder_op1 <= reg_Qs(REG_SP);
+                            data_address_adder_op2 <= "00000000000000000000000000000100";
+                            sp_dec <= '1';
+     
+                        else
+                            a_RE <= '1';
+                            instruction <= (others=>'0');
+                            stage <= 1;
+                            pc_inc <= '1';
+                        end if;
+                        
 
-                        a_RE <= '1';
-                        instruction <= (others=>'0');
-                        stage <= 1;
-                        pc_inc <= '1';
+                        
                     -- ***********************************************************************
                     -- STAGE 1
                     -- ***********************************************************************                        
@@ -617,13 +674,18 @@ begin
                                     case to_integer(unsigned(vimm1)) is
                                     when PORT_STATUS_REG =>
                                         alu_op1 <= status_register;    
+                                    when PORT_IRQ_MASK =>
+                                        alu_op1 <= "0000000000000000" & irq_mask;                                        
                                     when PORT_LED =>
                                         -- alu_op1 <= status_register;    
                                         -- LED <= regs_Q(va_reg_idx)(7 downto 0);
                                     when PORT_SEVEN_SEG =>
                                         -- SevenSeg <= regs_Q(va_reg_idx)(7 downto 0);
                                     when PORT_UART_FLAGS =>
-                                        alu_op1 <= "0000000000000000000000000000000" & tx_full;                                        
+                                        alu_op1 <= "000000000000000000000000000000" & rx_empty & tx_full;                                        
+                                    when PORT_UART_RX_DATA =>
+                                        alu_op1 <= "000000000000000000000000" & rx_data;
+                                        rx_enable <= '1';
                                     when others =>
                                         --
                                     end case;
@@ -815,13 +877,17 @@ begin
                                     case to_integer(unsigned(vimm1)) is
                                     when PORT_STATUS_REG =>
                                         status_register <= reg_Qs(va_reg_idx);
+                                    when PORT_IRQ_CLEAR =>
+                                        irq_clear <= reg_Qs(va_reg_idx)(15 downto 0);
+                                    when PORT_IRQ_MASK =>
+                                        irq_mask <= reg_Qs(va_reg_idx)(15 downto 0);
                                     when PORT_LED =>
                                         LED <= reg_Qs(va_reg_idx)(7 downto 0);
                                     when PORT_SEVEN_SEG =>
-                                        seven_seg <= reg_Qs(va_reg_idx)(7 downto 0);
+                                        seven_seg <= reg_Qs(va_reg_idx)(11 downto 0);
                                     when PORT_UART_TX_DATA =>
                                         tx_data <= reg_Qs(va_reg_idx)(7 downto 0);
-                                        tx_enable <= '1';                                        
+                                        tx_enable <= '1';
                                     when others =>
                                         --
                                     end case;
@@ -942,7 +1008,7 @@ begin
                                         reg_value_mux<='1';
                                         reg_value <= b_Q;
                                         reg_load(va_reg_idx) <= '1';
-                                        stage <= 0;                                        
+                                        stage <= 0;
                                                                             
                                     end if;                                 
                             
@@ -972,8 +1038,7 @@ begin
                                     else
                                         reg_value_mux<='1';
                                         reg_value <= b_Q;
-                                        reg_load(REG_PC) <= '1';
-                                        stage <= 0;                                        
+                                        reg_load(REG_PC) <= '1';                                        
                                         status_register(I_FLAG_POS) <= '1';                                        
                                     end if;       
                                     
@@ -1122,7 +1187,11 @@ begin
                         when others =>
                             -- nothing
                         end case;
-                    
+                        
+                        
+                    -- ***********************************************************************
+                    -- STAGE 4
+                    -- ***********************************************************************                    
                     when 4 =>
                     
                         stage <= 0;
@@ -1141,7 +1210,36 @@ begin
                         when others =>
                             -- do nothing.
                         end case;
+ 
+                    -- ***********************************************************************
+                    -- STAGE 6 IRQ SETUP
+                    -- ***********************************************************************                         
+                    when 6 =>
+                        
+                        b_D <= reg_Qs(REG_PC);
+                        b_WE <= "1111";
+                        stage <= 7;
+                    -- ***********************************************************************
+                    -- STAGE 7 IRQ SETUP
+                    -- ***********************************************************************                         
+                    when 7 =>
                     
+                        if b_ready = '1' then
+                            reg_value_mux<='1';
+                            reg_value <= irq_table_entry;
+                            reg_load(REG_PC) <= '1';
+                            -- clear the current IRQ.
+                            irq_clear <= irq_active_line;
+                            status_register(I_FLAG_POS) <= '0';
+                            stage <= 8;                            
+                        end if;
+                    -- ***********************************************************************
+                    -- STAGE 8 IRQ DONE
+                    -- ***********************************************************************                                                 
+                    when 8 =>
+                        -- all signals are now ready for IRQ processing.
+                        stage <= 0;
+ 
                     when others =>
 
                         
@@ -1328,7 +1426,44 @@ begin
         repeats_in => blu_repeats_in,
         repeats_out => blu_repeats_out        
 	);
+ 
+	irq_controller0: irq_controller PORT MAP(
+		clk => clk,
+		reset => reset,
+		irq_en => status_register(I_FLAG_POS),
+		irq_mask => irq_mask,
+		irq_clear => irq_clear,
+		irq => irq_asserted,
+		irq_table_entry => irq_table_entry,
+		irq_lines => irq_lines,
+        irq_active_line => irq_active_line
+	);
+
     
+    irq_lines(5) <= '0';
+    irq_lines(6) <= not rx_empty;
+    irq_lines(7) <= '0';
+    irq_lines(8) <= '0';
+    irq_lines(9) <= '0';
+    irq_lines(10) <= '0';
+    irq_lines(11) <= '0';
+    irq_lines(12) <= '0';
+    irq_lines(13) <= '0';
+    irq_lines(14) <= '0';
+    irq_lines(15) <= '0';
+    
+
+    button_syncs: for i in 0 to 4 generate
+        button_sync_x: input_sync PORT MAP(
+            clk => clk,
+            reset => reset,
+            input => buttons(i),
+            output => buttons_sync(i)
+        );
+        irq_lines(i) <= not buttons_sync(i);
+    end generate button_syncs;
+
+ 
 end Behavioral;
 
 
