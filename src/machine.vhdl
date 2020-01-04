@@ -339,14 +339,6 @@ architecture machine_arch of machine is
     	END COMPONENT;
         
 
-	COMPONENT input_sync
-	PORT(
-		clk : IN std_logic;
-		reset : IN std_logic;
-		input : IN std_logic;          
-		output : OUT std_logic
-		);
-	END COMPONENT;
     
     signal master_reset : std_logic;
     signal reset : std_logic;
@@ -715,20 +707,6 @@ begin
 		digits => SevenSegmentEnable
 	);
 
-
-    -- disable 7 segment displays
-    -- SevenSegmentEnable <= "111";
     SevenSegment(0) <= '1';
-
-    -- LED outputs
---    LED(0) <= c3_calib_done;    
---    LED(1) <= pattern_generate_done;
---    LED(2) <= '0';
---    LED(3) <= '0';
---    LED(4) <= '0';
---    LED(5) <= '0';
---    LED(6) <= '0';
---    LED(7) <= '0';
---    
-
+  
 end machine_arch;

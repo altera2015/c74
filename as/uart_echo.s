@@ -103,4 +103,4 @@ set I_FLAG_BIT
     ret
     
 :welcome
-    .str "C74====\nC74.000\nCopyright (c) 2020 Ron Bessems\nRevision 0.0.2\n\0"
+    .str "C74====\rC74.000\rCopyright (c) 2020 Ron Bessems\rRevision 0.0.2\r\0"

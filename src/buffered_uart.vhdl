@@ -146,8 +146,6 @@ begin
     end process;
 
 
-
-
 	uart_rx0: UART_RX PORT MAP(
 		i_Clk => clk,
 		i_RX_Serial => rx_pin,
