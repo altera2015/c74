@@ -8,11 +8,14 @@
 -- Copyright (c) 2019 Ron Bessems
 
 
+-- https://www.digikey.com/eewiki/pages/viewpage.action?pageId=68976724
+
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.isa_defs.all;
 use work.types.all;
+use work.SdCardPckg.all;
 
 
 entity control_logic is
@@ -84,7 +87,12 @@ entity control_logic is
         SD_MISO             : in std_logic;
         SD_MOSI             : out std_logic;
         SD_CS               : out std_logic;
-        SD_CLK              : out std_logic        
+        SD_CLK              : out std_logic; 
+
+        -- PS/2
+        PS2_CLK             : inout std_logic;
+        PS2_DATA            : inout std_logic
+
 
     );
 end control_logic;
@@ -92,8 +100,21 @@ end control_logic;
 
 architecture behavioral of control_logic is
     
-    
-    
+	COMPONENT ps2_transceiver
+	PORT(
+		clk : IN std_logic;
+		reset_n : IN std_logic;
+		tx_ena : IN std_logic;
+		tx_cmd : IN std_logic_vector(8 downto 0);    
+		ps2_clk : INOUT std_logic;
+		ps2_data : INOUT std_logic;      
+		tx_busy : OUT std_logic;
+		ack_error : OUT std_logic;
+		ps2_code : OUT std_logic_vector(7 downto 0);
+		ps2_code_new : OUT std_logic;
+		rx_error : OUT std_logic
+		);
+	END COMPONENT;
 
 	COMPONENT input_sync
 	PORT(
@@ -115,7 +136,8 @@ architecture behavioral of control_logic is
 		
         irq : OUT std_logic;
 		irq_table_entry : out  STD_LOGIC_VECTOR (31 downto 0);
-        irq_active_line : out  STD_LOGIC_VECTOR (15 downto 0)
+        irq_active_line : out  STD_LOGIC_VECTOR (15 downto 0);
+        irq_ready : out std_logic_vector(15 downto 0)
 		);
 	END COMPONENT;
         
@@ -250,36 +272,27 @@ architecture behavioral of control_logic is
         tx_pin : OUT std_logic
 		);
 	END COMPONENT;
-    
-	COMPONENT sd_controller
+
+	COMPONENT SdCardCtrl
 	PORT(
-		miso : IN std_logic;
-		card_present : IN std_logic;
-		card_write_prot : IN std_logic;
-		rd : IN std_logic;
-		rd_multiple : IN std_logic;
-		dout_taken : IN std_logic;
-		wr : IN std_logic;
-		wr_multiple : IN std_logic;
-		din : IN std_logic_vector(7 downto 0);
-		din_valid : IN std_logic;
-		addr : IN std_logic_vector(31 downto 0);
-		erase_count : IN std_logic_vector(7 downto 0);
-		reset : IN std_logic;
-		clk : IN std_logic;          
-		cs : OUT std_logic;
-		mosi : OUT std_logic;
-		sclk : OUT std_logic;
-		dout : OUT std_logic_vector(7 downto 0);
-		dout_avail : OUT std_logic;
-		din_taken : OUT std_logic;
-		sd_error : OUT std_logic;
-		sd_busy : OUT std_logic;
-		sd_error_code : OUT std_logic_vector(2 downto 0);
-		sd_type : OUT std_logic_vector(1 downto 0);
-		sd_fsm : OUT std_logic_vector(7 downto 0)
+		clk_i : IN std_logic;
+		reset_i : IN std_logic;
+		rd_i : IN std_logic;
+		wr_i : IN std_logic;
+		continue_i : IN std_logic;
+		addr_i : IN std_logic_vector(31 downto 0);
+		data_i : IN std_logic_vector(7 downto 0);
+		hndShk_i : IN std_logic;
+		miso_i : IN std_logic;          
+		data_o : OUT std_logic_vector(7 downto 0);
+		busy_o : OUT std_logic;
+		hndShk_o : OUT std_logic;
+		error_o : OUT std_logic_vector(15 downto 0);
+		cs_bo : OUT std_logic;
+		sclk_o : OUT std_logic;
+		mosi_o : OUT std_logic
 		);
-	END COMPONENT; 
+	END COMPONENT;
 
 	COMPONENT alu
 	PORT(
@@ -382,6 +395,7 @@ architecture behavioral of control_logic is
     signal irq_table_entry : std_logic_vector(31 downto 0);
     signal buttons_sync : std_logic_vector(4 downto 0);
     signal irq_lines : std_logic_vector(15 downto 0);
+    signal irq_ready : std_logic_vector(15 downto 0);
     signal irq_active_line : std_logic_vector (15 downto 0);
     signal irq_mask : std_logic_vector (15 downto 0);
     
@@ -473,9 +487,9 @@ architecture behavioral of control_logic is
     signal sd_address : std_logic_vector(31 downto 0);    
     signal sd_busy : std_logic;    
     signal sd_error : std_logic;
-    signal sd_error_code : std_logic_vector(2 downto 0);
+    signal sd_error_code : std_logic_vector(15 downto 0);
     signal sd_type : std_logic_vector(1 downto 0);
-    
+    signal sd_fsm : std_logic_vector(4 downto 0);
     
     -- ALU
     signal alu_c : std_logic;
@@ -494,7 +508,13 @@ architecture behavioral of control_logic is
     signal blu_r : std_logic_vector(31 downto 0);
     signal blu_repeats_in : std_logic_vector(4 downto 0);    
     signal blu_repeats_out : std_logic_vector(4 downto 0);    
-    	
+
+
+    -- PS/2
+    signal ps2_code : std_logic_vector(7 downto 0);
+    signal ps2_code_new : std_logic;
+    signal ps2_rx_error : std_logic;
+        	
 begin
 
     a_address <= reg_Qs(REG_PC);
@@ -544,6 +564,8 @@ begin
                 
                 sd_rd <= '0';
                 sd_dout_taken <= '0';
+                sd_address <= (others=>'0');
+                
                 opgroup := GRP_MISC;
                 
                 data_address_adder_f <= '1';
@@ -585,7 +607,18 @@ begin
                 b_RE <= '0';
                 b_WE <= "0000";
                 
-                sd_dout_taken <= '0';
+                if sd_dout_taken = '1' then
+                    if sd_dout_avail = '0' then
+                        sd_dout_taken <= '0';
+                    end if;
+                end if;
+                
+                if sd_rd = '1' then
+                    if sd_busy = '1' then
+                        sd_rd <= '0';                    
+                    end if;                
+                end if;
+                
                 tx_enable <= '0';
                 rx_enable <= '0';
                 irq_clear <= (others=>'0');
@@ -675,7 +708,9 @@ begin
                                     when PORT_STATUS_REG =>
                                         alu_op1 <= status_register;    
                                     when PORT_IRQ_MASK =>
-                                        alu_op1 <= "0000000000000000" & irq_mask;                                        
+                                        alu_op1 <= "0000000000000000" & irq_mask;
+                                    when PORT_IRQ_READY =>
+                                        alu_op1 <= "0000000000000000" & irq_ready;
                                     when PORT_LED =>
                                         -- alu_op1 <= status_register;    
                                         -- LED <= regs_Q(va_reg_idx)(7 downto 0);
@@ -686,6 +721,27 @@ begin
                                     when PORT_UART_RX_DATA =>
                                         alu_op1 <= "000000000000000000000000" & rx_data;
                                         rx_enable <= '1';
+                                    
+                                    when PORT_PS2_FLAGS =>
+                                        alu_op1 <= "0000000000000000000000000000000" & ps2_rx_error;
+                                    when PORT_PS2_RX_DATA =>
+                                        alu_op1 <= "000000000000000000000000" & ps2_code;
+                                    
+                                    when PORT_SD_FLAGS =>
+                                        
+                                        
+                                        -- error_code 5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20
+                                        -- error      4
+                                        -- type       2, 3
+                                        -- busy       1
+                                        -- available  0
+                                        alu_op1 <= "00000000000" & sd_error_code & sd_error & sd_type & sd_busy & sd_dout_avail;
+                                    
+                                    when PORT_SD_RX_DATA =>
+                                        
+                                        alu_op1 <= "000000000000000000000000" & sd_dout;
+                                        sd_dout_taken <= '1';
+                                        
                                     when others =>
                                         --
                                     end case;
@@ -777,7 +833,6 @@ begin
                                     -- nothing.
                                 end case;
 
-                            
                             -- Jump groups
                             when GRP_JMP1 | GRP_JMP2 =>
                             
@@ -787,7 +842,7 @@ begin
                                     alu_op1 <= reg_Qs(REG_PC);
                                     alu_op2 <= std_logic_vector(unsigned(vsigned_val0));
                                 when 1 =>
-                                    alu_op1 <= reg_Qs(vb_reg_idx);
+                                    alu_op1 <= reg_Qs(va_reg_idx);
                                     alu_op2 <= "00000000000000000000000000000000";
                                 when others =>
                                     -- nothing.
@@ -888,6 +943,15 @@ begin
                                     when PORT_UART_TX_DATA =>
                                         tx_data <= reg_Qs(va_reg_idx)(7 downto 0);
                                         tx_enable <= '1';
+                                    when PORT_SD_ADDRESS => 
+                                        sd_address <= reg_Qs(va_reg_idx);
+                                    when PORT_SD_COMMAND =>
+                                        --case reg_Qs(va_reg_idx)(1 downto 0) is
+                                        --when "00" => -- READ
+                                            sd_rd <= '1';                                            
+                                        --when others =>
+                                            -- do nothing.
+                                        --end case;
                                     when others =>
                                         --
                                     end case;
@@ -897,7 +961,7 @@ begin
                                     reg_load(va_reg_idx) <= '1';
                                 when others =>
                             end case;
-                            
+
                         -- ALU groups
                         when GRP_ALU =>
                             
@@ -916,7 +980,8 @@ begin
                                 when others =>
                                     -- nothing.
                             end case;
-                            
+                             
+                             
                         -- Jump
                         when GRP_JMP1 | GRP_JMP2 =>
                             stage <= 0;
@@ -958,11 +1023,8 @@ begin
                                     b_D <= reg_Qs(va_reg_idx);                                    
                                     
                                 when SC_STRB | SC_STAB =>
-                                                                        
-                                    b_D <= reg_Qs(va_reg_idx);
-                                    -- this is wrong, we don't know the address until stage 3 :(
-                                    -- byte_access_remainder := data_address_adder_S(1 downto 0);
-                                    
+                                        
+                                    b_D <= reg_Qs(va_reg_idx)(7 downto 0) & reg_Qs(va_reg_idx)(7 downto 0) & reg_Qs(va_reg_idx)(7 downto 0) & reg_Qs(va_reg_idx)(7 downto 0);
                                     case byte_access_remainder is
                                     when "11" =>
                                         b_WE <= "0001";
@@ -990,7 +1052,8 @@ begin
                             -- nothing.
                             
                         end case;
-                        
+                  
+                  
                     -- ***********************************************************************
                     -- STAGE 3
                     -- *********************************************************************** 
@@ -1132,8 +1195,6 @@ begin
                                     end if;                                      
                           
                                 when SC_LDAB =>
-                                
-
 
                                     if b_ready = '0' then                                        
                                         stage <= 3;                                        
@@ -1343,49 +1404,7 @@ begin
     reg_Ds(14) <= reg_intermediate_value;
     reg_Ds(15) <= reg_intermediate_value;
 
-	buffered_uart0: buffered_uart PORT MAP(
-		clk => clk,
-		reset => reset,
-		tx_data => tx_data,
-		tx_enable => tx_enable,
-		tx_full => tx_full,
-		tx_busy => tx_busy,		
-		rx_empty => rx_empty,
-		rx_data => rx_data,
-		rx_enable => rx_enable,
-		rx_pin => rx_pin,
-		tx_pin => tx_pin
-	);
-      
-	sd_controller0: sd_controller 
-    PORT MAP(
-		cs => SD_CS,
-		mosi => SD_MOSI,
-		miso => SD_MISO,
-		sclk => SD_CLK,
-		card_present => '1',
-		card_write_prot => '1',
-		rd => sd_rd,
-		rd_multiple => '0',
-		dout => sd_dout,
-		dout_avail => sd_dout_avail,
-		dout_taken => sd_dout_taken,
-		wr => '0',
-		wr_multiple => '0',
-		din => "00000000",
-		din_valid => '0',
-		-- din_taken => '0',
-		addr => sd_address,
-		erase_count => "00000000",
-		sd_error => sd_error,
-		sd_busy => sd_busy,
-		sd_error_code => sd_error_code,
-		reset => reset,
-		clk => clk,
-		sd_type => sd_type
 
-	);
-    
     alu0: alu PORT MAP(
 		clk => clk,
 		reset => reset,
@@ -1436,15 +1455,17 @@ begin
 		irq => irq_asserted,
 		irq_table_entry => irq_table_entry,
 		irq_lines => irq_lines,
-        irq_active_line => irq_active_line
+        irq_active_line => irq_active_line,
+        irq_ready => irq_ready
+        
 	);
 
     
     irq_lines(5) <= '0';
-    irq_lines(6) <= not rx_empty;
-    irq_lines(7) <= '0';
-    irq_lines(8) <= '0';
-    irq_lines(9) <= '0';
+    irq_lines(6) <= '0';
+    irq_lines(7) <= not rx_empty;
+    irq_lines(8) <= ps2_code_new;
+    irq_lines(9) <= sd_dout_avail;
     irq_lines(10) <= '0';
     irq_lines(11) <= '0';
     irq_lines(12) <= '0';
@@ -1452,7 +1473,6 @@ begin
     irq_lines(14) <= '0';
     irq_lines(15) <= '0';
     
-
     button_syncs: for i in 0 to 4 generate
         button_sync_x: input_sync PORT MAP(
             clk => clk,
@@ -1463,6 +1483,86 @@ begin
         irq_lines(i) <= not buttons_sync(i);
     end generate button_syncs;
 
+ 
+    ps2_transceiver0: ps2_transceiver PORT MAP(
+		clk => clk,
+		reset_n => (not reset),
+		tx_ena => '0',
+		tx_cmd => "000000000",
+		-- tx_busy => ,
+		-- ack_error => ,
+		ps2_code => ps2_code,
+		ps2_code_new => ps2_code_new,
+		rx_error => ps2_rx_error,
+		ps2_clk => ps2_clk,
+		ps2_data => ps2_data
+	); 
+    
+	buffered_uart0: buffered_uart PORT MAP(
+		clk => clk,
+		reset => reset,
+		tx_data => tx_data,
+		tx_enable => tx_enable,
+		tx_full => tx_full,
+		tx_busy => tx_busy,		
+		rx_empty => rx_empty,
+		rx_data => rx_data,
+		rx_enable => rx_enable,
+		rx_pin => rx_pin,
+		tx_pin => tx_pin
+	);
+      
+--	sd_controller0: sd_controller 
+--    PORT MAP(
+--		cs => SD_CS,
+--		mosi => SD_MOSI,
+--		miso => SD_MISO,
+--		sclk => SD_CLK,
+--		card_present => '1',
+--		card_write_prot => '1',
+--		rd => sd_rd,
+--		rd_multiple => '0',
+--		dout => sd_dout,
+--		dout_avail => sd_dout_avail,
+--		dout_taken => sd_dout_taken,
+--		wr => '0',
+--		wr_multiple => '0',
+--		din => "00000000",
+--		din_valid => '0',
+--		-- din_taken => '0',
+--		addr => sd_address,
+--		erase_count => "00000000",
+--		sd_error => sd_error,
+--		sd_busy => sd_busy,
+--		sd_error_code => sd_error_code,
+--		reset => reset,
+--		clk => clk,
+--		sd_type => sd_type,
+--        sd_fsm => sd_fsm
+--        
+--
+--	);
+--        
+ 	
+    SdCardCtrl0: SdCardCtrl PORT MAP(
+		clk_i => clk,
+		reset_i => reset,
+		rd_i => sd_rd,
+		wr_i => '0',
+		continue_i => '0',
+		addr_i => sd_address,
+		data_i => "00000000",
+		data_o => sd_dout,
+		busy_o => sd_busy,
+		hndShk_i => sd_dout_taken,
+		hndShk_o => sd_dout_avail,
+		error_o => sd_error_code,
+		cs_bo => SD_CS,
+		sclk_o => SD_CLK,
+		mosi_o => SD_MOSI,
+		miso_i => SD_MISO
+	); 
+    sd_error <= '0' when sd_error_code = "0000000000000000" else '1';
  
 end Behavioral;
 

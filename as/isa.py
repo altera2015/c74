@@ -48,26 +48,37 @@ IRQ_PORTS = {
     "IRQ_BUTTON2": 4,   #2
     "IRQ_BUTTON3": 8,   #3
     "IRQ_BUTTON4": 16,  #4
-    "IRQ_VBLANK": 32,   #5
-    "IRQ_UART_RX": 64,  #6
-    "IRQ_KEYBOARD": 128 #7
+    "IRQ_BUTTON5": 32,  #5
+    "IRQ_VBLANK": 64,   #6
+    "IRQ_UART_RX": 128, #7
+    "IRQ_KEYBOARD": 256,#8
+    "IRQ_SD_CARD": 512  #9
 }
 
 PORT_DEFINITIONS = {
     "PORT_STATUS_REG": 0,
     "PORT_IRQ_CLEAR": 1,
     "PORT_IRQ_MASK": 2,
+    "PORT_IRQ_READY": 3,
+    
     "PORT_LED": 5,
     "PORT_SEVEN_SEG": 6,
     "PORT_BUTTONS": 7,
     "PORT_SWITCHES": 8,
+    
     "PORT_UART_FLAGS": 10,
     "PORT_UART_TX_DATA": 11,    
-    "PORT_UART_RX_DATA": 12,   
+    "PORT_UART_RX_DATA": 12,
+    
     "PORT_SD_FLAGS": 20,    
-    "PORT_SD_COMMANDS": 21,    
+    "PORT_SD_COMMAND": 21,    
     "PORT_SD_ADDRESS": 22, 
-    "PORT_SD_DATA": 23,    
+    "PORT_SD_RX_DATA": 23, 
+    
+    "PORT_PS2_FLAGS": 30,
+    "PORT_PS2_RX_DATA": 31,
+    "PORT_PS2_TX_DATA": 32
+    
 }
 
 

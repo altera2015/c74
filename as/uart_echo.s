@@ -23,7 +23,7 @@ j irq15
 :irq4
 :irq5
 :irq6
-:irq7
+#:irq7
 :irq8
 :irq9
 :irq10
@@ -50,6 +50,16 @@ j irq15
     # Restore modified registers
     pop r0
     reti
+    
+    
+:irq7
+    push r0
+    in r0, PORT_PS2_RX_DATA
+    out r0 PORT_SEVEN_SEG
+    out r0, PORT_UART_TX_DATA
+    pop r0
+    reti
+    
 
 :main
 
@@ -60,6 +70,8 @@ mov r0, 0x01
 out r0, PORT_LED
 
 mov r0, IRQ_BUTTON0
+mov r1, IRQ_KEYBOARD
+or  r0, r0, r1
 out r0, PORT_IRQ_MASK
 set I_FLAG_BIT
 

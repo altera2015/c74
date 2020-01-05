@@ -18,30 +18,33 @@ entity irq_controller is
            
            irq : out  STD_LOGIC;
            irq_table_entry : out  STD_LOGIC_VECTOR (31 downto 0);
-           irq_active_line : out  STD_LOGIC_VECTOR (15 downto 0)
+           irq_active_line : out  STD_LOGIC_VECTOR (15 downto 0);
+           irq_ready : out std_logic_vector(15 downto 0)
     );
            
 end irq_controller;
 
 architecture Behavioral of irq_controller is    
-    signal irq_ready : std_logic_vector(15 downto 0);        
+    signal virq_ready : std_logic_vector(15 downto 0);        
     signal irq_previous : std_logic_vector(15 downto 0);
     signal rising : std_logic_vector(15 downto 0);
 
 begin
-
+    
+    irq_ready <= virq_ready;
+    
     process(clk)        
     begin
         if rising_edge(clk) then
         
             if reset = '1' then
-                irq_ready <= (others => '0');
+                virq_ready <= (others => '0');
                 irq_previous <= (others => '0');
             else
                 
                 -- detect rising edge
                 rising <= (irq_lines xor irq_previous) and irq_lines and irq_mask;
-                irq_ready <= ( irq_ready and (not irq_clear)) or 
+                virq_ready <= ( virq_ready and (not irq_clear)) or 
                              ( (irq_lines xor irq_previous) and irq_lines and irq_mask);
                 irq_previous <= irq_lines;  
             end if;
@@ -64,67 +67,67 @@ begin
                     
                     irq <= '1';
                     
-                    if irq_ready(0) = '1' then                        
+                    if virq_ready(0) = '1' then                        
                         irq_table_entry <= std_logic_vector(to_unsigned(4, irq_table_entry'length));
                         irq_active_line <= "0000000000000001";
                         
-                    elsif irq_ready(1) = '1' then
+                    elsif virq_ready(1) = '1' then
                         irq_table_entry <= std_logic_vector(to_unsigned(8, irq_table_entry'length));
                         irq_active_line <= "0000000000000010";
                         
-                    elsif irq_ready(2) = '1' then
+                    elsif virq_ready(2) = '1' then
                         irq_table_entry <= std_logic_vector(to_unsigned(12, irq_table_entry'length));
                         irq_active_line <= "0000000000000100";
                         
-                    elsif irq_ready(3) = '1' then
+                    elsif virq_ready(3) = '1' then
                         irq_table_entry <= std_logic_vector(to_unsigned(16, irq_table_entry'length));
                         irq_active_line <= "0000000000001000";
                         
-                    elsif irq_ready(4) = '1' then
+                    elsif virq_ready(4) = '1' then
                         irq_table_entry <= std_logic_vector(to_unsigned(20, irq_table_entry'length));
                         irq_active_line <= "0000000000010000";
                         
-                    elsif irq_ready(5) = '1' then
+                    elsif virq_ready(5) = '1' then
                         irq_table_entry <= std_logic_vector(to_unsigned(24, irq_table_entry'length));
                         irq_active_line <= "0000000000100000";
                         
-                    elsif irq_ready(6) = '1' then
+                    elsif virq_ready(6) = '1' then
                         irq_table_entry <= std_logic_vector(to_unsigned(28, irq_table_entry'length));
                         irq_active_line <= "0000000001000000";
                         
-                    elsif irq_ready(7) = '1' then
+                    elsif virq_ready(7) = '1' then
                         irq_table_entry <= std_logic_vector(to_unsigned(32, irq_table_entry'length));
                         irq_active_line <= "0000000010000000";
                         
-                    elsif irq_ready(8) = '1' then
+                    elsif virq_ready(8) = '1' then
                         irq_table_entry <= std_logic_vector(to_unsigned(36, irq_table_entry'length));
                         irq_active_line <= "0000000100000000";
                         
-                    elsif irq_ready(9) = '1' then
+                    elsif virq_ready(9) = '1' then
                         irq_table_entry <= std_logic_vector(to_unsigned(40, irq_table_entry'length));
                         irq_active_line <= "0000001000000000";
                         
-                    elsif irq_ready(10) = '1' then
+                    elsif virq_ready(10) = '1' then
                         irq_table_entry <= std_logic_vector(to_unsigned(44, irq_table_entry'length));
                         irq_active_line <= "0000010000000000";
                         
-                    elsif irq_ready(11) = '1' then
+                    elsif virq_ready(11) = '1' then
                         irq_table_entry <= std_logic_vector(to_unsigned(48, irq_table_entry'length));
                         irq_active_line <= "0000100000000000";
                         
-                    elsif irq_ready(12) = '1' then
+                    elsif virq_ready(12) = '1' then
                         irq_table_entry <= std_logic_vector(to_unsigned(52, irq_table_entry'length));
                         irq_active_line <= "0001000000000000";
                         
-                    elsif irq_ready(13) = '1' then
+                    elsif virq_ready(13) = '1' then
                         irq_table_entry <= std_logic_vector(to_unsigned(56, irq_table_entry'length));
                         irq_active_line <= "0010000000000000";
                         
-                    elsif irq_ready(14) = '1' then
+                    elsif virq_ready(14) = '1' then
                         irq_table_entry <= std_logic_vector(to_unsigned(60, irq_table_entry'length));
                         irq_active_line <= "0100000000000000";
                         
-                    elsif irq_ready(15) = '1' then
+                    elsif virq_ready(15) = '1' then
                         irq_table_entry <= std_logic_vector(to_unsigned(64, irq_table_entry'length));
                         irq_active_line <= "1000000000000000";
                                                

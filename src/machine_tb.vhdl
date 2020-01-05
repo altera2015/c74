@@ -57,8 +57,12 @@ ARCHITECTURE behavior OF machine_tb IS
          SD_MISO             : in std_logic;
          SD_MOSI             : out std_logic;
          SD_CS               : out std_logic;
-         SD_CLK              : out std_logic
-         
+         SD_CLK              : out std_logic;
+         -- GPIO
+         -- IO_P9_0 : in std_logic
+        -- PS/2
+        PS2_CLK             : inout std_logic;
+        PS2_DATA            : inout std_logic                 
         );
     END COMPONENT;
    
@@ -126,6 +130,9 @@ ARCHITECTURE behavior OF machine_tb IS
    signal SD_MOSI    : std_logic;
    signal SD_CS      : std_logic;
    signal SD_CLK     : std_logic;
+   
+   signal PS2_CLK   : std_logic;
+   signal PS2_DATA   : std_logic;
 
    -- Clock period definitions
    constant clk_100mhz_period : time := 10 ns;
@@ -221,10 +228,14 @@ BEGIN
           SD_MISO => SD_MISO,
           SD_MOSI => SD_MOSI,
           SD_CS   => SD_CS,
-          SD_CLK => SD_CLK
-          
+          SD_CLK => SD_CLK,
+          PS2_CLK => PS2_CLK,
+          PS2_DATA => PS2_DATA
         );
-
+    
+    PS2_CLK <= '0';
+    PS2_DATA <= 'Z';
+    
    -- Clock process definitions
    clk_100mhz_process :process
    begin

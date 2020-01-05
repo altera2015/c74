@@ -202,12 +202,12 @@ NET "LED[0]" SLEW = FAST;
 ###################################################################################################################################################
 #                                                   Micro SD Card                                                                                 #
 ###################################################################################################################################################
-NET "SD_MISO"                     LOC = K14     | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ; #MISO
-#NET "DAT1"                       LOC = G18     | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ;
-#NET "DAT2"                       LOC = J13     | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ;
-NET "SD_CS"                       LOC = L13     | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ; #CS
-NET "SD_MOSI"                     LOC = G16     | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ; #MOSI
-NET "SD_CLK"                      LOC = L12     | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ; #CLK
+NET "SD_MISO"                     LOC = K14     | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ; #MISO DAT0
+#NET "DAT1"                       LOC = G18     | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ; #DAT1
+#NET "DAT2"                       LOC = J13     | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ; #DAT2
+NET "SD_CS"                       LOC = L13     | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ; #CS DAT3
+NET "SD_MOSI"                     LOC = G16     | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ; #MOSI CMD
+NET "SD_CLK"                      LOC = L12     | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ; #CLK 
 ###################################################################################################################################################
 #                                               Seven Segment Display                                                                             #
 ################################################################################################################################################### 
@@ -320,6 +320,9 @@ NET "blue[1]" SLEW = FAST;
 ###################################################################################################################################################
 #                                                   HEADER P6                                                                                     #
 ################################################################################################################################################### 
+NET "PS2_CLK"                   LOC = U7      | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ; #Pin 1
+NET "PS2_DATA"                   LOC = V7      | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ; #Pin 2
+
 #NET "IO_P6[7]"                   LOC = U7      | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ; #Pin 1
 #NET "IO_P6[6]"                   LOC = V7      | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ; #Pin 2
 #NET "IO_P6[5]"                   LOC = T4      | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ; #Pin 3
@@ -360,7 +363,7 @@ NET "blue[1]" SLEW = FAST;
 #NET "IO_P9[3]"                 LOC = K15      | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ; #Pin 5
 #NET "IO_P9[2]"                 LOC = K16      | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ; #Pin 6
 #NET "IO_P9[1]"                 LOC = L15      | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ; #Pin 7
-#NET "IO_P9[0]"                 LOC = L16      | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ; #Pin 8
+#NET "IO_P9_0"                 LOC = L16      | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ; #Pin 8
 #Created by Constraints Editor (xc6slx9-csg324-2) - 2019/12/01
 NET "clk_100mhz" TNM_NET = "clk_100mhz";
 TIMESPEC TS_clk_100mhz = PERIOD "clk_100mhz" 10 ns HIGH 50 %;

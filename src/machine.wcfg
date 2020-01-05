@@ -9,10 +9,13 @@
             <top_module name="bip_usecase_utils_pkg_v2_0" />
             <top_module name="bip_utils_pkg_v2_0" />
             <top_module name="c_addsub_pkg_v11_0" />
+            <top_module name="commonpckg" />
             <top_module name="glbl" />
             <top_module name="isa_defs" />
             <top_module name="machine_tb" />
+            <top_module name="math_real" />
             <top_module name="numeric_std" />
+            <top_module name="sdcardpckg" />
             <top_module name="std_logic_1164" />
             <top_module name="std_logic_arith" />
             <top_module name="std_logic_signed" />
@@ -32,7 +35,7 @@
          </top_modules>
       </db_ref>
    </db_ref_list>
-   <WVObjectSize size="16" />
+   <WVObjectSize size="17" />
    <wvobject fp_name="/machine_tb/machine0/control_logic0/clk" type="logic" db_ref_id="1">
       <obj_property name="ElementShortName">clk</obj_property>
       <obj_property name="ObjectShortName">clk</obj_property>
@@ -513,6 +516,66 @@
       <wvobject fp_name="/machine_tb/machine0/control_logic0/irq_controller0/irq_active_line" type="array" db_ref_id="1">
          <obj_property name="ElementShortName">irq_active_line[15:0]</obj_property>
          <obj_property name="ObjectShortName">irq_active_line[15:0]</obj_property>
+      </wvobject>
+   </wvobject>
+   <wvobject fp_name="group110" type="group">
+      <obj_property name="label">SDCard</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/SdCardCtrl0/rd_i" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">rd_i</obj_property>
+         <obj_property name="ObjectShortName">rd_i</obj_property>
+      </wvobject>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/SdCardCtrl0/wr_i" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">wr_i</obj_property>
+         <obj_property name="ObjectShortName">wr_i</obj_property>
+      </wvobject>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/SdCardCtrl0/continue_i" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">continue_i</obj_property>
+         <obj_property name="ObjectShortName">continue_i</obj_property>
+      </wvobject>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/SdCardCtrl0/addr_i" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">addr_i[31:0]</obj_property>
+         <obj_property name="ObjectShortName">addr_i[31:0]</obj_property>
+      </wvobject>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/SdCardCtrl0/data_i" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">data_i[7:0]</obj_property>
+         <obj_property name="ObjectShortName">data_i[7:0]</obj_property>
+      </wvobject>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/SdCardCtrl0/data_o" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">data_o[7:0]</obj_property>
+         <obj_property name="ObjectShortName">data_o[7:0]</obj_property>
+      </wvobject>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/SdCardCtrl0/busy_o" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">busy_o</obj_property>
+         <obj_property name="ObjectShortName">busy_o</obj_property>
+      </wvobject>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/SdCardCtrl0/hndshk_i" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">hndshk_i</obj_property>
+         <obj_property name="ObjectShortName">hndshk_i</obj_property>
+      </wvobject>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/SdCardCtrl0/hndshk_o" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">hndshk_o</obj_property>
+         <obj_property name="ObjectShortName">hndshk_o</obj_property>
+      </wvobject>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/SdCardCtrl0/error_o" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">error_o[15:0]</obj_property>
+         <obj_property name="ObjectShortName">error_o[15:0]</obj_property>
+      </wvobject>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/SdCardCtrl0/cs_bo" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">cs_bo</obj_property>
+         <obj_property name="ObjectShortName">cs_bo</obj_property>
+      </wvobject>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/SdCardCtrl0/mosi_o" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">mosi_o</obj_property>
+         <obj_property name="ObjectShortName">mosi_o</obj_property>
+      </wvobject>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/SdCardCtrl0/miso_i" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">miso_i</obj_property>
+         <obj_property name="ObjectShortName">miso_i</obj_property>
+      </wvobject>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/SdCardCtrl0/sclk_o" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">sclk_o</obj_property>
+         <obj_property name="ObjectShortName">sclk_o</obj_property>
       </wvobject>
    </wvobject>
 </wave_config>

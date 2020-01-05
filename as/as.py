@@ -7,7 +7,7 @@ from datetime import datetime
 from isa_defs import *
 import shlex
 import math
-
+import struct
 
 labels = {}
 constants = {}
@@ -366,10 +366,11 @@ def encode_op( rec, op, reg, arg, pcrelative = False):
 ###############################################################################
 ###############################################################################
 
+baseAddress = 0
 
 def process_op(op, memory):
     
-    
+    global baseAddress
     source_line = op[ len(op) - 2 ]
     source_text = op[ len(op) - 1 ]
     op.pop()
@@ -452,6 +453,11 @@ def process_op(op, memory):
             exit(-1)
             
         constants[ constant ] = parse_value(op[2], source_line)    
+    elif first.startswith(".mem"):
+        if len(op)<2:
+            print("Line {} | Missing base address parameter".format(source_line))
+            exit(-1)
+        baseAddress = int(op[1],0)
     
     elif op[0].startswith(":"):
         
@@ -469,7 +475,8 @@ def process_op(op, memory):
             print("Line {} | Error, this label was used as a constant prior: {}".format(source_line, label))
             exit(-1)
         
-        labels[label] = len(memory*4)
+        # this is wrong,...
+        labels[label] = len(memory*4) + baseAddress
         op.pop(0)
         if len(op)>0:
             op.append(source_line)
@@ -481,7 +488,9 @@ def process_op(op, memory):
         exit(-1)
 
 def assemble(ops):
+    global baseAddress
     
+        
     memory = [
         
     ]
@@ -490,7 +499,7 @@ def assemble(ops):
         process_op(op, memory)        
 
     values = []
-    pc = 0
+    pc = baseAddress
     for m in memory:
         m["pc"] = pc
         if "args" in m:
@@ -587,6 +596,14 @@ def load_ops(filename):
 ###############################################################################
 ###############################################################################
 
+def write_bin(f, values):
+
+    for i in range(len(values)):        
+        value = values[i]
+        value = int(value,16)
+        f.write(struct.pack(">I", value))
+        
+
 def build_coe(values, memory, source):
     coe = ""
     coe += "; Zero page ram contents for source file {}\n".format(source)
@@ -650,6 +667,7 @@ parser = argparse.ArgumentParser(description='Assemble source file')
 parser.add_argument('source', help='Source file to assemble')
 parser.add_argument('-c', metavar="coe_file", help='COE output file')
 parser.add_argument('-m', metavar="mif_file", help='.mif output file')
+parser.add_argument('-b', metavar="bin_file", help="Save Binary File")
 parser.add_argument('--details',action='store_true', help="dump details")
 
 args = parser.parse_args()
@@ -664,8 +682,9 @@ if args.details:
     print("Project Details\n")
     d = build_labels(labels)    
     print(d)
-    d = build_constants(constants);
-    print(d)
+    if len(constants) > 0:
+        d = build_constants(constants);
+        print(d)
     d = build_dump(values, memory, "stdout")
     print(d)
     
@@ -693,4 +712,13 @@ if args.m:
         print("Failed to write {}".format(args.m))
         exit(-1)
 
-
+if args.b:
+    try:
+        f = open(args.b, "bw")
+        write_bin(f, values);
+        f.close()
+    except:
+        print("Failed to write {}".format(args.b))
+        exit(-1)
+    
+    

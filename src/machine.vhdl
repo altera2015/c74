@@ -83,7 +83,12 @@ entity machine is
         SD_MISO             : in std_logic;
         SD_MOSI             : out std_logic;
         SD_CS               : out std_logic;
-        SD_CLK              : out std_logic
+        SD_CLK              : out std_logic;
+        
+        -- GPIO
+        -- IO_P9_0 : in std_logic
+        PS2_CLK             : inout std_logic;
+        PS2_DATA            : inout std_logic
     );
 end machine;
 
@@ -154,7 +159,11 @@ architecture machine_arch of machine is
         SD_MISO             : in std_logic;
         SD_MOSI             : out std_logic;
         SD_CS               : out std_logic;
-        SD_CLK              : out std_logic        
+        SD_CLK              : out std_logic;
+        
+        -- PS/2
+        PS2_CLK             : inout std_logic;
+        PS2_DATA            : inout std_logic        
 	);
 	END COMPONENT;
     
@@ -696,7 +705,9 @@ begin
         SD_MISO => SD_MISO,
         SD_MOSI => SD_MOSI,
         SD_CS => SD_CS,
-        SD_CLK => SD_CLK
+        SD_CLK => SD_CLK,
+        PS2_CLK => PS2_CLK,
+        PS2_DATA => PS2_DATA
      );
 
 	sevenseg0: sevenseg PORT MAP(
@@ -707,6 +718,7 @@ begin
 		digits => SevenSegmentEnable
 	);
 
-    SevenSegment(0) <= '1';
+    SevenSegment(0) <= '1'; -- IO_P9_0;
+      
   
 end machine_arch;

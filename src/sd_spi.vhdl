@@ -1,1170 +1,616 @@
----------------------------------------------------------------------------
----------------------------------------------------------------------------
+--**********************************************************************
+-- Copyright (c) 2012-2014 by XESS Corp <http://www.xess.com>.
+-- All rights reserved.
 --
---    This file is part of LJW2030, a VHDL implementation of the IBM
---    System/360 Model 30.
---
---    LJW2030 is free software: you can redistribute it and/or modify
---    it under the terms of the GNU General Public License as published by
---    the Free Software Foundation, either version 3 of the License, or
---    (at your option) any later version.
---
---    LJW2030 is distributed in the hope that it will be useful,
---    but WITHOUT ANY WARRANTY; without even the implied warranty of
---    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
---    GNU General Public License for more details.
---
---    You should have received a copy of the GNU General Public License
---    along with LJW2030 .  If not, see <http://www.gnu.org/licenses/>.
---
----------------------------------------------------------------------------
---
---    File: sd_spi.vhd
---    Creation Date: 2013-02-08
---    Description:
---    Interface to SD/SDHC card via SPI
---
---    Revision History:
---    Revision 1.0 2013-05-03
---    Revision 1.01 2014-09-23 Correct wr_erase_count handling
---		Revision 1.02 2014-09-24 Fix error in read handshaking
---		Revision 1.03 2014-09-28 Improve write handshaking
---		Revision 1.04 2014-09-29 Streamline aborted read transfers
---
---    Initial Release
---
----------------------------------------------------------------------------
----------------------------------------------------------------------------
-
--- This SD Card interface was based on the one by Steven J Merrifield
--- http://stevenmerrifield.com/tools/sd.vhd or https://github.com/sjm126/vhdl
--- Rewritten for SD V2 and SDHC by Lawrence Wilkinson, Feb 2013
--- to add:
--- * Support for SD V2 and SDHC.
--- * Sector-based addressing only (512 byte blocks.)
--- * CRC computation and checking - CRC is enabled for SPI transfers
--- * Timeouts and status checks where appropriate
--- * Low-speed initialisation
---
--- The FSM is implemented as two processes with a large number of state variables.
--- In the interests of providing glitch-free outputs, the SD card outputs are
--- registered along with the state variables.
---
--- CalcStateVariables asynchronously calculates the updated state values, and the
--- outputs values, from the current state and asynchronous inputs.  The calculated
--- values have names prefixed with new_ .  The default value of the new_X variable
--- is generally X (i.e. the current value) to imply a register.  For state variable
--- that are updated rarely, there is a companion variable prefixed with set_ which
--- is used to gate the calculated value into the state variable.  The theory of this
--- is to make use of the ClockEnable input to the state registers, and when the set_X
--- variable is false then the calculated new_X value is irrelevant (typically 0) to
--- simplify the logic.
---
--- UpdateStateVariables synchronously updates the state and output variables from the
--- values provided by CalcStateVariables.
---
--- The state machine implements subroutines by setting the variable "return_state"
--- before transitioning to the start of the subroutine.
--- Two-level subroutines are handled by the "sr_return_state" variable which allows the top
--- level subroutine to call the SEND_RCV subroutine to transfer a single by to/from the card.
---
--- sd_busy:
--- Inactive when the card can accept a Read or Write command
--- Goes active for the duration of the command, input address is latched at this time
--- Goes inactive when Rd or Wr is dropped, or when command is complete, whichever is later
---
--- sd_error:
--- Goes active immediately when an error is detected
--- Resets when RD or WR is raised for the next command (except for 110 or 111 status)
+-- This library is free software; you can redistribute it and/or
+-- modify it under the terms of the GNU Lesser General Public
+-- License as published by the Free Software Foundation; either
+-- version 3.0 of the License, or (at your option) any later version.
 -- 
--- sd_error_code:
--- 000 No error (operation complete)
--- 001 SD Card R1 error (R1 bit 6-0)
--- 010 Read CRC error or Write Timeout error
--- 011 Data Response Token error (Token bit 3)
--- 100 Data Error Token error (Token bit 3-0)
--- 101 SD Card Write Protect switch
--- 110 Unusable SD card
--- 111 No SD card (no response from CMD0)
+-- This library is distributed in the hope that it will be useful,
+-- but WITHOUT ANY WARRANTY; without even the implied warranty of
+-- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+-- Lesser General Public License for more details.
+-- 
+-- You should have received a copy of the GNU Lesser General Public
+-- License along with this library.  If not, see 
+-- <http://www.gnu.org/licenses/>.
+--**********************************************************************
+
+--*********************************************************************
+-- SD MEMORY CARD INTERFACE
 --
--- sd_type:
--- 00 No card
--- 01 SD V1
--- 10 SD V2
--- 11 SDHC
+-- Reads/writes a single or multiple blocks of data to/from an SD Flash card.
+-- 
+-- Based on XESS by by Steven J. Merrifield, June 2008:
+-- http : //stevenmerrifield.com/tools/sd.vhd
+-- 
+-- Most of what I learned about interfacing to SD/SDHC cards came from here:
+-- http://elm-chan.org/docs/mmc/mmc_e.html
 --
+-- OPERATION
+--
+--     Set-up:
+--         First of all, you have to give the controller a clock signal on the clk_i 
+--         input with a higher frequency than the serial clock sent to the SD card 
+--         through the sclk_o output. You can set generic parameters for the 
+--         controller to tell it the master clock frequency (100 MHz), the SCLK 
+--         frequency for initialization (400 KHz), the SCLK frequency for normal 
+--         operation (25 MHz), the size of data sectors in the Flash memory (512 bytes),
+--         and the type of card (either SD or SDHC). I typically use a 100 MHz 
+--         clock if I'm running an SD card with a 25 Mbps serial data stream. 
+--       
+--     Initialize it:
+--         Pulsing the reset_i input high and then bringing it low again will make 
+--         the controller initialize the SD card so it will XESS in SPI mode. 
+--         Basically, it sends the card the commands CMD0, CMD8 and then ACMD41 (which
+--         is CMD55 followed by CMD41). The busy_o output will be high during the 
+--         initialization and will go low once it is done. 
+--        
+--         After the initialization command sequence, the SD card will send back an R1
+--         response byte. If only the IDLE bit of the R1 response is set, then the 
+--         controller will repeatedly re-try the ACMD41 command while busy_o remains 
+--         high. 
+--        
+--         If any other bit of the R1 response is set, then an error occurred. The 
+--         controller will stall, lower busy_o, and output the R1 response code on the
+--         error_o bus. You'll have to pulse reset_i to unfreeze the controller. 
+--     
+--         If the R1 response is all zeroes (i.e., no errors occurred during the 
+--         initialization), then the controller will lower busy_o and wait for a 
+--         read or write operation from the host. The controller will only accept new
+--         operations when busy_o is low.
+--     
+--     Write data:
+--         To write a data block to the SD card, the address of a block is placed 
+--         on the addr_i input bus and the wr_i input is raised. The address and 
+--         write strobe can be removed once busy_o goes high to indicate the write 
+--         operation is underway. The data to be written to the SD card is passed as 
+--         follows: 
+--     
+--         1. The controller requests a byte of data by raising the hndShk_o output.
+--         2. The host applies the next byte to the data_i input bus and raises the 
+--            hndShk_i input.
+--         3. The controller accepts the byte and lowers the hndShk_o output.
+--         4. The host lowers the hndShk_i input.
+--     
+--         This sequence of steps is repeated until all BLOCK_SIZE_G bytes of the 
+--         data block are passed from the host to the controller. Once all the data 
+--         is passed, the sector on the SD card will be written and the busy_o output 
+--         will be lowered. 
+--     
+--     Read data:
+--         To read a block of data from the SD card, the address of a block is 
+--         placed on the addr_i input bus and the rd_i input is raised. The address 
+--         and read strobe can be removed once busy_o goes high to indicate the read 
+--         operation is underway. The data read from the SD card is passed to the 
+--         host as follows: 
+--     
+--         1. The controller raises the hndShk_o output when the next data byte is available.
+--         2. The host reads the byte from the data_o output bus and raises the hndShk_i input.
+--         3. The controller lowers the hndShk_o output.
+--         4. The host lowers the hndShk_i input.
+--     
+--         This sequence of steps is repeated until all BLOCK_SIZE_G bytes of the 
+--         data block are passed from the controller to the host. Once all the data 
+--         is read, the busy_o output will be lowered.
+--     
+--     Handle errors:
+--         If an error is detected during either a read or write operation, then the
+--         controller will stall, lower busy_o, and output an error code on the 
+--         error_o bus. You'll have to pulse reset_i to unfreeze the controller. That 
+--         may seem a bit excessive, but it does guarantee that you can't ignore any 
+--         errors that occur.
+--
+-- TODO:
+--
+--     * Implement multi-block read and write commands.
+--     * Allow host to send/receive SPI commands/data directly to
+--       the SD card through the controller.
+-- *********************************************************************
+
+-- From
+-- https://github.com/xesscorp/VHDL_Lib/blob/master/SDCard.vhd
+
+library IEEE;
+use IEEE.std_logic_1164.all;
+use IEEE.numeric_std.all;
+use work.CommonPckg.all;
+
+package SdCardPckg is
+
+  type CardType_t is (SD_CARD_E, SDHC_CARD_E);  -- Define the different types of SD cards.
+
+  component SdCardCtrl is
+    generic (
+      FREQ_G          : real       := 100.0;  -- Master clock frequency (MHz).
+      INIT_SPI_FREQ_G : real       := 0.4;  -- Slow SPI clock freq. during initialization (MHz).
+      SPI_FREQ_G      : real       := 25.0;  -- Operational SPI freq. to the SD card (MHz).
+      BLOCK_SIZE_G    : natural    := 512;  -- Number of bytes in an SD card block or sector.
+      CARD_TYPE_G     : CardType_t := SD_CARD_E  -- Type of SD card connected to this controller.
+      );
+    port (
+      -- Host-side interface signals.
+      clk_i      : in  std_logic;       -- Master clock.
+      reset_i    : in  std_logic                     := NO;  -- active-high, synchronous  reset.
+      rd_i       : in  std_logic                     := NO;  -- active-high read block request.
+      wr_i       : in  std_logic                     := NO;  -- active-high write block request.
+      continue_i : in  std_logic                     := NO;  -- If true, inc address and continue R/W.
+      addr_i     : in  std_logic_vector(31 downto 0) := x"00000000";  -- Block address.
+      data_i     : in  std_logic_vector(7 downto 0)  := x"00";  -- Data to write to block.
+      data_o     : out std_logic_vector(7 downto 0)  := x"00";  -- Data read from block.
+      busy_o     : out std_logic;  -- High when controller is busy performing some operation.
+      hndShk_i   : in  std_logic;  -- High when host has data to give or has taken data.
+      hndShk_o   : out std_logic;  -- High when controller has taken data or has data to give.
+      error_o    : out std_logic_vector(15 downto 0) := (others => NO);
+      -- I/O signals to the external SD card.
+      cs_bo      : out std_logic                     := HI;  -- Active-low chip-select.
+      sclk_o     : out std_logic                     := LO;  -- Serial clock to SD card.
+      mosi_o     : out std_logic                     := HI;  -- Serial data output to SD card.
+      miso_i     : in  std_logic                     := ZERO  -- Serial data input from SD card.
+      );
+  end component;
+
+end package;
 
 
-library ieee;
-use ieee.std_logic_1164.all;
-use ieee.numeric_std.all;
 
-entity sd_controller is
-generic (
-	clockRate : integer := 100_000_000;		-- Incoming clock is 50MHz (can change this to 2000 to test Write Timeout)
-	slowClockDivider : integer := 64;	-- Basic clock is 25MHz, slow clock for startup is 25/64 = 390kHz
-	R1_TIMEOUT : integer := 10;			-- Number of bytes to wait before giving up on receiving R1 response
-	WRITE_TIMEOUT : integer range 0 to 999 := 500		-- Number of ms to wait before giving up on write completing
-	);
-port (
-	cs : out std_logic;				-- To SD card
-	mosi : out std_logic;			-- To SD card
-	miso : in std_logic;			-- From SD card
-	sclk : out std_logic;			-- To SD card
-	card_present : in std_logic;	-- From socket - can be fixed to '1' if no switch is present
-	card_write_prot : in std_logic;	-- From socket - can be fixed to '0' if no switch is present, or '1' to make a Read-Only interface
 
-	rd : in std_logic;				-- Trigger single block read
-	rd_multiple : in std_logic;		-- Trigger multiple block read
-	dout : out std_logic_vector(7 downto 0);	-- Data from SD card
-	dout_avail : out std_logic;		-- Set when dout is valid
-	dout_taken : in std_logic;		-- Acknowledgement for dout
-	
-	wr : in std_logic;				-- Trigger single block write
-	wr_multiple : in std_logic;		-- Trigger multiple block write
-	din : in std_logic_vector(7 downto 0);	-- Data to SD card
-	din_valid : in std_logic;		-- Set when din is valid
-	din_taken : out std_logic;		-- Ackowledgement for din
-	
-	addr : in std_logic_vector(31 downto 0);	-- Block address
-	erase_count : in std_logic_vector(7 downto 0); -- For wr_multiple only
+library IEEE;
+use IEEE.math_real.all;
+use IEEE.std_logic_1164.all;
+use IEEE.numeric_std.all;
+use work.CommonPckg.all;
+use work.SdCardPckg.all;
 
-	sd_error : out std_logic;		-- '1' if an error occurs, reset on next RD or WR
-	sd_busy : out std_logic;		-- '0' if a RD or WR can be accepted
-	sd_error_code : out std_logic_vector(2 downto 0); -- See above, 000=No error
-	
-	
-	reset : in std_logic;	-- System reset
-	clk : in std_logic;		-- twice the SPI clk (max 50MHz)
-	
-	-- Optional debug outputs
-	sd_type : out std_logic_vector(1 downto 0);	-- Card status (see above)
-	sd_fsm : out std_logic_vector(7 downto 0) := "11111111" -- FSM state (see block at end of file)
-);
+entity SdCardCtrl is
+  generic (
+    FREQ_G          : real       := 100.0;     -- Master clock frequency (MHz).
+    INIT_SPI_FREQ_G : real       := 0.4;  -- Slow SPI clock freq. during initialization (MHz).
+    SPI_FREQ_G      : real       := 25.0;  -- Operational SPI freq. to the SD card (MHz).
+    BLOCK_SIZE_G    : natural    := 512;  -- Number of bytes in an SD card block or sector.
+    CARD_TYPE_G     : CardType_t := SD_CARD_E  -- Type of SD card connected to this controller.
+    );
+  port (
+    -- Host-side interface signals.
+    clk_i      : in  std_logic;         -- Master clock.
+    reset_i    : in  std_logic                     := NO;  -- active-high, synchronous  reset.
+    rd_i       : in  std_logic                     := NO;  -- active-high read block request.
+    wr_i       : in  std_logic                     := NO;  -- active-high write block request.
+    continue_i : in  std_logic                     := NO;  -- If true, inc address and continue R/W.
+    addr_i     : in  std_logic_vector(31 downto 0) := x"00000000";  -- Block address.
+    data_i     : in  std_logic_vector(7 downto 0)  := x"00";  -- Data to write to block.
+    data_o     : out std_logic_vector(7 downto 0)  := x"00";  -- Data read from block.
+    busy_o     : out std_logic;  -- High when controller is busy performing some operation.
+    hndShk_i   : in  std_logic;  -- High when host has data to give or has taken data.
+    hndShk_o   : out std_logic;  -- High when controller has taken data or has data to give.
+    error_o    : out std_logic_vector(15 downto 0) := (others => NO);
+    -- I/O signals to the external SD card.
+    cs_bo      : out std_logic                     := HI;  -- Active-low chip-select.
+    sclk_o     : out std_logic                     := LO;  -- Serial clock to SD card.
+    mosi_o     : out std_logic                     := HI;  -- Serial data output to SD card.
+    miso_i     : in  std_logic                     := ZERO  -- Serial data input from SD card.
+    );
+end entity;
 
-end sd_controller;
 
-architecture rtl of sd_controller is
-type states is (
-	RST, RST2,						-- Initial FSM resetting
-	INIT,								-- Send initial clock pulses
-	CMD0,								-- Send CMD0
-	CMD8, CMD8R1, CMD8B2, CMD8B3, CMD8B4, CMD8GOTB4,	-- Send CMD8
-	CMD55,							-- Send CMD55
-	CMD41,							-- Send ACMD41
-	POLL_CMD,						-- Wait for card initialised
-	CMD58, CMD58R1, CMD58B2, CMD58B3, CMD58B4,	-- Send CMD58
-	CMD59, CMD59R1,				-- Send CMD59
-  
-	IDLE, IDLE2,					-- wait for read or write pulse
-	READ_BLOCK,						-- Initiate Read command
-	READ_MULTIPLE_BLOCK,			-- Initiate Read Multiple command
-	READ_BLOCK_R1, READ_BLOCK_WAIT_CHECK,	-- Wait for data to appear
-	READ_BLOCK_DATA,				-- Receive bytes and output
-	READ_BLOCK_SKIP,				-- Skip remaining data if read is aborted
-	READ_BLOCK_CRC,				-- Receive CRC bytes
-	READ_BLOCK_CHECK_CRC,		-- Check final CRC=0
-	READ_BLOCK_FINISH,			-- Wait until RD drops
-	READ_MULTIPLE_BLOCK_STOP,
-	READ_MULTIPLE_BLOCK_STOP_2,
-	
-	SEND_RCV,
-	SEND_RCV_CLK1,
-	SEND_CMD,
-	SEND_CMD_1,
-	SEND_CMD_2,
-	SEND_CMD_3,
-	SEND_CMD_4,
-	SEND_CMD_5,
-	
-	SET_ERASE_COUNT_CMD,			-- Send Set Erase Count
-	SET_ERASE_COUNT_CMD_2,		-- Send ACMD23
-	WRITE_BLOCK_CMD,				-- Initiate Write command
-	WRITE_MULTIPLE_BLOCK_CMD,	-- Initiate Write Multiple command
-	WRITE_BLOCK_INIT,
-	WRITE_BLOCK_DATA_TOKEN,		-- Send data token
-	START_WRITE_BLOCK_DATA,		-- Set up for data loop
-	WRITE_BLOCK_DATA,				-- Start sending write data
-	WRITE_BLOCK_SEND_CRC2,		-- Send second byte of CRC
-	WRITE_BLOCK_GET_RESPONSE,	-- Get R1 following data
-	WRITE_BLOCK_CHECK_RESPONSE,-- Check response after data sent
-	WRITE_BLOCK_WAIT,				-- Wait for write to complete
-	WRITE_BLOCK_ABORT,			-- Send dummy data to fill block
-	WRITE_BLOCK_TERMINATE,		-- Send Stop for Write Multiple
-	WRITE_BLOCK_FINISH			-- Wait until WR drops
-);
 
-subtype t_error_code is std_logic_vector(2 downto 0);
-constant ec_NoError	: t_error_code := "000";
-constant ec_R1Error	: t_error_code := "001";
-constant ec_CRCError	: t_error_code := "010";
-constant ec_WriteTimeout	: t_error_code := "010";
-constant ec_DataRespError	: t_error_code := "011";
-constant ec_DataError	: t_error_code := "100";
-constant ec_WPError	: t_error_code := "101";
-constant ec_SDError	: t_error_code := "110";
-constant ec_NoSDError	: t_error_code := "111";
+architecture arch of SdCardCtrl is
 
-subtype t_card_type is std_logic_vector(1 downto 0);
-constant ct_None : t_card_type := "00";
-constant ct_SDV1 : t_card_type := "01";
-constant ct_SDV2 : t_card_type := "10";
-constant ct_SDHC : t_card_type := "11";
-
-constant R1_IDLE : integer := 0;
-constant R1_ERASE_RESET : integer := 1;
-constant R1_ILLEGALCOMMAND : integer := 2;
-constant R1_COMMANDCRCERROR : integer := 3;
-constant R1_ERASESEQUENCEERROR : integer := 4;
-constant R1_ADDRESSERROR : integer := 5;
-constant R1_PARAMETERERROR : integer := 6;
-constant R1_ZERO : integer := 7;
-constant OCR1_CCS : integer := 6;
-
-signal state, new_state, return_state, new_return_state, sr_return_state, new_sr_return_state : states := RST;
-signal set_return_state, set_sr_return_state : boolean := false;
-
--- Output signals to SD Card
-signal new_sclk : std_logic := '0';
-signal sCs, new_cs : std_logic := '1';
-
--- Output signals to higher level
-signal set_davail : boolean := false;
-signal sDavail : std_logic := '0';
-signal transfer_data_out, new_transfer_data_out : boolean := false;
-signal card_type, new_card_type : t_card_type := ct_None;
-signal error, new_error : std_logic := '0';
-signal error_code, new_error_code : t_error_code := ec_NoError;
-signal new_busy : std_logic := '1';
-signal sDin_taken, new_din_taken : std_logic := '0';
-
--- Shift registers
-signal cmd_out, new_cmd_out : std_logic_vector(39 downto 0) := (others=>'1');
-signal set_cmd_out : boolean := false;
-signal data_in, new_data_in : std_logic_vector(7 downto 0);
-signal new_crc7, crc7 : std_logic_vector(6 downto 0);
-signal new_in_crc16, in_crc16 : std_logic_vector(15 downto 0);
-signal new_out_crc16, out_crc16 : std_logic_vector(15 downto 0);
-signal new_crcLow, crcLow : std_logic_vector(7 downto 0);
-signal data_out, new_data_out : std_logic_vector(7 downto 0) := x"00";
-
-signal address, new_address : std_logic_vector(31 downto 0);
-signal wr_erase_count, new_wr_erase_count : std_logic_vector(7 downto 0);
-signal set_address : boolean := false;
-signal byte_counter, new_byte_counter : integer range 0 to 512 := 0;
-signal set_byte_counter : boolean := false;
-signal bit_counter, new_bit_counter : integer range 0 to 160 := 0;
-signal slow_clock, new_slow_clock : boolean := true;
-signal clock_divider, new_clock_divider : integer range 0 to slowClockDivider := 0;
-signal multiple, new_multiple : boolean := false;
-signal skipFirstR1Byte, new_skipFirstR1Byte : boolean := false;
-signal din_latch : boolean := false;
-signal last_din_valid : std_logic := '0';
-
+type FsmState_t is (    -- States of the SD card controller FSM.
+      START_INIT,  -- Send initialization clock pulses to the deselected SD card.    
+      SEND_CMD0,                        -- Put the SD card in the IDLE state.
+      CHK_CMD0_RESPONSE,    -- Check card's R1 response to the CMD0.
+      SEND_CMD8,   -- This command is needed to initialize SDHC cards.
+      GET_CMD8_RESPONSE,                -- Get the R7 response to CMD8.
+      SEND_CMD55,                       -- Send CMD55 to the SD card. 
+      SEND_CMD41,                       -- Send CMD41 to the SD card.
+      CHK_ACMD41_RESPONSE,  -- Check if the SD card has left the IDLE state.     
+      WAIT_FOR_HOST_RW,  -- Wait for the host to issue a read or write command.
+      RD_BLK,    -- Read a block of data from the SD card.
+      WR_BLK,    -- Write a block of data to the SD card.
+      WR_WAIT,   -- Wait for SD card to finish writing the data block.
+      START_TX,                         -- Start sending command/data.
+      TX_BITS,   -- Shift out remaining command/data bits.
+      GET_CMD_RESPONSE,  -- Get the R1 response of the SD card to a command.
+      RX_BITS,   -- Receive response/data from the SD card.
+      DESELECT,  -- De-select the SD card and send some clock pulses (Must enter with sclk at zero.)
+      PULSE_SCLK,  -- Issue some clock pulses. (Must enter with sclk at zero.)
+      REPORT_ERROR                      -- Report error and stall until reset.
+      );
+      
+  signal sclk_r   : std_logic := ZERO;  -- Register output drives SD card clock.
+  signal hndShk_r : std_logic := NO;  -- Register output drives handshake output to host.
+  signal state    : FsmState_t;
 begin
-	-- This process updates all the state variables from the values calculated
-	-- by the calcStateVariables process
-	updateStateVariables: process(clk)
-	begin
-		if rising_edge(clk) then
-			if (reset='1') then
-				state <= RST;
-				return_state <= RST;
-				sr_return_state <= RST;
-				cmd_out <= (others=>'1');
-				data_in <= (others=>'0');
-				dout <= (others=>'0');
-				address <= (others=>'0');
-				data_out <= (others=>'1');
-				card_type <= ct_None;
-				byte_counter <= 0;
-				bit_counter <= 0;
-				crc7 <= (others => '0');
-				in_crc16 <= (others => '0');
-				out_crc16 <= (others => '0');
-				crcLow <= (others => '0');
-				error <= '1';
-				error_code <= ec_NoSDError;
-				sdAvail <= '0';
-				error <= '0';
-				slow_clock <= true;
-				clock_divider <= 0;
-				transfer_data_out <= false;
-				sCs <= '1';
-				sDin_taken <= '0';
-				wr_erase_count <= "00000001";
-				-- SD outputs
-				sclk <= '0';
-				cs <= '1';
-				mosi <= '1';
-				-- Interface outputs
-				sd_type <= "00";
-				sd_busy <= '1';
-				sd_error <= '1';
-				sd_error_code <= ec_NoSDError;
-				dout <= "00000000";
-				dout_avail <= '0';
-				din_taken <= '0';
-				multiple <= false;
-				skipFirstR1Byte <= false;
-			else
-				-- State variables
-				state <= new_state;
-				if (set_return_state) then return_state <= new_return_state; end if;
-				if (set_sr_return_state) then sr_return_state <= new_sr_return_state; end if;
-				if (set_cmd_out) then cmd_out <= new_cmd_out; end if;
-				data_in <= new_data_in;
-				if (set_address) then address <= new_address; end if;
-				data_out <= new_data_out;
-				if (set_byte_counter) then byte_counter <= new_byte_counter; end if;
-				bit_counter <= new_bit_counter;
-				error <= new_error;
-				error_code <= new_error_code;
-				card_type <= new_card_type;
-				slow_clock <= new_slow_clock;
-				clock_divider <= new_clock_divider;
-				crc7 <= new_crc7;
-				in_crc16 <= new_in_crc16;
-				out_crc16 <= new_out_crc16;
-				crcLow <= new_crcLow;
-				transfer_data_out <= new_transfer_data_out;
-				sCs <= new_cs;
-				-- SD outputs
-				sclk <= new_sclk;
-				cs <= new_cs;
-				mosi <= new_data_out(7);
-				wr_erase_count <= new_wr_erase_count;
-				-- Interface outputs
-				sd_type <= new_card_type;
-				sd_busy <= new_busy;
-				sd_error <= new_error;
-				sd_error_code <= new_error_code;
-				if set_davail then -- NB can't do this at the same cycle as we set data_in
-					sDavail <= '1';
-					dout <= data_in;
-					dout_avail <= '1';
-				elsif sDavail='1' and dout_taken='1' then
-					sDavail <= '0';
-					dout_avail <= '0';
-				end if;
-				multiple <= new_multiple;
-				skipFirstR1Byte <= new_skipFirstR1Byte;
+  
+  process(clk_i)  -- FSM process for the SD card controller.
 
-				-- This latches the din_valid and generates din_latch and din_taken
-				if din_valid='0' or (wr='0' and wr_multiple='0') then
-					-- Reset din_latch when din_valid is false, or no write in progress
-					sDin_taken <= '0';
-					din_taken <= '0';
-					din_latch <= false;
-				elsif din_valid='1' and last_din_valid='0' then
-					-- Set din_latch on rising edge of din_valid
-					sDin_taken <= '0';
-					din_taken <= '0';
-					din_latch <= true;
-				elsif din_latch and new_din_taken='1' then
-					-- Reset din_latch when din_taken rises
-					sDin_taken <= '1';
-					din_taken <= '1';
-					din_latch <= false;
-				end if;
-				last_din_valid <= din_valid;
-			end if;
-		end if;
-    end process;
+    
+    variable state_v    : FsmState_t := START_INIT;  -- Current state of the FSM.
+    variable rtnState_v : FsmState_t;  -- State FSM returns to when FSM subroutine completes.
 
-	-- This process calculates all of the state variables
-	-- It should not generate any latches
-	-- Some values are initialised to a fixed value, and overridden later (new_X <= '0')
-	-- Some values are initialised to their current values (new_X <= X)
-	-- Some values are initialised to Don't Care (new_X <= '-')
-	-- Updating of the latter values is under control of the set_X signal
-	calcStateVariables: process(miso,rd,rd_multiple,wr,wr_multiple,
-		state,bit_counter,card_type,byte_counter,data_in,data_out,
-		address,addr,dout_taken,error,cmd_out,return_state,clock_divider,
-		error_code,crc7,in_crc16,out_crc16,slow_clock,card_present,
-		card_write_prot,SDin_Taken,sCS,transfer_data_out,din_valid,din,din_latch,
-		crcLow,sDavail,sr_return_state,multiple,skipFirstR1Byte)
-	constant WriteTimeoutCount : integer := clockRate/18000 * WRITE_TIMEOUT;
-	begin
-		assert(WriteTimeoutCount > 0) report "WriteTimeoutCount is 0" severity failure ;
-		new_state <= state;
-		new_return_state <= RST;
-		set_return_state <= false;
-		new_sr_return_state <= RST;
-		set_sr_return_state <= false;
-		new_bit_counter <= bit_counter;
-		new_card_type <= card_type;
-		new_cmd_out <= (others=>'-');
-		set_cmd_out <= false;
-		new_byte_counter <= byte_counter;
-		set_byte_counter <= false;
-		new_data_in <= data_in;
-		set_davail <= false;
-		new_din_taken <= sDin_taken;
-		new_data_out <= data_out;
-		new_address <= (others=>'-');
-		set_address <= false;
-		new_sclk <= '0';
-		new_cs <= sCs;
-		new_error <= error;
-		new_error_code <= error_code;
-		new_busy <= '1';
-		new_crc7 <= crc7;
-		new_in_crc16 <= in_crc16;
-		new_out_crc16 <= out_crc16;
-		new_crcLow <= crcLow;
-		new_slow_clock <= slow_clock;
-		new_clock_divider <= clock_divider;
-		new_transfer_data_out <= transfer_data_out;
-		new_multiple <= multiple;
-		new_skipFirstR1Byte <= skipFirstR1Byte;
-		new_wr_erase_count <= wr_erase_count;
-		
-		case state is
-		
-		when RST =>
-			-- Reset, including error codes
-			new_error_code <= ec_NoSDError;
-			new_error <= '1';
-			new_state <= RST2;
-			
-		when RST2 =>
-			-- Reset, retaining error codes
-			new_card_type <= ct_None;
-			new_cs <= '1';
-			new_slow_clock <= true;
-			new_clock_divider <= slowClockDivider;
-			new_byte_counter <= 20; set_byte_counter <= true;
-			new_data_out <= "11111111";
-			new_transfer_data_out <= false;
-			new_sr_return_state <= INIT; set_sr_return_state <= true;
-			if card_present='1' then
-			-- Wait for card present indication before attempting initialisation
-				new_state <= SEND_RCV;
-			end if;
-			
-		when INIT =>
-			if byte_counter=0 then
-				new_state <= CMD0;
-			else
-				new_state <= SEND_RCV;
-			end if;
-			
-		when CMD0 =>
-			-- Send CMD0
-			new_cs <= '0';
-			new_address <= (others=>'0'); set_address <= true;
-			new_cmd_out <= x"4000000000"; set_cmd_out <= true;
-			new_return_state <= CMD8; set_return_state <= true;
-			new_state <= SEND_CMD;
-			
-		when CMD8 =>
-			-- Check CMD0 response and send CMD8 or Error
-			if data_in="00000001" then
-				new_cmd_out <= x"48000001AA"; set_cmd_out <= true; -- Voltage is 1, Check pattern is AA
-				new_return_state <= CMD8R1; set_return_state <= true;
-				new_state <= SEND_CMD;
-			else
-				new_card_type <= ct_None;
-				new_error <= '1';
-				new_error_code <= ec_R1Error;
-				new_state <= RST2;
-			end if;
-			
-		when CMD8R1 =>
-			-- Check R1 response to CMD8
-			if data_in(R1_ILLEGALCOMMAND)='1' then -- Illegal command?
-				new_card_type <= ct_SDV1; -- Yes, must be SD1
-				new_state <= CMD55;
-			else
-				new_card_type <= ct_SDV2; -- No, could be SD2 (10) or SDHC (11)
-				new_sr_return_state <= CMD8B2; set_sr_return_state <= true;
-				new_state <= SEND_RCV;
-			end if;
-			
-		when CMD8B2 =>
-			-- Got first byte of CMD8 response
-			new_sr_return_state <= CMD8B3; set_sr_return_state <= true;
-			new_state <= SEND_RCV;
-			
-		when CMD8B3 =>
-			-- Got second byte of CMD8 response
-			new_sr_return_state <= CMD8B4; set_sr_return_state <= true;
-			new_state <= SEND_RCV;
-			
-		when CMD8B4 =>
-			-- Got third byte of CMD8 response
-			-- Check operating voltage
-			if data_in(3 downto 0) /= "0001" then
-				new_state <= RST;
-			end if;
-			-- Get byte 4 (check pattern)
-			new_sr_return_state <= CMD8GOTB4; set_sr_return_state <= true;
-			new_state <= SEND_RCV;
-			
-		when CMD8GOTB4 =>
-			-- Got fourth byte of CMD8 response
-			-- Check pattern
-			if data_in = x"AA" then
-				new_state <= CMD55;
-			else
-				new_state <= RST;
-			end if;
-			
-		when CMD55 =>
-			-- Send CMD55
-			new_return_state <= CMD41; set_return_state <= true;
-			new_cmd_out <= x"7700000000"; set_cmd_out <= true;
-			new_state <= SEND_CMD;
-			
-		when CMD41 =>
-			-- Send CMD41
-			new_return_state <= POLL_CMD; set_return_state <= true;
-			if card_type=ct_SDV1 then
-				new_cmd_out <= x"6900000000";
-			else
-				new_cmd_out <= x"6940000000";
-			end if;
-			set_cmd_out <= true;
-			new_state <= SEND_CMD;
-			
-		when POLL_CMD =>
-			-- Poll until card ready, then send CMD58 or CMD59 depending on type
-			if (data_in(R1_IDLE) = '0') then -- In idle state?
-				if (card_type=ct_SDV1) then
-					new_state <= CMD59; -- SD1 ready now
-				else
-					new_state <= CMD58; -- SD2, SDHC determine
-				end if;
-			else
-				new_state <= CMD55; -- Still in idle, repeat ACMD41
-			end if;
-			
-		when CMD58 =>
-			-- Send CMD58
-			new_return_state <= CMD58R1; set_return_state <= true;
-			new_cmd_out <= x"7A00000000"; set_cmd_out <= true;
-			new_state <= SEND_CMD;
-			
-		when CMD58R1 =>
-			-- Check R1 response to CMD58
-			if data_in(R1_ILLEGALCOMMAND)='1' then
-				-- Illegal command - not an SD card
-				new_card_type <= ct_None;
-				new_error_code <= ec_SDError;
-				new_error <= '1';
-				new_state <= RST2;
-			else
-				-- Go fetch byte 1
-				new_sr_return_state <= CMD58B2; set_sr_return_state <= true;
-				new_state <= SEND_RCV;
-			end if;
-			
-		when CMD58B2 =>
-			-- Check CCS: 0=SD2 1=SDHC
-			-- card_type already set to ct_SDV2 (10) in CMD8R1
-			if (data_in(OCR1_CCS)='1') then -- OCR(30) = CCS
-				new_card_type <= ct_SDHC; -- SDHC
-			end if;
-			-- Go fetch byte 2
-			new_sr_return_state <= CMD58B3; set_sr_return_state <= true;
-			new_state <= SEND_RCV;
-			
-		when CMD58B3 =>
-			-- Fetch byte 3
-			new_sr_return_state <= CMD58B4; set_sr_return_state <= true;
-			new_state <= SEND_RCV;
-			
-		when CMD58B4 =>
-			-- Fetch byte 4
-			new_sr_return_state <= CMD59; set_sr_return_state <= true;
-			new_state <= SEND_RCV;
-			
-		when CMD59 =>
-			-- Send CMD59
-			new_return_state <= CMD59R1; set_return_state <= true;
-			new_cmd_out <= x"7B00000001"; set_cmd_out <= true; -- Enable CRC
-			new_state <= SEND_CMD;
-			
-		when CMD59R1 =>
-			-- Check reply from CMD59
-			if data_in/="00000000" then
-				new_state <= RST;
-			end if;
-			-- Don't enter IDLE until Rd and Wr are down
-			if (rd='0') and (wr='0') and (rd_multiple='0') and (wr_multiple='0') then
-				new_error_code <= ec_NoError;
-				new_error <= '0';
-				new_state <= IDLE;
-			end if;
-			
-		when IDLE =>
-			-- Generate 8 clocks when entering idle
-			new_slow_clock <= false;	-- Can run at full speed now
-			new_data_out <= "11111111";
-			new_bit_counter <= 7;
-			new_transfer_data_out <= false;
-			new_sr_return_state <= IDLE2; set_sr_return_state <= true;
-			new_state <= SEND_RCV;
-			
-		when IDLE2 =>
-			-- Sits in this state when idle
-			if card_present='0' then
-				-- Card gone!
-				new_state <= RST;
-			elsif data_in=x"00" then
-				-- Card still busy
-				new_state <= IDLE;
-			elsif rd='1' then
-				-- Initiate Read
-				new_cs <= '0';
-				new_error <= '0';
-				new_error_code <= ec_NoError;
-				new_address <= addr; set_address <= true;
-				new_multiple <= false;
-				new_state <= READ_BLOCK;
-			elsif rd_multiple='1' then
-				-- Initiate Read Multiple
-				new_cs <= '0';
-				new_error <= '0';
-				new_error_code <= ec_NoError;
-				new_address <= addr; set_address <= true;
-				new_multiple <= true;
-				new_state <= READ_MULTIPLE_BLOCK;
-			elsif wr='1' or wr_multiple='1' then
-				-- Initiate Write or Write Multiple
-				if card_write_prot='0' then
-					new_cs <= '0';
-					new_error <= '0';
-					new_error_code <= ec_NoError;
-					new_address <= addr; set_address <= true;
-					if wr='1' then
-						new_multiple <= false;
-						new_wr_erase_count <= "00000001";
-					else
-						new_multiple <= true;
-						new_wr_erase_count <= erase_count;
-					end if;
-					new_state <= SET_ERASE_COUNT_CMD;
-				else
-					new_error <= '1';
-					new_error_code <= ec_WPError;
-				end if;
-			else
-				-- No command
-				new_cs <= '1';
-				new_busy <= '0';
-			end if;
-			
-		when READ_BLOCK =>
-			-- Basic Read command
-			if card_type=ct_SDHC then
-				-- SDHC: Use block address
-				new_cmd_out <= x"51" & address(31 downto 0);
-			else
-				-- SDV1,2: Use byte address
-				new_cmd_out <= x"51" & address(22 downto 0) & "000000000";
-			end if;
-			set_cmd_out <= true;
-			new_return_state <= READ_BLOCK_R1; set_return_state <= true;
-			new_state <= SEND_CMD;
-			
-		when READ_MULTIPLE_BLOCK =>
-			-- Read Multiple command
-			if card_type=ct_SDHC then
-				-- SDHC: Use block address
-				new_cmd_out <= x"52" & address(31 downto 0);
-			else
-				-- SDV1,2: Use byte address
-				new_cmd_out <= x"52" & address(22 downto 0) & "000000000";
-			end if;
-			set_cmd_out <= true;
-			new_return_state <= READ_BLOCK_R1; set_return_state <= true;
-			new_state <= SEND_CMD;
-			
-		when READ_BLOCK_R1 =>
-			-- Get R1 response to Read or Read Multiple command
-			if data_in/="00000000" then -- Some error
-				new_error <= '1';
-				new_error_code <= ec_R1Error;
-				new_state <= READ_BLOCK_FINISH;
-			else
-				new_sr_return_state <= READ_BLOCK_WAIT_CHECK; set_sr_return_state <= true;
-				new_state <= SEND_RCV;
-			end if;
-			
-		when READ_BLOCK_WAIT_CHECK =>
-			-- Wait for Read token, or Error token
-			new_in_crc16 <= (others=>'0');
-			if rd='0' and rd_multiple='0' then
-				-- Abort transfer
-				new_state <= READ_BLOCK_FINISH; -- And then to IDLE
-			elsif (data_in="11111110") then
-				new_transfer_data_out <= true;
-				new_byte_counter <= 512; set_byte_counter <= true;
-				new_sr_return_state <= READ_BLOCK_DATA; set_sr_return_state <= true; -- Wait for dout_taken to drop
-				new_state <= SEND_RCV;
-			elsif (data_in(7 downto 4)="0000") then
-				-- Check for error token 0000XXXX
-				-- Flag error and wait for RD to drop
-				new_error <= '1';
-				new_error_code <= ec_DataError;
-				new_state <= READ_BLOCK_FINISH;
-			else
-				new_state <= SEND_RCV;
-			end if;
-			
-		when READ_BLOCK_DATA =>
-			-- Read a byte of data from the card
-			if rd='0' and rd_multiple='0' then
-				-- Abort transfer
-				new_state <= READ_BLOCK_SKIP; -- And then to IDLE
-			else
-				if byte_counter=0 then
-					new_transfer_data_out <= false;
-					new_sr_return_state <= READ_BLOCK_CRC;
-					set_sr_return_state <= true;
-				end if;
-				new_state <= SEND_RCV;
-			end if;
-			
-		when READ_BLOCK_SKIP =>
-			-- Skip all remaining bytes without transferring them
-			new_transfer_data_out <= false;
-			if multiple then
-				-- Special stop mechanism for Read Multiple
-				new_state <= READ_MULTIPLE_BLOCK_STOP;
-			elsif (byte_counter=0) then
-				-- After last byte, read the first CRC byte
-				new_sr_return_state <= READ_BLOCK_CRC; set_sr_return_state <= true;
-				new_state <= SEND_RCV;
-			else
-				-- Keep skipping bytes
-				new_sr_return_state <= READ_BLOCK_SKIP; set_sr_return_state <= true;
-				new_state <= SEND_RCV;
-			end if;
-			
-		when READ_BLOCK_CRC =>
-			-- Read second CRC byte
-			new_sr_return_state <= READ_BLOCK_CHECK_CRC; set_sr_return_state <= true;
-			new_state <= SEND_RCV;
-			
-		when READ_BLOCK_CHECK_CRC =>
-			-- After reading all the data and the two CRC bytes, the result should be zero
-			if in_crc16/="0000000000000000" then
-				new_error <= '1';
-				new_error_code <= ec_CRCError;
-				new_state <= READ_BLOCK_FINISH;
-			elsif multiple and rd_multiple='1' then
-				-- Start looking for a further data block
-				new_sr_return_state <= READ_BLOCK_WAIT_CHECK; set_sr_return_state <= true;
-				new_state <= SEND_RCV;
-			else
-				-- Transfer complete
-				new_state <= READ_BLOCK_FINISH;
-			end if;
-			
-		when READ_BLOCK_FINISH =>
-			new_transfer_data_out <= false;
-			-- Wait for RD to fall after last byte has been transferred
-			if (rd='0') and (rd_multiple='0') then
-				if multiple then
-					new_state <= READ_MULTIPLE_BLOCK_STOP;
-				else
-					new_state <= IDLE;
-				end if;
-			end if;
-			
-		when READ_MULTIPLE_BLOCK_STOP =>
-			-- Send CMD12
-			new_skipFirstR1Byte <= true;
-			new_return_state <= READ_MULTIPLE_BLOCK_STOP_2; set_return_state <= true;
-			new_cmd_out <= x"4C00000000"; set_cmd_out <= true;
-			new_state <= SEND_CMD;
-			
-		when READ_MULTIPLE_BLOCK_STOP_2 =>
-			-- Check R1 and wait for not-busy when we get to IDLE
-			if data_in/="00000000" then
-				new_state <= RST;
-			else
-				if rd_multiple='0' then
-					new_state <= IDLE;
-				end if;
-			end if;
-			
-		when SET_ERASE_COUNT_CMD =>
-			-- Send CMD55
-			new_return_state <= SET_ERASE_COUNT_CMD_2; set_return_state <= true;
-			new_cmd_out <= x"7700000000"; set_cmd_out <= true;
-			new_state <= SEND_CMD;
-			
-		when SET_ERASE_COUNT_CMD_2 =>
-			-- Send ACMD23
-			new_cmd_out <= x"57000000" & wr_erase_count;
-			if wr='1' then
-				new_return_state <= WRITE_BLOCK_CMD;
-			else
-				new_return_state <= WRITE_MULTIPLE_BLOCK_CMD;
-			end if;
-			set_cmd_out <= true;
-			set_return_state <= true;
-			new_state <= SEND_CMD;
-		
-		when WRITE_BLOCK_CMD =>
-			-- Send CMD24 for single block write
-			if (card_type=ct_SDHC) then
-				new_cmd_out <= x"58" & address(31 downto 0);
-			else
-				new_cmd_out <= x"58" & address(22 downto 0) & "000000000";
-			end if;
-			set_cmd_out <= true;
-			new_return_state <= WRITE_BLOCK_INIT; set_return_state <= true;
-			new_state <= SEND_CMD;
-			
-		when WRITE_MULTIPLE_BLOCK_CMD =>
-			-- Send CMD25 for multiple write
-			if (card_type=ct_SDHC) then
-				new_cmd_out <= x"59" & address(31 downto 0);
-			else
-				new_cmd_out <= x"59" & address(22 downto 0) & "000000000";
-			end if;
-			set_cmd_out <= true;
-			new_return_state <= WRITE_BLOCK_INIT; set_return_state <= true;
-			new_state <= SEND_CMD;
-		
-		when WRITE_BLOCK_INIT =>
-			-- Check for response to write command, then send data token
-			if data_in/="00000000" then
-				new_error <= '1';
-				new_error_code <= ec_R1Error;
-				new_state <= WRITE_BLOCK_FINISH;
-			else
-				new_state <= WRITE_BLOCK_DATA_TOKEN;
-			end if;
-			
-		when WRITE_BLOCK_DATA_TOKEN =>
-			-- Send data start token
-			if multiple then
-				new_data_out <= x"FC"; -- start token, multiple block
-			else
-				new_data_out <= x"FE"; -- start token, single block
-			end if;
-			new_sr_return_state <= START_WRITE_BLOCK_DATA; set_sr_return_state <= true;
-			new_state <= SEND_RCV;
+    -- Timing constants based on the master clock frequency and the SPI SCLK frequencies.
+    constant CLKS_PER_INIT_SCLK_C      : real    := FREQ_G / INIT_SPI_FREQ_G;
+    constant CLKS_PER_SCLK_C           : real    := FREQ_G / SPI_FREQ_G;
+    constant MAX_CLKS_PER_SCLK_C       : real    := realmax(CLKS_PER_INIT_SCLK_C, CLKS_PER_SCLK_C);
+    constant MAX_CLKS_PER_SCLK_PHASE_C : natural := integer(round(MAX_CLKS_PER_SCLK_C / 2.0));
+    constant INIT_SCLK_PHASE_PERIOD_C  : natural := integer(round(CLKS_PER_INIT_SCLK_C / 2.0));
+    constant SCLK_PHASE_PERIOD_C       : natural := integer(round(CLKS_PER_SCLK_C / 2.0));
+    constant DELAY_BETWEEN_BLOCK_RW_C  : natural := SCLK_PHASE_PERIOD_C;
 
-		when START_WRITE_BLOCK_DATA =>
-			-- Reset CRC and start writing data
-			new_byte_counter <= 512; set_byte_counter <= true;
-			new_out_crc16 <= (others=>'0');
-			new_state <= WRITE_BLOCK_DATA;
+    -- Registers for generating slow SPI SCLK from the faster master clock.
+    variable clkDivider_v     : natural range 0 to MAX_CLKS_PER_SCLK_PHASE_C;  -- Holds the SCLK period.
+    variable sclkPhaseTimer_v : natural range 0 to MAX_CLKS_PER_SCLK_PHASE_C;  -- Counts down to zero, then SCLK toggles.
 
-		when WRITE_BLOCK_DATA =>
-			-- Write data, finishing with first CRC byte
-			if byte_counter = 0 then
-				new_data_out <= out_crc16(15 downto 8);
-				new_crcLow <= out_crc16(7 downto 0);
-				new_sr_return_state <= WRITE_BLOCK_SEND_CRC2; set_sr_return_state <= true;
-				new_state <= SEND_RCV;
-			elsif wr='0' and wr_multiple='0' then
-				-- Abort writing - send dummy data and bad CRC
-				new_state <= WRITE_BLOCK_ABORT;
-			elsif din_latch then
-				new_data_out <= din;
-				new_din_taken <= '1';
-				new_sr_return_state <= WRITE_BLOCK_DATA; set_sr_return_state <= true;
-				new_state <= SEND_RCV;
-			end if;
+    constant NUM_INIT_CLKS_C : natural := 160;  -- Number of initialization clocks to SD card.
+    variable bitCnt_v        : natural range 0 to NUM_INIT_CLKS_C;  -- Tx/Rx bit counter.
 
-		when WRITE_BLOCK_SEND_CRC2 =>
-			-- Send second CRC byte
-			new_data_out <= crcLow;
-			new_sr_return_state <= WRITE_BLOCK_GET_RESPONSE; set_sr_return_state <= true;
-			new_state <= SEND_RCV;
-			
-		when WRITE_BLOCK_GET_RESPONSE =>
-			-- Get response byte from write
-			new_byte_counter <= R1_TIMEOUT; set_byte_counter <= true;
-			new_sr_return_state <= WRITE_BLOCK_CHECK_RESPONSE; set_sr_return_state <= true;
-			new_state <= SEND_RCV;
-			
-		when WRITE_BLOCK_CHECK_RESPONSE =>
-			-- Check write response for error
-			if (data_in(4) /= '0') or (data_in(0) /= '1') then
-				if byte_counter=0 then
-					new_error <= '1';
-					new_error_code <= ec_R1Error;
-					new_state <= WRITE_BLOCK_TERMINATE;
-				else
-					new_byte_counter <= byte_counter - 1; set_byte_counter <= true;
-					new_state <= SEND_RCV; -- Wait for Data Response token
-				end if;
-			elsif data_in(3 downto 1) /= "010" then
-				-- Data not accepted
-				new_error <= '1';
-				new_error_code <= ec_DataRespError;
-				new_state <= WRITE_BLOCK_TERMINATE;
-			else
-				-- Receive a byte and poll for write complete
-				-- Use cmd_out to time 2ms (50000 clocks @ 25MHz)
-				new_cmd_out <= std_logic_vector(to_unsigned(WriteTimeoutCount,40)); set_cmd_out <= true;
-				new_sr_return_state <= WRITE_BLOCK_WAIT; set_sr_return_state <= true;
-				new_state <= SEND_RCV;
-			end if;
+    constant CRC_SZ_C    : natural := 2;  -- Number of CRC bytes for read/write blocks.
+    -- When reading blocks of data, get 0xFE + [DATA_BLOCK] + [CRC].
+    constant RD_BLK_SZ_C : natural := 1 + BLOCK_SIZE_G + CRC_SZ_C;
+    -- When writing blocks of data, send 0xFF + 0xFE + [DATA BLOCK] + [CRC] then receive response byte.
+    constant WR_BLK_SZ_C : natural := 1 + 1 + BLOCK_SIZE_G + CRC_SZ_C + 1;
+    variable byteCnt_v   : natural range 0 to IntMax(WR_BLK_SZ_C, RD_BLK_SZ_C);  -- Tx/Rx byte counter.
 
-		when WRITE_BLOCK_WAIT =>
-			-- Wait for write to complete
-			if data_in=x"00" then
-				if cmd_out=x"0000000000" then
-					new_error <= '1';
-					new_error_code <= ec_WriteTimeout;
-					new_state <= WRITE_BLOCK_TERMINATE;
-				else
-					new_cmd_out <= STD_LOGIC_VECTOR(unsigned(cmd_out) - 1); set_cmd_out <= true;
-					new_state <= SEND_RCV; -- Will come back here, loop until write complete
-				end if;
-			else
-				if multiple then
-					if wr_multiple='1' then
-						if din_latch then
-							new_state <= WRITE_BLOCK_DATA_TOKEN;
-						else
-							-- Wait here for din_latch before starting another block
-						end if;
-					else
-						new_state <= WRITE_BLOCK_TERMINATE;
-					end if;
-				else
-					new_state <= WRITE_BLOCK_FINISH;
-				end if;
-			end if;
-			
-		when WRITE_BLOCK_ABORT =>
-			-- Abort write due to Write command input being dropped - write remaining bytes and force CRC error
-			if byte_counter=0 then
-				new_data_out <= out_crc16(15 downto 8);
-				new_crcLow <= out_crc16(7 downto 0) xor x"01"; -- Force bad CRC
-				new_sr_return_state <= WRITE_BLOCK_SEND_CRC2; set_sr_return_state <= true;
-				new_state <= SEND_RCV;
-			else
-				new_data_out <= x"00";
-				new_sr_return_state <= WRITE_BLOCK_ABORT; set_sr_return_state <= true;
-				new_state <= SEND_RCV;
-			end if;
+    -- Command bytes for various SD card operations.
+    subtype Cmd_t is std_logic_vector(7 downto 0);
+    constant CMD0_C          : Cmd_t := std_logic_vector(to_unsigned(16#40# + 0, Cmd_t'length));
+    constant CMD8_C          : Cmd_t := std_logic_vector(to_unsigned(16#40# + 8, Cmd_t'length));
+    constant CMD55_C         : Cmd_t := std_logic_vector(to_unsigned(16#40# + 55, Cmd_t'length));
+    constant CMD41_C         : Cmd_t := std_logic_vector(to_unsigned(16#40# + 41, Cmd_t'length));
+    constant READ_BLK_CMD_C  : Cmd_t := std_logic_vector(to_unsigned(16#40# + 17, Cmd_t'length));
+    constant WRITE_BLK_CMD_C : Cmd_t := std_logic_vector(to_unsigned(16#40# + 24, Cmd_t'length));
 
-		when WRITE_BLOCK_TERMINATE =>
-			-- Terminate multiple block write
-			if multiple then
-				new_data_out <= x"FD"; -- stop token, multiple block
-				new_multiple <= false; -- So that WRITE_BLOCK_WAIT will exit to WRITE_BLOCK_FINISH
-				new_sr_return_state <= WRITE_BLOCK_WAIT; set_sr_return_state <= true;
-				new_state <= SEND_RCV;
-			else
-				new_state <= WRITE_BLOCK_FINISH;
-			end if;
-		
-		when WRITE_BLOCK_FINISH =>
-			-- Wait for WR to fall after last byte has been transferred
-			if (wr='0' and wr_multiple='0') then
-				new_state <= IDLE;
-			end if;
-		
-		when SEND_RCV =>
-			-- Send the byte in data_out while simultaneously receiving one into data_in
-			-- ** Must enter with bit_counter = 7 **
-			-- Update CRC7 and CRC16 from output stream
-			-- Update CRC16 from input stream
-			-- Decrement byte_counter
-			-- Leave data_out as 11111111
-			-- Leave bit_counter as 7 for next time
-			
-			-- When we enter SPI Clock should be low, we set the output data, wait half a cycle, raise
-			-- the clock, latch the input data, then wait a further half cycle before dropping the clock
-			-- The output data (MOSI) follows data_out(7)
-			
-			-- Clock is low, output data is set
-			if slow_clock=false or clock_divider=0 then
-				new_clock_divider <= slowClockDivider;
-				new_sclk <= '1';
-				-- Update output CRCs
-				new_crc7 <= crc7(5 downto 3) & (crc7(2) xor crc7(6) xor data_out(7)) & crc7(1 downto 0) & (crc7(6) xor data_out(7));
-				new_out_crc16 <= out_crc16(14 downto 12) & (data_out(7) xor out_crc16(15) xor out_crc16(11)) & out_crc16(10 downto 5) &
-				(data_out(7) xor out_crc16(15) xor out_crc16(4)) & out_crc16(3 downto 0) & (data_out(7) xor out_crc16(15));
-				-- Update input data
-				new_data_in <= data_in(6 downto 0) & miso;
-				-- Update input CRC
-				new_in_crc16 <= in_crc16(14 downto 12) & (miso xor in_crc16(15) xor in_crc16(11)) & in_crc16(10 downto 5) &
-					(miso xor in_crc16(15) xor in_crc16(4)) & in_crc16(3 downto 0) & (miso xor in_crc16(15));
-				new_state <= SEND_RCV_CLK1;
-			else
-				new_clock_divider <= clock_divider - 1;
-			end if;
+    -- Except for CMD0 and CMD8, SD card ops don't need a CRC, so use a fake one for that slot in the command.
+    constant FAKE_CRC_C : std_logic_vector(7 downto 0) := x"FF";
 
-		when SEND_RCV_CLK1 =>
-			if slow_clock=false or clock_divider=0 then
-				new_clock_divider <= slowClockDivider;
-				if (bit_counter = 0) then
-					-- Reception handling - if DAvail and DTaken are down, transfer new byte into output register and raise DAvail
-					if transfer_data_out then
-						if (rd='1' or rd_multiple='1') then
-							if sDavail='0' and dout_taken='0' then
-								-- If we're ok to transfer data, then do it
-								-- otherwise wait here until dout_taken rises
-								set_davail <= true;
-								new_byte_counter <= byte_counter - 1; set_byte_counter <= true;
-								-- Next byte
-								new_bit_counter <= 7;
-								if byte_counter=1 then
-									new_transfer_data_out <= false;
-									new_sr_return_state <= READ_BLOCK_CRC;
-									set_sr_return_state <= true;
-								end if;
-								new_state <= SEND_RCV;
-							end if;
-						else
-							-- Abort transfer
-							new_byte_counter <= byte_counter - 1; set_byte_counter <= true;
-							-- Next byte
-							new_bit_counter <= 7;
-							if byte_counter=1 then
-								new_transfer_data_out <= false;
-								new_sr_return_state <= READ_BLOCK_CRC;
-								set_sr_return_state <= true;
-							end if;
-							new_state <= SEND_RCV;
-						end if;
-					else
-						new_bit_counter <= 7;
-						new_state <= sr_return_state;
-						new_byte_counter <= byte_counter - 1; set_byte_counter <= true;
-					end if;
-				else
-					new_bit_counter <= bit_counter - 1;
-					new_data_out <= data_out(6 downto 0) & '1';
-					new_state <= SEND_RCV;
-				end if;
-			else
-				new_sclk <= '1';
-				new_clock_divider <= clock_divider - 1;
-			end if;
+    variable addr_v : unsigned(addr_i'range);  -- Address of current block for R/W operations.
 
-		when SEND_CMD =>
-			-- Send FF byte first
-			new_bit_counter <= 7;
-			new_data_out <= "11111111";
-			new_sr_return_state <= SEND_CMD_1; set_sr_return_state <= true;
-			new_state <= SEND_RCV;
-			
-		when SEND_CMD_1 =>
-			-- Initialise CRC and byte counter
-			new_crc7 <= "0000000";
-			new_byte_counter <= 5; set_byte_counter <= true; -- 5 bytes are CC NN NN NN NN
-			new_state <= SEND_CMD_2;
-			
-		when SEND_CMD_2 =>
-			-- Send one byte of the command and parameter
-			if byte_counter=0 then
-				new_state <= SEND_CMD_3;
-			else
-				new_data_out <= cmd_out(39 downto 32);
-				new_cmd_out <= cmd_out(31 downto 0) & x"FF"; set_cmd_out <= true;
-				new_sr_return_state <= SEND_CMD_2; set_sr_return_state <= true;
-				new_state <= SEND_RCV;
-			end if;
-	
-		when SEND_CMD_3 =>
-			-- Send the CRC
-			new_data_out <= crc7 & '1';
-			new_sr_return_state <= SEND_CMD_4; set_sr_return_state <= true;
-			new_state <= SEND_RCV;
+    -- Maximum Tx to SD card consists of command + address + CRC. Data Tx is just a single byte.
+    variable tx_v : std_logic_vector(CMD0_C'length + addr_v'length + FAKE_CRC_C'length - 1 downto 0);  -- Data/command to SD card.
+    alias txCmd_v is tx_v;              -- Command transmission shift register.
+    alias txData_v is tx_v(tx_v'high downto tx_v'high - data_i'length + 1);  -- Data byte transmission shift register.
 
-		when SEND_CMD_4 =>
-			-- Receive the first byte, maybe R1
-			new_byte_counter <= R1_TIMEOUT; set_byte_counter <= true;
-			new_sr_return_state <= SEND_CMD_5; set_sr_return_state <= true;
-			new_state <= SEND_RCV;
-			
-		when SEND_CMD_5 =>
-			-- Check for R1 response, receive another byte if not
-			if skipFirstR1Byte then
-				-- If doing a CMD12 then skip a byte before looking for R1
-				new_skipFirstR1Byte <= false;
-				new_state <= SEND_RCV;
-			elsif data_in(R1_ZERO)='0' then
-				new_state <= return_state;
-			else
-				if byte_counter=0 then
---					new_state <= RST2;
-					new_card_type <= ct_None;
-					new_error <= '1';
-					new_error_code <= ec_NoSDError;
-				else
-					new_state <= SEND_RCV; -- Will come back to SEND_CMD_5
-				end if;
-			end if;
-	    end case;
-	end process calcStateVariables;
+    variable rx_v               : std_logic_vector(data_i'range);  -- Data/response byte received from SD card.
+    -- Various response codes.
+    subtype Response_t is std_logic_vector(rx_v'range);
+    constant ACTIVE_NO_ERRORS_C : Response_t := "00000000";  -- Normal R1 code after initialization.
+    constant IDLE_NO_ERRORS_C   : Response_t := "00000001";  -- Normal R1 code after CMD0.
+    constant DATA_ACCEPTED_C    : Response_t := "---00101";  -- SD card accepts data block from host.
+    constant DATA_REJ_CRC_C     : Response_t := "---01011";  -- SD card rejects data block from host due to CRC error.
+    constant DATA_REJ_WERR_C    : Response_t := "---01101";  -- SD card rejects data block from host due to write error.
+    -- Various tokens.
+    subtype Token_t is std_logic_vector(rx_v'range);
+    constant NO_TOKEN_C         : Token_t    := x"FF";  -- Received before the SD card responds to a block read command.
+    constant START_TOKEN_C      : Token_t    := x"FE";  -- Starting byte preceding a data block.
 
-	-- This calculates a debug output to determine the FSM state
-	calcDebugOutputs: block
-	begin
-		with state select sd_fsm <=
-			x"00" when RST,
-			x"00" when RST2,
-			x"01" when INIT,
-			x"02" when CMD0,
-			x"03" when CMD8,
-			x"04" when CMD8R1,
-			x"04" when CMD8B2,
-			x"04" when CMD8B3,
-			x"04" when CMD8B4,
-			x"04" when CMD8GOTB4,
-			x"05" when CMD55,
-			x"06" when CMD41,
-			x"07" when POLL_CMD,
-			x"08" when CMD58,
-			x"08" when CMD58R1,
-			x"08" when CMD58B2,
-			x"08" when CMD58B3,
-			x"08" when CMD58B4,
-			x"09" when CMD59,
-			x"0A" when CMD59R1,
-			x"10" when IDLE,
-			x"11" when IDLE2,
-			x"20" when READ_BLOCK,
-			x"20" when READ_MULTIPLE_BLOCK,
-			x"21" when READ_BLOCK_R1,
-			x"22" when READ_BLOCK_WAIT_CHECK,
-			x"23" when READ_BLOCK_DATA,
-			x"24" when READ_BLOCK_SKIP,
-			x"25" when READ_BLOCK_CRC,
-			x"26" when READ_BLOCK_CHECK_CRC,
-			x"27" when READ_BLOCK_FINISH,
-			x"28" when READ_MULTIPLE_BLOCK_STOP,
-			x"29" when READ_MULTIPLE_BLOCK_STOP_2,
-			x"30" when SEND_RCV,
-			x"31" when SEND_RCV_CLK1,
-			x"32" when SEND_CMD,
-			x"33" when SEND_CMD_1,
-			x"34" when SEND_CMD_2,
-			x"35" when SEND_CMD_3,
-			x"36" when SEND_CMD_4,
-			x"37" when SEND_CMD_5,
-			x"40" when SET_ERASE_COUNT_CMD,
-			x"41" when SET_ERASE_COUNT_CMD_2,
-			x"42" when WRITE_BLOCK_CMD,
-			x"43" when WRITE_MULTIPLE_BLOCK_CMD,
-			x"44" when WRITE_BLOCK_INIT,
-			x"45" when WRITE_BLOCK_DATA,
-			x"46" when WRITE_BLOCK_DATA_TOKEN,
-			x"47" when START_WRITE_BLOCK_DATA,
-			x"48" when WRITE_BLOCK_SEND_CRC2,
-			x"49" when WRITE_BLOCK_GET_RESPONSE,
-			x"4A" when WRITE_BLOCK_CHECK_RESPONSE,
-			x"4B" when WRITE_BLOCK_WAIT,
-			x"4C" when WRITE_BLOCK_ABORT,
-			x"4D" when WRITE_BLOCK_TERMINATE,
-			x"4E" when WRITE_BLOCK_FINISH
-			;
-	end block calcDebugOutputs;
-end rtl;
+    -- Flags that are set/cleared to affect the operation of the FSM.
+    variable getCmdResponse_v : boolean;  -- When true, get R1 response to command sent to SD card.
+    variable rtnData_v        : boolean;  -- When true, signal to host when a data byte arrives from SD card.
+    variable doDeselect_v     : boolean;  -- When true, de-select SD card after a command is issued.
+    
+  begin
+    if rising_edge(clk_i) then
+
+      if reset_i = YES then             -- Perform a reset.
+        state_v          := START_INIT;  -- Send the FSM to the initialization entry-point.
+        sclkPhaseTimer_v := 0;  -- Don't delay the initialization right after reset.
+        busy_o           <= YES;  -- Busy while the SD card interface is being initialized.
+
+      elsif sclkPhaseTimer_v /= 0 then
+        -- Setting the clock phase timer to a non-zero value delays any further actions
+        -- and generates the slower SPI clock from the faster master clock.
+        sclkPhaseTimer_v := sclkPhaseTimer_v - 1;
+
+        -- Clock phase timer has reached zero, so check handshaking sync. between host and controller.
+
+        -- Handshaking lets the host control the flow of data to/from the SD card controller.
+        -- Handshaking between the SD card controller and the host proceeds as follows:
+        --   1: Controller raises its handshake and waits.
+        --   2: Host sees controller handshake and raises its handshake in acknowledgement.
+        --   3: Controller sees host handshake acknowledgement and lowers its handshake.
+        --   4: Host sees controller lower its handshake and removes its handshake.
+        --
+        -- Handshaking is bypassed when the controller FSM is initializing the SD card.
+        
+      elsif state_v /= START_INIT and hndShk_r = HI and hndShk_i = LO then
+        null;            -- Waiting for the host to acknowledge handshake.
+      elsif state_v /= START_INIT and hndShk_r = HI and hndShk_i = HI then
+        txData_v := data_i;             -- Get any data passed from the host.
+        hndShk_r <= LO;  -- The host acknowledged, so lower the controller handshake.
+      elsif state_v /= START_INIT and hndShk_r = LO and hndShk_i = HI then
+        null;            -- Waiting for the host to lower its handshake.
+      elsif (state_v = START_INIT) or (hndShk_r = LO and hndShk_i = LO) then
+        -- Both handshakes are low, so the controller operations can proceed.
+        
+        busy_o <= YES;  -- Busy by default. Only false when waiting for R/W from host or stalled by error.
+
+        case state_v is
+          
+          when START_INIT =>  -- Deselect the SD card and send it a bunch of clock pulses with MOSI high.
+            error_o          <= (others => ZERO);  -- Clear error flags.
+            clkDivider_v     := INIT_SCLK_PHASE_PERIOD_C - 1;  -- Use slow SPI clock freq during init.
+            sclkPhaseTimer_v := INIT_SCLK_PHASE_PERIOD_C - 1;  -- and set the duration of the next clock phase.
+            sclk_r           <= LO;     -- Start with low clock to the SD card.
+            hndShk_r         <= LO;     -- Initialize handshake signal.
+            addr_v           := (others => ZERO);  -- Initialize address.
+            rtnData_v        := false;  -- No data is returned to host during initialization.
+            bitCnt_v         := NUM_INIT_CLKS_C;  -- Generate this many clock pulses.
+            state_v          := DESELECT;  -- De-select the SD card and pulse SCLK.
+            rtnState_v       := SEND_CMD0;  -- Then go to this state after the clock pulses are done.
+            
+          when SEND_CMD0 =>             -- Put the SD card in the IDLE state.
+            cs_bo            <= LO;     -- Enable the SD card.
+            txCmd_v          := CMD0_C & x"00000000" & x"95";  -- 0x95 is the correct CRC for this command.
+            bitCnt_v         := txCmd_v'length;  -- Set bit counter to the size of the command.
+            getCmdResponse_v := true;  -- Sending a command that generates a response.
+            doDeselect_v     := true;  -- De-select SD card after this command finishes.
+            state_v          := START_TX;  -- Go to FSM subroutine to send the command.
+            rtnState_v       := CHK_CMD0_RESPONSE;  -- Then check the response to the command.
+            
+          when CHK_CMD0_RESPONSE =>  -- Check card's R1 response to the CMD0.
+            if rx_v = IDLE_NO_ERRORS_C then
+              state_v := SEND_CMD8;  -- Continue init if SD card is in IDLE state with no errors
+            else
+              state_v := SEND_CMD0;     -- Otherwise, try CMD0 again.
+            end if;
+            
+          when SEND_CMD8 =>  -- This command is needed to initialize SDHC cards.
+            cs_bo            <= LO;     -- Enable the SD card.
+            txCmd_v          := CMD8_C & x"000001aa" & x"87";  -- 0x87 is the correct CRC for this command.
+            bitCnt_v         := txCmd_v'length;  -- Set bit counter to the size of the command.
+            getCmdResponse_v := true;  -- Sending a command that generates a response.
+            doDeselect_v     := false;  -- Don't de-select, need to get the R7 response sent from the SD card.
+            state_v          := START_TX;  -- Go to FSM subroutine to send the command.
+            rtnState_v       := GET_CMD8_RESPONSE;  -- Then go to this state after the command is sent.
+            
+          when GET_CMD8_RESPONSE =>     -- Get the R7 response to CMD8.
+            cs_bo            <= LO;  -- The SD card should already be enabled, but let's be explicit.
+            bitCnt_v         := 31;     -- Four bytes (32 bits) in R7 response.
+            getCmdResponse_v := false;  -- Not sending a command that generates a response.
+            doDeselect_v     := true;  -- De-select card to end the command after getting the four bytes.
+            state_v          := RX_BITS;  -- Go to FSM subroutine to get the R7 response.
+            rtnState_v       := SEND_CMD55;  -- Then go here (we don't care what the actual R7 response is).
+
+          when SEND_CMD55 =>  -- Send CMD55 as preamble of ACMD41 initialization command.
+            cs_bo            <= LO;     -- Enable the SD card.
+            txCmd_v          := CMD55_C & x"00000000" & FAKE_CRC_C;
+            bitCnt_v         := txCmd_v'length;  -- Set bit counter to the size of the command.
+            getCmdResponse_v := true;  -- Sending a command that generates a response.
+            doDeselect_v     := true;  -- De-select SD card after this command finishes.
+            state_v          := START_TX;  -- Go to FSM subroutine to send the command.
+            rtnState_v       := SEND_CMD41;  -- Then go to this state after the command is sent.
+            
+          when SEND_CMD41 =>  -- Send the SD card the initialization command.
+            cs_bo            <= LO;     -- Enable the SD card.
+            txCmd_v          := CMD41_C & x"40000000" & FAKE_CRC_C;
+            bitCnt_v         := txCmd_v'length;  -- Set bit counter to the size of the command.
+            getCmdResponse_v := true;  -- Sending a command that generates a response.
+            doDeselect_v     := true;  -- De-select SD card after this command finishes.
+            state_v          := START_TX;  -- Go to FSM subroutine to send the command.
+            rtnState_v       := CHK_ACMD41_RESPONSE;  -- Then check the response to the command.
+            
+          when CHK_ACMD41_RESPONSE =>
+            -- The CMD55, CMD41 sequence should cause the SD card to leave the IDLE state
+            -- and become ready for SPI read/write operations. If still IDLE, then repeat the CMD55, CMD41 sequence.
+            -- If one of the R1 error flags is set, then report the error and stall.
+            if rx_v = ACTIVE_NO_ERRORS_C then   -- Not IDLE, no errors.
+              state_v := WAIT_FOR_HOST_RW;  -- Start processing R/W commands from the host.
+            elsif rx_v = IDLE_NO_ERRORS_C then  -- Still IDLE but no errors. 
+              state_v := SEND_CMD55;    -- Repeat the CMD55, CMD41 sequence.
+            else                        -- Some error occurred.
+              state_v := REPORT_ERROR;  -- Report the error and stall.
+            end if;
+            
+          when WAIT_FOR_HOST_RW =>  -- Wait for the host to read or write a block of data from the SD card.
+            clkDivider_v     := SCLK_PHASE_PERIOD_C - 1;  -- Set SPI clock frequency for normal operation.
+            getCmdResponse_v := true;  -- Get R1 response to any commands issued to the SD card.
+            if rd_i = YES then  -- send READ command and address to the SD card.
+              cs_bo <= LO;              -- Enable the SD card.
+              if continue_i = YES then  -- Multi-block read. Use stored address.
+                if CARD_TYPE_G = SD_CARD_E then  -- SD cards use byte-addressing, 
+                  addr_v := addr_v + BLOCK_SIZE_G;  -- so add block-size to get next block address.
+                else                    -- SDHC cards use block-addressing,
+                  addr_v := addr_v + 1;  -- so just increment current block address.
+                end if;
+                txCmd_v := READ_BLK_CMD_C & std_logic_vector(addr_v) & FAKE_CRC_C;
+              else                      -- Single-block read.
+                txCmd_v := READ_BLK_CMD_C & addr_i & FAKE_CRC_C;  -- Use address supplied by host.
+                addr_v  := unsigned(addr_i);  -- Store address for multi-block operations.
+              end if;
+              bitCnt_v   := txCmd_v'length;  -- Set bit counter to the size of the command.
+              byteCnt_v  := RD_BLK_SZ_C;
+              state_v    := START_TX;  -- Go to FSM subroutine to send the command.
+              rtnState_v := RD_BLK;  -- Then go to this state to read the data block.
+            elsif wr_i = YES then  -- send WRITE command and address to the SD card.
+              cs_bo <= LO;              -- Enable the SD card.
+              if continue_i = YES then  -- Multi-block write. Use stored address.
+                if CARD_TYPE_G = SD_CARD_E then  -- SD cards use byte-addressing, 
+                  addr_v := addr_v + BLOCK_SIZE_G;  -- so add block-size to get next block address.
+                else                    -- SDHC cards use block-addressing,
+                  addr_v := addr_v + 1;  -- so just increment current block address.
+                end if;
+                txCmd_v := WRITE_BLK_CMD_C & std_logic_vector(addr_v) & FAKE_CRC_C;
+              else                      -- Single-block write.
+                txCmd_v := WRITE_BLK_CMD_C & addr_i & FAKE_CRC_C;  -- Use address supplied by host.
+                addr_v  := unsigned(addr_i);  -- Store address for multi-block operations.
+              end if;
+              bitCnt_v   := txCmd_v'length;  -- Set bit counter to the size of the command.
+              byteCnt_v  := WR_BLK_SZ_C;    -- Set number of bytes to write.
+              state_v    := START_TX;  -- Go to this FSM subroutine to send the command ...
+              rtnState_v := WR_BLK;  -- then go to this state to write the data block.
+            else              -- Do nothing and wait for command from host.
+              cs_bo   <= HI;            -- Deselect the SD card.
+              busy_o  <= NO;  -- SD card interface is waiting for R/W from host, so it's not busy.
+              state_v := WAIT_FOR_HOST_RW;  -- Keep waiting for command from host.
+            end if;
+
+          when RD_BLK =>          -- Read a block of data from the SD card.
+            -- Some default values for these...
+            rtnData_v  := false;  -- Data is only returned to host in one place.
+            bitCnt_v   := rx_v'length - 1;   -- Receiving byte-sized data.
+            state_v    := RX_BITS;      -- Call the bit receiver routine.
+            rtnState_v := RD_BLK;   -- Return here when done receiving a byte.
+            if byteCnt_v = RD_BLK_SZ_C then  -- Initial read to prime the pump.
+              byteCnt_v := byteCnt_v - 1;
+            elsif byteCnt_v = RD_BLK_SZ_C -1 then  -- Then look for the data block start token.
+              if rx_v = NO_TOKEN_C then  -- Receiving 0xFF means the card hasn't responded yet. Keep trying.
+                null;
+              elsif rx_v = START_TOKEN_C then
+                rtnData_v := true;  -- Found the start token, so now start returning data byes to the host.
+                byteCnt_v := byteCnt_v - 1;
+              else  -- Getting anything else means something strange has happened.
+                state_v := REPORT_ERROR;
+              end if;
+            elsif byteCnt_v >= 3 then  -- Now bytes of data from the SD card are received.
+              rtnData_v := true;        -- Return this data to the host.
+              byteCnt_v := byteCnt_v - 1;
+            elsif byteCnt_v = 2 then  -- Receive the 1st CRC byte at the end of the data block.
+              byteCnt_v := byteCnt_v - 1;
+            elsif byteCnt_v = 1 then    -- Receive the 2nd
+              byteCnt_v := byteCnt_v - 1;
+            else    -- Reading is done, so deselect the SD card.
+              sclk_r     <= LO;
+              bitCnt_v   := 2;
+              state_v    := DESELECT;
+              rtnState_v := WAIT_FOR_HOST_RW;
+            end if;
+            
+          when WR_BLK =>             -- Write a block of data to the SD card.
+            -- Some default values for these...
+            getCmdResponse_v := false;  -- Sending data bytes so there's no command response from SD card.
+            bitCnt_v         := txData_v'length;  -- Transmitting byte-sized data.
+            state_v          := START_TX;  -- Call the bit transmitter routine.
+            rtnState_v       := WR_BLK;  -- Return here when done transmitting a byte.
+            if byteCnt_v = WR_BLK_SZ_C then
+              txData_v := NO_TOKEN_C;  -- Hold MOSI high for one byte before data block goes out.
+            elsif byteCnt_v = WR_BLK_SZ_C - 1 then     -- Send start token.
+              txData_v := START_TOKEN_C;   -- Starting token for data block.
+            elsif byteCnt_v >= 4 then   -- Now send bytes in the data block.
+              hndShk_r <= HI;           -- Signal host to provide data.
+            -- The transmit shift register is loaded with data from host in the handshaking section above.
+            elsif byteCnt_v = 3 or byteCnt_v = 2 then  -- Send two phony CRC bytes at end of packet.
+              txData_v := FAKE_CRC_C;
+            elsif byteCnt_v = 1 then
+              bitCnt_v   := rx_v'length - 1;
+              state_v    := RX_BITS;  -- Get response of SD card to the write operation.
+              rtnState_v := WR_WAIT;
+            else                        -- Check received response byte.
+              if std_match(rx_v, DATA_ACCEPTED_C) then  -- Data block was accepted.
+                state_v := WR_WAIT;  -- Wait for the SD card to finish writing the data into Flash.
+              else                      -- Data block was rejected.
+                error_o(15 downto 8) <= rx_v;
+                state_v              := REPORT_ERROR;  -- Report the error.
+              end if;
+            end if;
+            byteCnt_v := byteCnt_v - 1;
+            
+          when WR_WAIT =>  -- Wait for SD card to finish writing the data block.
+            -- The SD card will pull MISO low while it is busy, and raise it when it is done.
+            sclk_r           <= not sclk_r;    -- Toggle the SPI clock...
+            sclkPhaseTimer_v := clkDivider_v;  -- and set the duration of the next clock phase.
+            if sclk_r = HI and miso_i = HI then  -- Data block has been written, so deselect the SD card.
+              bitCnt_v   := 2;
+              state_v    := DESELECT;
+              rtnState_v := WAIT_FOR_HOST_RW;
+            end if;
+            
+          when START_TX =>
+            -- Start sending command/data by lowering SCLK and outputing MSB of command/data
+            -- so it has plenty of setup before the rising edge of SCLK.
+            sclk_r           <= LO;  -- Lower the SCLK (although it should already be low).
+            sclkPhaseTimer_v := clkDivider_v;  -- Set the duration of the low SCLK.
+            mosi_o           <= tx_v(tx_v'high);  -- Output MSB of command/data.
+            tx_v             := tx_v(tx_v'high-1 downto 0) & ONE;  -- Shift command/data register by one bit.
+            bitCnt_v         := bitCnt_v - 1;  -- The first bit has been sent, so decrement bit counter.
+            state_v          := TX_BITS;  -- Go here to shift out the rest of the command/data bits.
+            
+          when TX_BITS =>  -- Shift out remaining command/data bits and (possibly) get response from SD card.
+            sclk_r           <= not sclk_r;    -- Toggle the SPI clock...
+            sclkPhaseTimer_v := clkDivider_v;  -- and set the duration of the next clock phase.
+            if sclk_r = HI then
+              -- SCLK is going to be flipped from high to low, so output the next command/data bit
+              -- so it can setup while SCLK is low.
+              if bitCnt_v /= 0 then  -- Keep sending bits until the bit counter hits zero.
+                mosi_o   <= tx_v(tx_v'high);
+                tx_v     := tx_v(tx_v'high-1 downto 0) & ONE;
+                bitCnt_v := bitCnt_v - 1;
+              else
+                if getCmdResponse_v then
+                  state_v  := GET_CMD_RESPONSE;  -- Get a response to the command from the SD card.
+                  bitCnt_v := Response_t'length - 1;  -- Length of the expected response.
+                else
+                  state_v          := rtnState_v;  -- Return to calling state (no need to get a response).
+                  sclkPhaseTimer_v := 0;  -- Clear timer so next SPI op can begin ASAP with SCLK low.
+                end if;
+              end if;
+            end if;
+
+          when GET_CMD_RESPONSE =>  -- Get the response of the SD card to a command.
+            if sclk_r = HI and miso_i = LO then  -- MISO will be held high by SD card until 1st bit of R1 response, which is 0.
+              -- Shift in the MSB bit of the response.
+              rx_v     := rx_v(rx_v'high-1 downto 0) & miso_i;
+              bitCnt_v := bitCnt_v - 1;
+              state_v  := RX_BITS;  -- Now receive the reset of the response.
+            end if;
+            sclk_r           <= not sclk_r;    -- Toggle the SPI clock...
+            sclkPhaseTimer_v := clkDivider_v;  -- and set the duration of the next clock phase.
+
+          when RX_BITS =>               -- Receive bits from the SD card.
+            if sclk_r = HI then    -- Bits enter after the rising edge of SCLK.
+              rx_v := rx_v(rx_v'high-1 downto 0) & miso_i;
+              if bitCnt_v /= 0 then     -- More bits left to receive.
+                bitCnt_v := bitCnt_v - 1;
+              else                      -- Last bit has been received.
+                if rtnData_v then       -- Send the received data to the host.
+                  data_o   <= rx_v;     -- Output received data to the host.
+                  hndShk_r <= HI;  -- Signal to the host that the data is ready.
+                end if;
+                if doDeselect_v then
+                  bitCnt_v := 1;
+                  state_v  := DESELECT;  -- De-select SD card before returning.
+                else
+                  state_v := rtnState_v;  -- Otherwise, return to calling state without de-selecting.
+                end if;
+              end if;
+            end if;
+            sclk_r           <= not sclk_r;    -- Toggle the SPI clock...
+            sclkPhaseTimer_v := clkDivider_v;  -- and set the duration of the next clock phase.
+            
+          when DESELECT =>  -- De-select the SD card and send some clock pulses (Must enter with sclk at zero.)
+            doDeselect_v     := false;  -- Once the de-select is done, clear the flag that caused it.
+            cs_bo            <= HI;     -- De-select the SD card.
+            mosi_o           <= HI;  -- Keep the data input of the SD card pulled high.
+            state_v          := PULSE_SCLK;  -- Pulse the clock so the SD card will see the de-select.
+            sclk_r           <= LO;  -- Clock is set low so the next rising edge will see the new CS and MOSI
+            sclkPhaseTimer_v := clkDivider_v;  -- Set the duration of the next clock phase.
+            
+          when PULSE_SCLK =>  -- Issue some clock pulses. (Must enter with sclk at zero.)
+            if sclk_r = HI then
+              if bitCnt_v /= 0 then
+                bitCnt_v := bitCnt_v - 1;
+              else  -- Return to the calling routine when the pulse counter reaches zero.
+                state_v := rtnState_v;
+              end if;
+            end if;
+            sclk_r           <= not sclk_r;    -- Toggle the SPI clock...
+            sclkPhaseTimer_v := clkDivider_v;  -- and set the duration of the next clock phase.
+            
+          when REPORT_ERROR =>  -- Report the error code and stall here until a reset occurs.
+            error_o(rx_v'range) <= rx_v;  -- Output the SD card response as the error code.
+            busy_o              <= NO;  -- Not busy.
+
+          when others =>
+            state_v := START_INIT;
+        end case;
+      end if;
+    end if;
+    state <= state_v;
+  end process;
+
+  sclk_o   <= sclk_r;    -- Output the generated SPI clock for the SD card.
+  hndShk_o <= hndShk_r;  -- Output the generated handshake to the host.
+  
+end architecture;
 

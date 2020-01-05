@@ -200,14 +200,17 @@ package isa_defs is
 	constant IRQ_BUTTON2 : integer := 4;
 	constant IRQ_BUTTON3 : integer := 8;
 	constant IRQ_BUTTON4 : integer := 16;
-	constant IRQ_VBLANK : integer := 32;
-	constant IRQ_UART_RX : integer := 64;
-	constant IRQ_KEYBOARD : integer := 128;
+	constant IRQ_BUTTON5 : integer := 32;
+	constant IRQ_VBLANK : integer := 64;
+	constant IRQ_UART_RX : integer := 128;
+	constant IRQ_KEYBOARD : integer := 256;
+	constant IRQ_SD_CARD : integer := 512;
 
 	-- Port Definitions
 	constant PORT_STATUS_REG      : integer := 0;
 	constant PORT_IRQ_CLEAR       : integer := 1;
 	constant PORT_IRQ_MASK        : integer := 2;
+	constant PORT_IRQ_READY       : integer := 3;
 	constant PORT_LED             : integer := 5;
 	constant PORT_SEVEN_SEG       : integer := 6;
 	constant PORT_BUTTONS         : integer := 7;
@@ -216,8 +219,11 @@ package isa_defs is
 	constant PORT_UART_TX_DATA    : integer := 11;
 	constant PORT_UART_RX_DATA    : integer := 12;
 	constant PORT_SD_FLAGS        : integer := 20;
-	constant PORT_SD_COMMANDS     : integer := 21;
+	constant PORT_SD_COMMAND      : integer := 21;
 	constant PORT_SD_ADDRESS      : integer := 22;
-	constant PORT_SD_DATA         : integer := 23;
+	constant PORT_SD_RX_DATA      : integer := 23;
+	constant PORT_PS2_FLAGS       : integer := 30;
+	constant PORT_PS2_RX_DATA     : integer := 31;
+	constant PORT_PS2_TX_DATA     : integer := 32;
 
 end isa_defs;
