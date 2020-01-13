@@ -21,8 +21,8 @@ NET "clk_100mhz" IOSTANDARD = LVCMOS33;
 ###################################################################################################################################################
 #                                                 UART Interface                                                                                  #
 ################################################################################################################################################### 
-#NET "UART_RX"                    LOC = A8      |  IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ;
-#NET "UART_TX"                    LOC = B8      |  IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ;
+NET "DBG_UART_RX"                    LOC = A8      |  IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ;
+NET "DBG_UART_TX"                    LOC = B8      |  IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ;
 
 NET "UART_RX"                    LOC = U8      |  IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ;
 NET "UART_TX"                    LOC = V8     |  IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ;

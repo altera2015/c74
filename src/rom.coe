@@ -1,5 +1,5 @@
 ; Zero page ram contents for source file boot.s
-; Assembled 2020-01-05 13:46:24.471424
+; Assembled 2020-01-12 16:10:50.982706
 
 memory_initialization_radix = 16;
 memory_initialization_vector =

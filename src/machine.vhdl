@@ -79,6 +79,10 @@ entity machine is
         UART_TX             : out std_logic;
         UART_RX             : in std_logic;
         
+        -- UART
+        DBG_UART_TX             : out std_logic;
+        DBG_UART_RX             : in std_logic;        
+                
         -- SD Card
         SD_MISO             : in std_logic;
         SD_MOSI             : out std_logic;
@@ -97,7 +101,7 @@ architecture machine_arch of machine is
 	COMPONENT control_logic
 	PORT(
 		clk                                        : IN std_logic;
-		reset                                      : IN std_logic;
+		master_reset                               : IN std_logic := '1';
         
         lpddr_pA_cmd_en                            : out std_logic;
         lpddr_pA_cmd_instr                         : out std_logic_vector(2 downto 0);
@@ -154,6 +158,10 @@ architecture machine_arch of machine is
         -- UART Pins.
    		rx_pin : IN std_logic;          
         tx_pin : OUT std_logic;
+        
+        -- Debug UART
+        DBG_UART_TX             : out std_logic;
+        DBG_UART_RX             : in std_logic;      
         
         -- SD Card
         SD_MISO             : in std_logic;
@@ -429,14 +437,19 @@ architecture machine_arch of machine is
     signal  c3_p3_rd_overflow                        : std_logic;
     signal  c3_p3_rd_error                           : std_logic; 
     signal  user_clk                                 : std_logic;
-    signal  framebuffer_reset                        : std_logic;
+    signal  framebuffer_reset                        : std_logic := '1';
     
 
 begin
    
    
-
-   
+--    process(clk)
+--    begin
+--        if rising_edge(clk) then
+--            master_reset <= not reset_button;        
+--        end if;
+--    end process;
+--   
     master_reset <= not reset_button;
 
 
@@ -654,7 +667,7 @@ begin
 
 	control_logic0: control_logic PORT MAP(
 		clk => user_clk,
-		reset => reset,
+		master_reset => reset,
         buttons => buttons,
         seven_seg => seven_seg,
 		lpddr_pA_cmd_en => c3_p0_cmd_en,
@@ -702,6 +715,8 @@ begin
         led=>led,
         tx_pin => UART_TX,
         rx_pin => UART_RX,
+        DBG_UART_TX => DBG_UART_TX,
+        DBG_UART_RX => DBG_UART_RX,
         SD_MISO => SD_MISO,
         SD_MOSI => SD_MOSI,
         SD_CS => SD_CS,

@@ -1,0 +1,9 @@
+<RCC>
+    <qresource prefix="/icons">
+        <file>iconfinder_sync_126579.png</file>
+        <file>iconfinder_ic_pause_circle_fill_48px_352582.png</file>
+        <file>iconfinder_play_126575.png</file>
+        <file>icons8-step-into-48.png</file>
+        <file>iconfinder_stop_326597.png</file>
+    </qresource>
+</RCC>

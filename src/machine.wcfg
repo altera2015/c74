@@ -35,7 +35,7 @@
          </top_modules>
       </db_ref>
    </db_ref_list>
-   <WVObjectSize size="17" />
+   <WVObjectSize size="19" />
    <wvobject fp_name="/machine_tb/machine0/control_logic0/clk" type="logic" db_ref_id="1">
       <obj_property name="ElementShortName">clk</obj_property>
       <obj_property name="ObjectShortName">clk</obj_property>
@@ -577,5 +577,88 @@
          <obj_property name="ElementShortName">sclk_o</obj_property>
          <obj_property name="ObjectShortName">sclk_o</obj_property>
       </wvobject>
+   </wvobject>
+   <wvobject fp_name="group126" type="group">
+      <obj_property name="label">Debug</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/dbg_prt0/rx" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">rx</obj_property>
+         <obj_property name="ObjectShortName">rx</obj_property>
+      </wvobject>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/dbg_prt0/rx_data" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">rx_data[7:0]</obj_property>
+         <obj_property name="ObjectShortName">rx_data[7:0]</obj_property>
+      </wvobject>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/dbg_prt0/rx_empty" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">rx_empty</obj_property>
+         <obj_property name="ObjectShortName">rx_empty</obj_property>
+      </wvobject>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/dbg_prt0/rx_enable" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">rx_enable</obj_property>
+         <obj_property name="ObjectShortName">rx_enable</obj_property>
+      </wvobject>
+      <wvobject fp_name="/machine_tb/r_tx_byte" type="array" db_ref_id="1">
+         <obj_property name="DisplayName">label</obj_property>
+         <obj_property name="ElementShortName">r_tx_byte[7:0]</obj_property>
+         <obj_property name="ObjectShortName">r_tx_byte[7:0]</obj_property>
+         <obj_property name="label">response</obj_property>
+         <obj_property name="Radix">HEXRADIX</obj_property>
+      </wvobject>
+      <wvobject fp_name="/machine_tb/r_tx_dv" type="logic" db_ref_id="1">
+         <obj_property name="DisplayName">label</obj_property>
+         <obj_property name="ElementShortName">r_tx_dv</obj_property>
+         <obj_property name="ObjectShortName">r_tx_dv</obj_property>
+         <obj_property name="label">response_valid</obj_property>
+      </wvobject>
+      <wvobject fp_name="/machine_tb/dbg_uart_rx" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">dbg_uart_rx</obj_property>
+         <obj_property name="ObjectShortName">dbg_uart_rx</obj_property>
+      </wvobject>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/dbg_continue_request" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">dbg_continue_request</obj_property>
+         <obj_property name="ObjectShortName">dbg_continue_request</obj_property>
+      </wvobject>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/dbg_halt_request" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">dbg_halt_request</obj_property>
+         <obj_property name="ObjectShortName">dbg_halt_request</obj_property>
+      </wvobject>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/dbg_mem_re" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">dbg_mem_re</obj_property>
+         <obj_property name="ObjectShortName">dbg_mem_re</obj_property>
+      </wvobject>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/dbg_mem_address" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">dbg_mem_address[31:0]</obj_property>
+         <obj_property name="ObjectShortName">dbg_mem_address[31:0]</obj_property>
+      </wvobject>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/halt" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">halt</obj_property>
+         <obj_property name="ObjectShortName">halt</obj_property>
+      </wvobject>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/step" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">step</obj_property>
+         <obj_property name="ObjectShortName">step</obj_property>
+      </wvobject>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/dbg_prt0/tx_full" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">tx_full</obj_property>
+         <obj_property name="ObjectShortName">tx_full</obj_property>
+      </wvobject>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/dbg_prt0/tx_enable" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">tx_enable</obj_property>
+         <obj_property name="ObjectShortName">tx_enable</obj_property>
+      </wvobject>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/dbg_prt0/tx_data" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">tx_data[7:0]</obj_property>
+         <obj_property name="ObjectShortName">tx_data[7:0]</obj_property>
+         <obj_property name="Radix">HEXRADIX</obj_property>
+      </wvobject>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/dbg_prt0/data_to_send" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">data_to_send[31:0]</obj_property>
+         <obj_property name="ObjectShortName">data_to_send[31:0]</obj_property>
+         <obj_property name="Radix">HEXRADIX</obj_property>
+      </wvobject>
+   </wvobject>
+   <wvobject fp_name="/machine_tb/machine0/control_logic0/dbg_prt0/state" type="other" db_ref_id="1">
+      <obj_property name="ElementShortName">state</obj_property>
+      <obj_property name="ObjectShortName">state</obj_property>
    </wvobject>
 </wave_config>

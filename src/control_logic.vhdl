@@ -7,9 +7,6 @@
 -- 
 -- Copyright (c) 2019 Ron Bessems
 
-
--- https://www.digikey.com/eewiki/pages/viewpage.action?pageId=68976724
-
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
@@ -22,7 +19,7 @@ entity control_logic is
     port ( 
     
         clk   : in  std_logic;
-        reset : in  std_logic;
+        master_reset : in  std_logic;
 
         -- LPDDR Interface
         lpddr_pA_cmd_en                            : out std_logic;
@@ -83,6 +80,10 @@ entity control_logic is
    		rx_pin : IN std_logic;          
         tx_pin : OUT std_logic;
         
+        -- UART
+        DBG_UART_TX             : out std_logic;
+        DBG_UART_RX             : in std_logic;              
+        
         -- SD Card
         SD_MISO             : in std_logic;
         SD_MOSI             : out std_logic;
@@ -92,13 +93,37 @@ entity control_logic is
         -- PS/2
         PS2_CLK             : inout std_logic;
         PS2_DATA            : inout std_logic
-
+    
+        
 
     );
 end control_logic;
 
 
 architecture behavioral of control_logic is
+    
+    
+	COMPONENT dbg_prt
+	PORT(
+		clk : IN std_logic;
+		reset : IN std_logic;
+		rx : IN std_logic;
+		tx : out std_logic;
+		Qs : in register_array;
+        cpu_flags : in  std_logic_vector (31 downto 0);
+		data : IN std_logic_vector(31 downto 0);
+		ready : IN std_logic;
+		halt : IN std_logic;          
+		address : OUT std_logic_vector(31 downto 0);
+		re : OUT std_logic;
+		step : OUT std_logic;
+		halt_request : OUT std_logic;
+        continue_request : out std_logic;
+        reset_request : out std_logic;
+        dout : out std_logic_vector (31 downto 0);
+        we : out std_logic
+		);
+	END COMPONENT;
     
 	COMPONENT ps2_transceiver
 	PORT(
@@ -389,6 +414,7 @@ architecture behavioral of control_logic is
     end;
 
 
+    signal reset: std_logic := '1';
     -- IRQ 
     signal irq_clear : std_logic_vector(15 downto 0);
     signal irq_asserted : std_logic;
@@ -514,9 +540,29 @@ architecture behavioral of control_logic is
     signal ps2_code : std_logic_vector(7 downto 0);
     signal ps2_code_new : std_logic;
     signal ps2_rx_error : std_logic;
-        	
+    
+    -- Debug Logic
+    signal halt : std_logic;
+    signal step : std_logic;
+    signal dbg_mem_address : std_logic_vector(31 downto 0);
+    signal dbg_mem_re : std_logic;
+    signal dbg_halt_request : std_logic;
+    signal dbg_continue_request : std_logic;
+    signal dbg_reset_request : std_logic;
+    signal dbg_dout : std_logic_vector (31 downto 0);
+    signal dbg_mem_we : std_logic;
+    
 begin
 
+    -- reset <= dbg_reset_request or master_reset;
+    -- reset <= master_reset;
+    process(clk)
+    begin
+        if rising_edge(clk) then
+            reset <= dbg_reset_request or master_reset;        
+        end if;
+    end process;    
+    
     a_address <= reg_Qs(REG_PC);
     
     process(clk)
@@ -576,6 +622,8 @@ begin
                 irq_mask <= (others => '0');                
                 irq_clear <= (others=>'0');
                 
+                halt <= '0';
+                
             else
             
                 data_address_adder_bypass <= '0';
@@ -629,23 +677,42 @@ begin
                     -- STAGE 0
                     -- ***********************************************************************                    
                     when 0 =>
-                        if irq_asserted = '1' then
+                    
+                        if (step='0' and halt = '1') or dbg_halt_request = '1' then
                                                         
-                            stage <= 6;  
-                                                       
-                            data_address_adder_f <= '0';
-                            data_address_adder_op1 <= reg_Qs(REG_SP);
-                            data_address_adder_op2 <= "00000000000000000000000000000100";
-                            sp_dec <= '1';
-     
+                            halt <= not dbg_continue_request;
+                                
+                            data_address_adder_op2 <= dbg_mem_address;
+                            data_address_adder_bypass <= '1';                            
+                            
+                            if dbg_mem_re = '1' then                                
+                                b_re <= dbg_mem_re;                                                              
+                            end if;
+                            
+                            if dbg_mem_we = '1' then
+                                b_D <= dbg_dout;
+                                b_we <= "1111";                            
+                            end if;
+                            
                         else
-                            a_RE <= '1';
-                            instruction <= (others=>'0');
-                            stage <= 1;
-                            pc_inc <= '1';
+                    
+                            if irq_asserted = '1' then
+                                                            
+                                stage <= 6;  
+                                                           
+                                data_address_adder_f <= '0';
+                                data_address_adder_op1 <= reg_Qs(REG_SP);
+                                data_address_adder_op2 <= "00000000000000000000000000000100";
+                                sp_dec <= '1';
+         
+                            else
+                                a_RE <= '1';
+                                instruction <= (others=>'0');
+                                stage <= 1;
+                                pc_inc <= '1';
+                            end if;
+                            
                         end if;
-                        
-
                         
                     -- ***********************************************************************
                     -- STAGE 1
@@ -864,7 +931,8 @@ begin
                                         end if;
                                         
                                     when SC_HLT =>
-                                        stage <= 1;
+                                        halt <= '1';
+                                        stage <= 0;
                                     when SC_TST =>
                                         temp_idx := to_integer(unsigned(vimm1(4 downto 0)) );
                                         status_register(Z_FLAG_POS) <= reg_Qs(va_reg_idx)( temp_idx );
@@ -1563,6 +1631,27 @@ begin
 		miso_i => SD_MISO
 	); 
     sd_error <= '0' when sd_error_code = "0000000000000000" else '1';
+ 
+	dbg_prt0: dbg_prt PORT MAP(
+		clk => clk,
+		reset => reset,
+		rx => dbg_uart_rx,
+		tx => dbg_uart_tx,
+		Qs => reg_Qs,
+        cpu_flags => status_register,
+		address => dbg_mem_address,
+		data => b_q,
+		ready => b_ready,
+		re => dbg_mem_re,
+		halt => halt,
+		step => step,
+		halt_request => dbg_halt_request,
+        continue_request => dbg_continue_request,
+        reset_request => dbg_reset_request,
+        we => dbg_mem_we,
+        dout => dbg_dout
+	);
+     
  
 end Behavioral;
 

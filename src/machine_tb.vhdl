@@ -8,6 +8,7 @@ LIBRARY ieee;
 USE ieee.std_logic_1164.ALL;
 library unisim;
 use unisim.vcomponents.all;
+use work.isa_defs.all;
 
 ENTITY machine_tb IS
 END machine_tb;
@@ -20,6 +21,7 @@ ARCHITECTURE behavior OF machine_tb IS
    constant C3_SIMULATION      : string := "TRUE"; 
  
     -- Component Declaration for the Unit Under Test (UUT)
+
  
     COMPONENT machine 
     GENERIC (
@@ -54,6 +56,11 @@ ARCHITECTURE behavior OF machine_tb IS
          --c3_rst0 : OUT  std_logic;
          UART_TX             : out std_logic;
          UART_RX             : in std_logic;
+        
+         -- Debug UART
+         DBG_UART_TX             : out std_logic;
+         DBG_UART_RX             : in std_logic;      
+             
          SD_MISO             : in std_logic;
          SD_MOSI             : out std_logic;
          SD_CS               : out std_logic;
@@ -124,7 +131,7 @@ ARCHITECTURE behavior OF machine_tb IS
    signal mcb3_enable2              : std_logic;  
    
    signal UART_TX : std_logic;
-   signal UART_RX : std_logic;
+   signal UART_RX : std_logic := '1';
 
    signal SD_MISO    : std_logic;
    signal SD_MOSI    : std_logic;
@@ -136,7 +143,36 @@ ARCHITECTURE behavior OF machine_tb IS
 
    -- Clock period definitions
    constant clk_100mhz_period : time := 10 ns;
+         
+    -- Debug UART
+    signal DBG_UART_TX : std_logic;
+    signal DBG_UART_RX : std_logic := '1';
+    
+  signal r_TX_DV     : std_logic                    := '0';
+  signal r_TX_BYTE   : std_logic_vector(7 downto 0) := (others => '0');    
+    
+    constant c_BIT_PERIOD : time := 8680 ns;
+  -- Low-level byte-write
+  procedure UART_WRITE_BYTE (
+    i_data_in       : in  std_logic_vector(7 downto 0);
+    signal o_serial : out std_logic) is
+  begin
  
+    -- Send Start Bit
+    o_serial <= '0';
+    wait for c_BIT_PERIOD;
+ 
+    -- Send Data Byte
+    for ii in 0 to 7 loop
+      o_serial <= i_data_in(ii);
+      wait for c_BIT_PERIOD;
+    end loop;  -- ii
+ 
+    -- Send Stop Bit
+    o_serial <= '1';
+    wait for c_BIT_PERIOD;
+  end UART_WRITE_BYTE;    
+    
 BEGIN
  
    rzq_pulldown3 : PULLDOWN port map(O => mcb3_rzq);
@@ -225,6 +261,10 @@ BEGIN
           --c3_rst0 => c3_rst0,
           UART_TX => UART_TX,
           UART_RX => UART_RX,
+          
+          DBG_UART_TX => DBG_UART_TX,
+          DBG_UART_RX => DBG_UART_RX,
+
           SD_MISO => SD_MISO,
           SD_MOSI => SD_MOSI,
           SD_CS   => SD_CS,
@@ -235,6 +275,16 @@ BEGIN
     
     PS2_CLK <= '0';
     PS2_DATA <= 'Z';
+    
+    
+  -- Instantiate UART Receiver
+  UART_RX_INST : entity work.uart_rx(rtl)
+    port map (
+      i_clk       => clk_100mhz,
+      i_rx_serial => DBG_UART_TX,
+      o_rx_dv     => r_TX_DV,
+      o_rx_byte   => r_TX_BYTE
+      );    
     
    -- Clock process definitions
    clk_100mhz_process :process
@@ -259,6 +309,25 @@ BEGIN
       wait for 14000 ns;
       buttons(0) <= '0';
 
+
+      UART_WRITE_BYTE('0'&DBG_HALT, DBG_UART_RX);
+      wait for 10ns;
+      
+      UART_WRITE_BYTE('0'&DBG_SET_MEM, DBG_UART_RX);
+      
+      UART_WRITE_BYTE(X"00", DBG_UART_RX);
+      UART_WRITE_BYTE(X"00", DBG_UART_RX);
+      UART_WRITE_BYTE(X"03", DBG_UART_RX);
+      UART_WRITE_BYTE(X"00", DBG_UART_RX);
+      
+      UART_WRITE_BYTE(X"ff", DBG_UART_RX);
+      UART_WRITE_BYTE(X"00", DBG_UART_RX);
+      UART_WRITE_BYTE(X"ff", DBG_UART_RX);
+      UART_WRITE_BYTE(X"00", DBG_UART_RX);
+      
+
+      wait for 10ns;
+      -- UART_WRITE_BYTE('0'DBG_RESET, DBG_UART_RX);
 
       -- insert stimulus here 
 
