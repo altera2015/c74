@@ -1,3 +1,4 @@
+# python3 as.py app.s -b app.bin --details
 # sudo dd if=app.bin of=/dev/sdb bs=512 count=1 conv=notrunc
 # verify: sudo dd if=/dev/sdb of=mbr bs=512 count=1
 .mem 0x300

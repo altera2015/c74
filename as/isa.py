@@ -7,19 +7,18 @@ import pystache
 # Code groups
 
 # GRP Descr.  Full
-# 000 Misc    Y
-# 010 Jump    Y
+# 000 Misc    N
 # 011 Jump    Y
 # 100 ALU     N
 # 101 Flags   N
 # 110 Memory  N
-# 111 Boolean Y
+# 111 Boolean N
 
 op_groups = {
     "MISC": 0,
-    "UNSD": 1,
-    "JMP1": 2,
-    "JMP2": 3,
+    "UNSD1": 1,
+    "UNSD2": 2,
+    "JMP": 3,
     "ALU": 4,
     "FLGS": 5,
     "MEM": 6,
@@ -129,6 +128,12 @@ DEBUG_CONSTANTS = {
     "HALTED_CPU_ID": 0xC3373430 # C740  (MSB bit set)
 }
 
+
+def generate_op( grp, op, immediate ):
+    b = "{0}{1:04b}{2:01b}".format(grp, op, immediate)
+    return int(b,2)
+
+
 ################################################
 # Misc
 ################################################
@@ -137,22 +142,20 @@ misc_codes = [
     [ "NOP", 0, 0 ],    
     [ "OUT", 1, 1 ],
     [ "IN",  1, 2 ],
-    [ "CALL", 1, 3 ],
-    [ "CALLI", 0, 3 ],
+    [ "CALL", 0, 3 ],
+    [ "CALLI", 1, 3 ],
     [ "RET", 0, 4],
     [ "RETI", 0, 5],
-    [ "PUSH", 1, 6],
-    [ "POP", 1, 7]
+    [ "PUSH", 0, 6],
+    [ "PUSHI", 1, 6],
+    [ "POP", 0, 7]
 ]
-
-def generate_misc( registers, op ):
-    b = MISC + "{1:03b}{0:02b}".format( registers, op )
-    return int(b, 2)
 
 def generate_misc_opcodes():
 
     for code in misc_codes:        
-        op_codes[ code[0] ] = generate_misc( code[1], code[2] )
+        op_codes[ code[0] ] = generate_op( MISC, code[2], code[1] )
+        
 
 ################################################
 # ALU
@@ -173,70 +176,66 @@ alu_codes = [
     [ "SUB", 0 ]
 ]
 
-def generate_alu( registers, f, carry, dont_store_result ):
+def generate_alu( immediate, f, carry, dont_store_result ):
     
-    b = ALU + "{0:b}{1:b}{2:b}{3:02b}".format( dont_store_result, f, carry, registers  )
-    # 28 = don't store
-    # 27 = Add/Sub 
-    # 26 = Carry
-    
-    
-    
-    
-    return int(b, 2)
+    # Group    | 0 | SR | Add| Carry | I 
+    # 31 30 29 | 28| 27 | 26 | 25    | 24
+    op = int("{0:01b}{1:01b}{2:01b}".format(dont_store_result, f, carry),2)
+    return generate_op( ALU, op, immediate)
+
 
 def generate_alu_opcodes():
     
 
-    op_codes[ "CMP" ] = generate_alu( 3, 0, 0, 1 )
-    op_codes[ "CMPI" ] = generate_alu( 2, 0, 0, 1 )
+    op_codes[ "CMP" ] = generate_alu( 0, 0, 0, 1 )
+    op_codes[ "CMPI" ] = generate_alu( 1, 0, 0, 1 )
     
     for code in alu_codes:
-        op_codes[ code[0] ] = generate_alu( 3, code[1], 0, 0 )
-        op_codes[ code[0] + "C" ] = generate_alu( 3, code[1], 1, 0 )
-        op_codes[ code[0] + "I" ] = generate_alu( 2, code[1], 0, 0 )
-        op_codes[ code[0] + "CI" ] = generate_alu( 2, code[1], 1, 0 )
+        op_codes[ code[0] ] = generate_alu( 0, code[1], 0, 0 )
+        op_codes[ code[0] + "C" ] = generate_alu( 0, code[1], 1, 0 )
+        op_codes[ code[0] + "I" ] = generate_alu( 1, code[1], 0, 0 )
+        op_codes[ code[0] + "CI" ] = generate_alu( 1, code[1], 1, 0 )
         
     
 
-def generate_alu_doc( dest ):
-    t = open("opcode.template", 'r')
-    template = t.read()
-    t.close()
+#def generate_alu_doc( dest ):
+    #t = open("opcode.template", 'r')
+    #template = t.read()
+    #t.close()
     
-    doc_codes = {
-        "title": "ALU",
-        "opcodes" : [
-            {
-                "name": "Compare / CMP",
-                "operands": 2,
-                "example": [ "CMP RA, RB", "CMP RA, imm" ],
-                "desc": "Subtracts operand 2 from operand 1 like SUB but discards result, does set flags",
-                "flags": "ZVNC",
-            },
-            {
-                "name": "Addition / ADD",
-                "operands": 3,
-                "example": [ "ADD RA, RB, RC", "ADD RA, RB, imm" ],
-                "desc": "Adds operand 2 to 3 and stores result in first operand",
-                "flags": "ZVNC",
-            },
-            {
-                "name": "Subtraction / SUB",
-                "operands": 3,
-                "example": [ "SUB RA, RB, RC", "SUB RA, RB, imm" ],
-                "desc": "Subtracts operand 3 from operand 2 and stores result in first operand",
-                "flags": "ZVNC",
-            }
-        ]
-    }
+    #doc_codes = {
+        #"title": "ALU",
+        #"opcodes" : [
+            #{
+                #"name": "Compare / CMP",
+                #"operands": 2,
+                #"example": [ "CMP RA, RB", "CMP RA, imm" ],
+                #"desc": "Subtracts operand 2 from operand 1 like SUB but discards result, does set flags",
+                #"flags": "ZVNC",
+            #},
+            #{
+                #"name": "Addition / ADD",
+                #"operands": 3,
+                #"example": [ "ADD RA, RB, RC", "ADD RA, RB, imm" ],
+                #"desc": "Adds operand 2 to 3 and stores result in first operand",
+                #"flags": "ZVNC",
+            #},
+            #{
+                #"name": "Subtraction / SUB",
+                #"operands": 3,
+                #"example": [ "SUB RA, RB, RC", "SUB RA, RB, imm" ],
+                #"desc": "Subtracts operand 3 from operand 2 and stores result in first operand",
+                #"flags": "ZVNC",
+            #}
+        #]
+    #}
 
     
-    html = pystache.render(template, doc_codes)
+    #html = pystache.render(template, doc_codes)
     
-    f = open(dest + "/alu.html", "w")
-    f.write(html)
-    f.close()
+    #f = open(dest + "/alu.html", "w")
+    #f.write(html)
+    #f.close()
     
 
 ################################################
@@ -248,26 +247,17 @@ flag_codes = [
     [ "CLR", 0, 1 ],
     [ "HLT", 0, 2 ],
     [ "INT", 0, 3 ],
-    [ "TST", 1, 4 ]
+    [ "TST", 1, 4 ],
+    [ "MOV", 0, 5 ],
+    [ "MOVI", 1, 5 ]
+    
 ]
-
-flag_codes_I = [
-    [ "MOV", 2, 5 ],
-]
-
-def generate_flag( registers, op ):
-    b = FLGS + "{1:03b}{0:02b}".format( registers, op )
-    return int(b, 2)
 
 # 101 group 101X XXRR
 def generate_flag_opcodes():
        
     for code in flag_codes:        
-        op_codes[ code[0] ] = generate_flag( code[1], code[2] )
-        
-    for code in flag_codes_I:        
-        op_codes[ code[0] ] = generate_flag( code[1], code[2] )
-        op_codes[ code[0] + "I" ] = generate_flag( code[1] - 1, code[2] )
+        op_codes[ code[0] ] = generate_op( FLGS, code[2], code[1] )
 
         
 
@@ -303,18 +293,18 @@ jump_codes = [
     [ "JGE", 0, 6],
     [ "JLT", 1, 6],
     [ "JGT", 0, 7],
-    [ "JLE", 1, 7]    
+    [ "JLE", 1, 7]
 ]
 #mnemonic
 
-def generate_jump( registers, invert, condition ):
-    b = "01{1:b}{2:03b}{0:02b}".format( registers, invert, condition )
-    return int(b, 2)
+def generate_jump( immediate, invert, condition ):    
+    op = int("{0:01b}{1:03b}".format(invert, condition),2)
+    return generate_op(JMP, op, immediate)
 
 def generate_jump_opcodes():
     for code in jump_codes:        
-        op_codes[ code[0] + "I" ] = generate_jump( 0, code[1], code[2] )
-        op_codes[ code[0] ]       = generate_jump( 1, code[1], code[2] )
+        op_codes[ code[0] + "I" ] = generate_jump( 1, code[1], code[2] )
+        op_codes[ code[0] ]       = generate_jump( 0, code[1], code[2] )
         
     
 ###############################################
@@ -322,26 +312,23 @@ def generate_jump_opcodes():
 ###############################################
 
 boolean_codes_binary = [
-    [ "AND", 3, 0 ],    
-    [ "OR",  3, 1 ],
-    [ "XOR", 3, 2 ],
-    [ "LSL", 2, 3 ],
-    [ "LSR", 2, 4 ],
-    [ "ASL", 2, 5 ],    
-    [ "ASR", 2, 6 ],
-    [ "NOT", 2, 7 ]
+    
+    [ "AND", 0 ],    
+    [ "OR",  1 ],
+    [ "XOR", 2 ],
+    
+    [ "LSL", 3 ],
+    [ "LSR", 4 ],
+    [ "ASL", 5 ],    
+    [ "ASR", 6 ],
+    [ "NOT", 7 ]
 ]
 
-def generate_boolean( registers, op ):
-    b = BOOL + "{1:03b}{0:02b}".format( registers, op )
-    return int(b, 2)
-
 # 101 group 101X XXRR
-def generate_boolean_opcodes():
-       
+def generate_boolean_opcodes():       
     for code in boolean_codes_binary:        
-        op_codes[ code[0] ] = generate_boolean( code[1], code[2] )
-        op_codes[ code[0] + "I" ] = generate_boolean( code[1] - 1, code[2] )
+        op_codes[ code[0] ] = generate_op( BOOL, code[1], 0 )
+        op_codes[ code[0] + "I" ] = generate_op(BOOL, code[1], 1 )
 
 
 ###############################################
@@ -357,35 +344,28 @@ def generate_boolean_opcodes():
 # STA R1, R2, 4
 
 memory_codes_I = [    
-    [ "LDR", 2, 0 ],
-    [ "STR", 2, 1 ],
-    [ "LDRB", 2, 2 ],
-    [ "STRB", 2, 3 ]    
+    [ "LDR", 0 ],
+    [ "STR", 1 ],
+    [ "LDRB", 2 ],
+    [ "STRB", 3 ]    
 ]
 
 memory_codes = [    
-    [ "LDA", 2, 4 ],
-    [ "STA", 2, 5 ],
-    [ "LDAB", 2, 6 ],
-    [ "STAB", 2, 7 ]
+    [ "LDA", 4 ],
+    [ "STA", 5 ],
+    [ "LDAB", 6 ],
+    [ "STAB", 7 ]
 ]
-
-def generate_memory( registers, op ):
-    b = MEM + "{1:03b}{0:02b}".format( registers, op )
-    return int(b, 2)
 
 # 101 group 101X XXRR
 def generate_memory_opcodes():
        
     for code in memory_codes_I:        
-        op_codes[ code[0] ] = generate_memory( code[1], code[2] )
-        op_codes[ code[0] + "I" ] = generate_memory( code[1] - 1, code[2] )
-
+        op_codes[ code[0] ] = generate_op( MEM, code[1], 0 )
+        op_codes[ code[0] + "I" ] = generate_op( MEM, code[1], 1 )
+        
     for code in memory_codes:        
-        op_codes[ code[0] ] = generate_memory( code[1], code[2] )        
-
-
-
+        op_codes[ code[0] ] = generate_op( MEM, code[1], 0 )
 
 
 generate_flag_opcodes()    
@@ -445,9 +425,9 @@ def write_vhdl(fn):
     f.write("\n\t-- Short Codes\n")
     for op_code in sorted(mnemonic_by_op_code.keys()):
         mnemonic = mnemonic_by_op_code[op_code]        
-        short_code = op_code & 28
-        short_code = short_code >> 2
-        f.write("\tconstant SC_{0:<5} : std_logic_vector(2 downto 0) := \"{1:03b}\"; -- 0x{1:02X}\n".format(mnemonic, short_code))    
+        short_code = op_code & 30
+        short_code = short_code >> 1
+        f.write("\tconstant SC_{0:<5} : std_logic_vector(3 downto 0) := \"{1:04b}\"; -- 0x{1:02X}\n".format(mnemonic, short_code))    
         # 000{1:03b}{0:02b}
         
         
@@ -539,8 +519,8 @@ def write_c(fn):
     f.write("\n// Short Codes\n")
     for op_code in sorted(mnemonic_by_op_code.keys()):
         mnemonic = mnemonic_by_op_code[op_code]        
-        short_code = op_code & 28
-        short_code = short_code >> 2
+        short_code = op_code & 30
+        short_code = short_code >> 1
         f.write("#define SC_{0:<5} \t\t 0x{1:02X}\n".format(mnemonic, short_code))                    
         
         
@@ -577,7 +557,7 @@ write_vhdl("../src/isa_defs.vhdl")
 write_python("isa_defs.py")
 write_c("../include/isa_defs.h")
 
-generate_alu_doc(".");
+#generate_alu_doc(".");
 
 print("C74 ISA has {} opcodes".format(len(mnemonic_by_op_code)))
 

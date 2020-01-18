@@ -15,7 +15,7 @@ use work.isa_defs.all;
 entity blu is
     port ( clk : in  std_logic;
            reset : in  std_logic;
-           f : in  std_logic_vector (2 downto 0);
+           f : in  std_logic_vector (3 downto 0);
            op1 : in  std_logic_vector (31 downto 0);
            op2 : in  std_logic_vector (31 downto 0);
            r : out  std_logic_vector (31 downto 0);

@@ -170,7 +170,7 @@ architecture behavioral of control_logic is
 	PORT(
 		clk : IN std_logic;
 		reset : IN std_logic;
-		f : IN std_logic_vector(2 downto 0);
+		f : IN std_logic_vector(3 downto 0);
 		op1 : IN std_logic_vector(31 downto 0);
 		op2 : IN std_logic_vector(31 downto 0);          
 		r : OUT std_logic_vector(31 downto 0);
@@ -528,7 +528,7 @@ architecture behavioral of control_logic is
     signal alu_f : std_logic_vector(1 downto 0);
     
     -- BLU
-    signal blu_f : std_logic_vector(2 downto 0);
+    signal blu_f : std_logic_vector(3 downto 0);
     signal blu_op1 : std_logic_vector(31 downto 0);
     signal blu_op2 : std_logic_vector(31 downto 0);
     signal blu_r : std_logic_vector(31 downto 0);
@@ -578,12 +578,13 @@ begin
         variable vsigned_val1 : signed(31 downto 0);    
         variable vsigned_val2 : signed(31 downto 0); 
         variable opgroup : std_logic_vector(2 downto 0);
-        variable short_code : std_logic_vector(2 downto 0);
-        variable register_cnt : integer range 0 to 3;
+        variable short_code : std_logic_vector(3 downto 0);
+        
         variable temp : std_logic;
         variable temp_idx : integer range 0 to 31;
         variable temp_word : std_logic_vector(31 downto 0);
         variable byte_access_remainder : std_logic_vector(1 downto 0);    
+        variable imm_flag : std_logic;
     begin
     
         if rising_edge(clk) then
@@ -654,6 +655,7 @@ begin
                 a_WE <= "0000";
                 b_RE <= '0';
                 b_WE <= "0000";
+                imm_flag := '0';
                 
                 if sd_dout_taken = '1' then
                     if sd_dout_avail = '0' then
@@ -753,9 +755,8 @@ begin
                             signed_val2 <= vsigned_val2;
                             
                             opgroup := a_Q(31 downto 29);
-                            short_code := a_Q(28 downto 26);
-                            register_cnt := to_integer(unsigned(a_Q(25 downto 24)));
-                            
+                            short_code := a_Q(28 downto 25);                            
+                            imm_flag := a_Q(24);
                             
                             
                             case opgroup is
@@ -822,7 +823,7 @@ begin
                                     data_address_adder_op1 <= reg_Qs(REG_SP);
                                     data_address_adder_op2 <= "00000000000000000000000000000100";
                                     
-                                    if register_cnt = 1 then
+                                    if imm_flag = '0' then
                                         alu_op1 <= reg_Qs(va_reg_idx);
                                         alu_op2 <= "00000000000000000000000000000000";
                                     else                                        
@@ -850,7 +851,7 @@ begin
                                     when SC_LDR | SC_LDRB | 
                                          SC_STR | SC_STRB  =>                                        
                                         data_address_adder_f <= '1';
-                                        if register_cnt = 1 then                                            
+                                        if imm_flag = '1' then                                            
                                             data_address_adder_op1 <= std_logic_vector(vsigned_val1);
                                             data_address_adder_op2 <= reg_Qs(REG_PC);
                                             byte_access_remainder := std_logic_vector(unsigned(reg_Qs(REG_PC)(1 downto 0)) + unsigned(vsigned_val1(1 downto 0)));
@@ -863,7 +864,7 @@ begin
                                     when SC_LDA | SC_LDAB |
                                          SC_STA | SC_STAB =>                                        
                                         data_address_adder_f <= '1';
-                                        if register_cnt = 1 then
+                                        if imm_flag = '1' then
                                             data_address_adder_op1 <= std_logic_vector(vsigned_val1);
                                             data_address_adder_op2 <= reg_Qs(REG_PC);
                                             byte_access_remainder := reg_Qs(REG_PC)(1 downto 0);
@@ -888,12 +889,12 @@ begin
                             -- ALU
                             when GRP_ALU =>
                                 
-                                alu_f <= a_Q(27 downto 26);                                
-                                case register_cnt is
-                                when 2 =>
+                                alu_f <= short_code(1 downto 0);                                
+                                case imm_flag is
+                                when '1' =>
                                     alu_op1 <= reg_Qs(vb_reg_idx);
                                     alu_op2 <= vimm2;
-                                when 3 =>
+                                when '0' =>
                                     alu_op1 <= reg_Qs(vb_reg_idx);
                                     alu_op2 <= reg_Qs(vc_reg_idx);
                                 when others =>
@@ -901,14 +902,14 @@ begin
                                 end case;
 
                             -- Jump groups
-                            when GRP_JMP1 | GRP_JMP2 =>
+                            when GRP_JMP =>
                             
                                 alu_f <= "10";
-                                case register_cnt is
-                                when 0 =>
+                                case imm_flag is
+                                when '1' =>
                                     alu_op1 <= reg_Qs(REG_PC);
                                     alu_op2 <= std_logic_vector(unsigned(vsigned_val0));
-                                when 1 =>
+                                when '0' =>
                                     alu_op1 <= reg_Qs(va_reg_idx);
                                     alu_op2 <= "00000000000000000000000000000000";
                                 when others =>
@@ -922,7 +923,7 @@ begin
                                 
                                     when SC_MOV =>
                                         alu_f <= "10";
-                                        if register_cnt = 1 then
+                                        if imm_flag = '1' then
                                             alu_op1 <= vimm1;
                                             alu_op2 <= "00000000000000000000000000000000";
                                         else                                        
@@ -945,24 +946,38 @@ begin
                                 
                             -- BLU
                             when GRP_BOOL =>
+                                blu_f <= short_code; --a_Q(27 downto 25);                                
                                 
-                                blu_f <= a_Q(28 downto 26);                                
-                                case register_cnt is
-                                when 1 =>
-                                    blu_op1 <= vimm1;
-                                    blu_op2 <= "00000000000000000000000000000000";
-                                    blu_repeats_in <= "00001";
-                                when 2 =>
-                                    blu_op1 <= reg_Qs(vb_reg_idx);
-                                    blu_op2 <= vimm2;
-                                    blu_repeats_in <= vimm2(4 downto 0);
-                                when 3 =>
-                                    blu_op1 <= reg_Qs(vb_reg_idx);
-                                    blu_op2 <= reg_Qs(vc_reg_idx);
-                                    blu_repeats_in <= reg_Qs(vc_reg_idx)(4 downto 0);                                    
+                                case short_code is
+                                when SC_AND | SC_OR | SC_XOR =>
+                                    if imm_flag = '1' then
+                                    
+                                        blu_op1 <= reg_Qs(vb_reg_idx);
+                                        blu_op2 <= vimm2;
+                                        blu_repeats_in <= vimm2(4 downto 0);
+                                    
+                                    else
+                                    
+                                        blu_op1 <= reg_Qs(vb_reg_idx);
+                                        blu_op2 <= reg_Qs(vc_reg_idx);
+                                        blu_repeats_in <= reg_Qs(vc_reg_idx)(4 downto 0);                                    
+                                    
+                                    end if;
                                 when others =>
-                                    -- nothing.
-                                end case;                                
+                                    
+                                    if imm_flag = '1' then
+                                        blu_op1 <= vimm1;
+                                        blu_op2 <= "00000000000000000000000000000000";
+                                        blu_repeats_in <= "00001";                                                                        
+                                    else
+                                    
+                                        blu_op1 <= reg_Qs(vb_reg_idx);
+                                        blu_op2 <= vimm2;
+                                        blu_repeats_in <= vimm2(4 downto 0);
+                                    
+                                    end if;
+                                
+                                end case;
                                 
                             when others =>
                              -- nothing.                                
@@ -982,9 +997,12 @@ begin
                             case short_code is
                             
                                 when SC_PUSH =>
-                                
-                                    b_WE <= "1111";                                    
-                                    b_D <= reg_Qs(va_reg_idx);
+                                    b_WE <= "1111";
+                                    if ( imm_flag = '1' ) then
+                                        b_D <= vimm0; -- push immediate to stack.
+                                    else                                        
+                                        b_D <= reg_Qs(va_reg_idx);
+                                    end if;
                                 
                                 when SC_CALL =>
                                     
@@ -1033,7 +1051,7 @@ begin
                         -- ALU groups
                         when GRP_ALU =>
                             
-                            reg_load(va_reg_idx) <= not instruction(28);
+                            reg_load(va_reg_idx) <= not short_code(2); --instruction(27);
                             
                         -- Flags
                         when GRP_FLGS =>
@@ -1051,9 +1069,9 @@ begin
                              
                              
                         -- Jump
-                        when GRP_JMP1 | GRP_JMP2 =>
+                        when GRP_JMP =>
                             stage <= 0;
-                            case short_code is
+                            case '0' & short_code(2 downto 0) is
                             when SC_J =>
                                 temp := '1';
                             when SC_JEQ =>
@@ -1074,7 +1092,7 @@ begin
                                 temp := '0';
                             end case;
                                                         
-                            if instruction(29) = '1' then
+                            if short_code(3) = '1' then
                                 reg_load(REG_PC) <= not temp;
                             else
                                 reg_load(REG_PC) <= temp;

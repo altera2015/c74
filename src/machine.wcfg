@@ -58,14 +58,17 @@
       <wvobject fp_name="/machine_tb/machine0/control_logic0/imm0" type="array" db_ref_id="1">
          <obj_property name="ElementShortName">imm0[31:0]</obj_property>
          <obj_property name="ObjectShortName">imm0[31:0]</obj_property>
+         <obj_property name="Radix">HEXRADIX</obj_property>
       </wvobject>
       <wvobject fp_name="/machine_tb/machine0/control_logic0/imm1" type="array" db_ref_id="1">
          <obj_property name="ElementShortName">imm1[31:0]</obj_property>
          <obj_property name="ObjectShortName">imm1[31:0]</obj_property>
+         <obj_property name="Radix">HEXRADIX</obj_property>
       </wvobject>
       <wvobject fp_name="/machine_tb/machine0/control_logic0/imm2" type="array" db_ref_id="1">
          <obj_property name="ElementShortName">imm2[31:0]</obj_property>
          <obj_property name="ObjectShortName">imm2[31:0]</obj_property>
+         <obj_property name="Radix">HEXRADIX</obj_property>
       </wvobject>
       <wvobject fp_name="/machine_tb/machine0/control_logic0/a_q" type="array" db_ref_id="1">
          <obj_property name="DisplayName">label</obj_property>
