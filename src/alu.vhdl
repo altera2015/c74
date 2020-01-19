@@ -6,10 +6,12 @@
 
 library ieee;
 use ieee.std_logic_1164.all;
-
+use ieee.numeric_std.all;
 
 -- f(1) => 1 = add, 0 = subtract
 -- f(0) => 1 = use carry, 0 do not use carry
+
+-- f(2) => 1 = mult
 
 entity alu is
     port ( clk : in  std_logic;
@@ -42,6 +44,7 @@ architecture Behavioral of alu is
     
     signal gated_carry : std_logic;
     signal res : STD_LOGIC_VECTOR(31 DOWNTO 0);
+    
 begin
     
     gated_carry <= c_in and f(0);        
@@ -56,9 +59,9 @@ begin
             c_out => c,
             s => res
         );
-    
-    
+
     result <= res;
+    
     z <= '1' when res = "00000000000000000000000000000000" else '0';
     n <= res(0);
     v <= f(1) when op1(31) /= res(31) and op1(31) = op2(31) else not f(1);

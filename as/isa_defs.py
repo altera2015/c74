@@ -8,8 +8,11 @@ OP_CALLI = 7   ; # 07
 OP_RET   = 8   ; # 08
 OP_RETI  = 10  ; # 0A
 OP_PUSH  = 12  ; # 0C
-OP_PUSHI = 13  ; # 0D
 OP_POP   = 14  ; # 0E
+OP_MUL   = 16  ; # 10
+OP_MULI  = 17  ; # 11
+OP_SMUL  = 18  ; # 12
+OP_SMULI = 19  ; # 13
 OP_J     = 96  ; # 60
 OP_JI    = 97  ; # 61
 OP_JEQ   = 98  ; # 62
@@ -48,8 +51,8 @@ OP_ADD   = 132 ; # 84
 OP_ADDI  = 133 ; # 85
 OP_ADDC  = 134 ; # 86
 OP_ADDCI = 135 ; # 87
-OP_CMP   = 136 ; # 88
-OP_CMPI  = 137 ; # 89
+OP_CMP   = 144 ; # 90
+OP_CMPI  = 145 ; # 91
 OP_SET   = 160 ; # A0
 OP_CLR   = 162 ; # A2
 OP_HLT   = 164 ; # A4
@@ -87,43 +90,43 @@ OP_NOT   = 238 ; # EE
 OP_NOTI  = 239 ; # EF
 
 predef_constants = {
+	"Z_FLAG_BIT": 0,
+	"C_FLAG_BIT": 2,
 	"I_FLAG_BIT": 4,
 	"V_FLAG_BIT": 1,
 	"N_FLAG_BIT": 3,
-	"Z_FLAG_BIT": 0,
-	"C_FLAG_BIT": 2,
+	"Z_FLAG": 1,
+	"C_FLAG": 4,
 	"I_FLAG": 16,
 	"V_FLAG": 2,
 	"N_FLAG": 8,
-	"Z_FLAG": 1,
-	"C_FLAG": 4,
 
-	"IRQ_KEYBOARD": 256,
-	"IRQ_VBLANK": 64,
-	"IRQ_BUTTON1": 2,
-	"IRQ_BUTTON5": 32,
 	"IRQ_BUTTON2": 4,
-	"IRQ_BUTTON3": 8,
+	"IRQ_SD_CARD": 512,
 	"IRQ_UART_RX": 128,
 	"IRQ_BUTTON4": 16,
+	"IRQ_KEYBOARD": 256,
 	"IRQ_BUTTON0": 1,
-	"IRQ_SD_CARD": 512,
+	"IRQ_BUTTON5": 32,
+	"IRQ_BUTTON1": 2,
+	"IRQ_VBLANK": 64,
+	"IRQ_BUTTON3": 8,
 	"PORT_SD_ADDRESS" : 22,
-	"PORT_SD_RX_DATA" : 23,
-	"PORT_PS2_RX_DATA" : 31,
-	"PORT_STATUS_REG" : 0,
-	"PORT_PS2_FLAGS" : 30,
-	"PORT_IRQ_MASK" : 2,
-	"PORT_LED" : 5,
-	"PORT_SD_FLAGS" : 20,
-	"PORT_UART_FLAGS" : 10,
-	"PORT_IRQ_CLEAR" : 1,
 	"PORT_PS2_TX_DATA" : 32,
-	"PORT_SWITCHES" : 8,
-	"PORT_SD_COMMAND" : 21,
+	"PORT_SD_RX_DATA" : 23,
+	"PORT_STATUS_REG" : 0,
+	"PORT_PS2_RX_DATA" : 31,
 	"PORT_BUTTONS" : 7,
-	"PORT_SEVEN_SEG" : 6,
 	"PORT_IRQ_READY" : 3,
+	"PORT_LED" : 5,
+	"PORT_UART_FLAGS" : 10,
+	"PORT_SD_FLAGS" : 20,
+	"PORT_PS2_FLAGS" : 30,
 	"PORT_UART_TX_DATA" : 11,
 	"PORT_UART_RX_DATA" : 12,
+	"PORT_SD_COMMAND" : 21,
+	"PORT_SWITCHES" : 8,
+	"PORT_IRQ_CLEAR" : 1,
+	"PORT_IRQ_MASK" : 2,
+	"PORT_SEVEN_SEG" : 6,
 }

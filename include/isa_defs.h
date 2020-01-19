@@ -22,8 +22,11 @@
 #define OP_RET   		 0x08
 #define OP_RETI  		 0x0A
 #define OP_PUSH  		 0x0C
-#define OP_PUSHI 		 0x0D
 #define OP_POP   		 0x0E
+#define OP_MUL   		 0x10
+#define OP_MULI  		 0x11
+#define OP_SMUL  		 0x12
+#define OP_SMULI 		 0x13
 #define OP_J     		 0x60
 #define OP_JI    		 0x61
 #define OP_JEQ   		 0x62
@@ -62,8 +65,8 @@
 #define OP_ADDI  		 0x85
 #define OP_ADDC  		 0x86
 #define OP_ADDCI 		 0x87
-#define OP_CMP   		 0x88
-#define OP_CMPI  		 0x89
+#define OP_CMP   		 0x90
+#define OP_CMPI  		 0x91
 #define OP_SET   		 0xA0
 #define OP_CLR   		 0xA2
 #define OP_HLT   		 0xA4
@@ -109,8 +112,11 @@
 #define SC_RET   		 0x04
 #define SC_RETI  		 0x05
 #define SC_PUSH  		 0x06
-#define SC_PUSHI 		 0x06
 #define SC_POP   		 0x07
+#define SC_MUL   		 0x08
+#define SC_MULI  		 0x08
+#define SC_SMUL  		 0x09
+#define SC_SMULI 		 0x09
 #define SC_J     		 0x00
 #define SC_JI    		 0x00
 #define SC_JEQ   		 0x01
@@ -149,8 +155,8 @@
 #define SC_ADDI  		 0x02
 #define SC_ADDC  		 0x03
 #define SC_ADDCI 		 0x03
-#define SC_CMP   		 0x04
-#define SC_CMPI  		 0x04
+#define SC_CMP   		 0x08
+#define SC_CMPI  		 0x08
 #define SC_SET   		 0x00
 #define SC_CLR   		 0x01
 #define SC_HLT   		 0x02

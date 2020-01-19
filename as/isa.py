@@ -115,9 +115,10 @@ DEBUG_CMDS = {
     "GET_REG_13": 0x3D,
     "GET_REG_14": 0x3E,
     "GET_REG_15": 0x3F,
-    "GET_MEM":    0x40,   # + 4 byte address MSB. ACK & 4 bytes MSB first
-    # FUTURE
+    "GET_MEM":    0x40,   # + 4 byte address MSB. ACK & 4 bytes MSB first    
     "SET_MEM": 0x41
+    
+    # Future?
     # "SET_REG":    
     # "SET_FLAGS":  
 
@@ -147,8 +148,14 @@ misc_codes = [
     [ "RET", 0, 4],
     [ "RETI", 0, 5],
     [ "PUSH", 0, 6],
-    [ "PUSHI", 1, 6],
-    [ "POP", 0, 7]
+    
+    [ "POP", 0, 7],
+    
+    [ "MUL", 0, 8],
+    [ "MULI", 1, 8],
+    [ "SMUL", 0, 9],
+    [ "SMULI", 1, 9]    
+    
 ]
 
 def generate_misc_opcodes():
@@ -176,11 +183,16 @@ alu_codes = [
     [ "SUB", 0 ]
 ]
 
+
+# f => 01 = Add
+# f => 00 = SUB
+
 def generate_alu( immediate, f, carry, dont_store_result ):
     
-    # Group    | 0 | SR | Add| Carry | I 
+    # GRP      | Short Code          | I-flag    
+    # Group    | SR| FFFFFF  | Carry | I 
     # 31 30 29 | 28| 27 | 26 | 25    | 24
-    op = int("{0:01b}{1:01b}{2:01b}".format(dont_store_result, f, carry),2)
+    op = int("{0:01b}{1:02b}{2:01b}".format(dont_store_result, f, carry),2)
     return generate_op( ALU, op, immediate)
 
 
@@ -189,6 +201,7 @@ def generate_alu_opcodes():
 
     op_codes[ "CMP" ] = generate_alu( 0, 0, 0, 1 )
     op_codes[ "CMPI" ] = generate_alu( 1, 0, 0, 1 )
+
     
     for code in alu_codes:
         op_codes[ code[0] ] = generate_alu( 0, code[1], 0, 0 )

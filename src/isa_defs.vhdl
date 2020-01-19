@@ -25,8 +25,11 @@ package isa_defs is
 	constant OP_RET   : std_logic_vector(7 downto 0) := "00001000"; -- 0x08
 	constant OP_RETI  : std_logic_vector(7 downto 0) := "00001010"; -- 0x0A
 	constant OP_PUSH  : std_logic_vector(7 downto 0) := "00001100"; -- 0x0C
-	constant OP_PUSHI : std_logic_vector(7 downto 0) := "00001101"; -- 0x0D
 	constant OP_POP   : std_logic_vector(7 downto 0) := "00001110"; -- 0x0E
+	constant OP_MUL   : std_logic_vector(7 downto 0) := "00010000"; -- 0x10
+	constant OP_MULI  : std_logic_vector(7 downto 0) := "00010001"; -- 0x11
+	constant OP_SMUL  : std_logic_vector(7 downto 0) := "00010010"; -- 0x12
+	constant OP_SMULI : std_logic_vector(7 downto 0) := "00010011"; -- 0x13
 	constant OP_J     : std_logic_vector(7 downto 0) := "01100000"; -- 0x60
 	constant OP_JI    : std_logic_vector(7 downto 0) := "01100001"; -- 0x61
 	constant OP_JEQ   : std_logic_vector(7 downto 0) := "01100010"; -- 0x62
@@ -65,8 +68,8 @@ package isa_defs is
 	constant OP_ADDI  : std_logic_vector(7 downto 0) := "10000101"; -- 0x85
 	constant OP_ADDC  : std_logic_vector(7 downto 0) := "10000110"; -- 0x86
 	constant OP_ADDCI : std_logic_vector(7 downto 0) := "10000111"; -- 0x87
-	constant OP_CMP   : std_logic_vector(7 downto 0) := "10001000"; -- 0x88
-	constant OP_CMPI  : std_logic_vector(7 downto 0) := "10001001"; -- 0x89
+	constant OP_CMP   : std_logic_vector(7 downto 0) := "10010000"; -- 0x90
+	constant OP_CMPI  : std_logic_vector(7 downto 0) := "10010001"; -- 0x91
 	constant OP_SET   : std_logic_vector(7 downto 0) := "10100000"; -- 0xA0
 	constant OP_CLR   : std_logic_vector(7 downto 0) := "10100010"; -- 0xA2
 	constant OP_HLT   : std_logic_vector(7 downto 0) := "10100100"; -- 0xA4
@@ -112,8 +115,11 @@ package isa_defs is
 	constant SC_RET   : std_logic_vector(3 downto 0) := "0100"; -- 0x04
 	constant SC_RETI  : std_logic_vector(3 downto 0) := "0101"; -- 0x05
 	constant SC_PUSH  : std_logic_vector(3 downto 0) := "0110"; -- 0x06
-	constant SC_PUSHI : std_logic_vector(3 downto 0) := "0110"; -- 0x06
 	constant SC_POP   : std_logic_vector(3 downto 0) := "0111"; -- 0x07
+	constant SC_MUL   : std_logic_vector(3 downto 0) := "1000"; -- 0x08
+	constant SC_MULI  : std_logic_vector(3 downto 0) := "1000"; -- 0x08
+	constant SC_SMUL  : std_logic_vector(3 downto 0) := "1001"; -- 0x09
+	constant SC_SMULI : std_logic_vector(3 downto 0) := "1001"; -- 0x09
 	constant SC_J     : std_logic_vector(3 downto 0) := "0000"; -- 0x00
 	constant SC_JI    : std_logic_vector(3 downto 0) := "0000"; -- 0x00
 	constant SC_JEQ   : std_logic_vector(3 downto 0) := "0001"; -- 0x01
@@ -152,8 +158,8 @@ package isa_defs is
 	constant SC_ADDI  : std_logic_vector(3 downto 0) := "0010"; -- 0x02
 	constant SC_ADDC  : std_logic_vector(3 downto 0) := "0011"; -- 0x03
 	constant SC_ADDCI : std_logic_vector(3 downto 0) := "0011"; -- 0x03
-	constant SC_CMP   : std_logic_vector(3 downto 0) := "0100"; -- 0x04
-	constant SC_CMPI  : std_logic_vector(3 downto 0) := "0100"; -- 0x04
+	constant SC_CMP   : std_logic_vector(3 downto 0) := "1000"; -- 0x08
+	constant SC_CMPI  : std_logic_vector(3 downto 0) := "1000"; -- 0x08
 	constant SC_SET   : std_logic_vector(3 downto 0) := "0000"; -- 0x00
 	constant SC_CLR   : std_logic_vector(3 downto 0) := "0001"; -- 0x01
 	constant SC_HLT   : std_logic_vector(3 downto 0) := "0010"; -- 0x02

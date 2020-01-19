@@ -87,6 +87,8 @@ op_defs = {
     "sub": [[OP_SUBI, REG_A_B, ARG_UNSIGNED],[OP_SUB, REG_A_B_C, ARG_NONE]],
     "subc":[[OP_SUBCI, REG_A_B, ARG_UNSIGNED],[OP_SUBC, REG_A_B_C, ARG_NONE]],
     "cmp": [[OP_CMPI, REG_I_A, ARG_UNSIGNED],[OP_CMP, REG_I_A_B, ARG_NONE]],
+    "mul": [[OP_MULI, REG_A_B, ARG_UNSIGNED],[OP_MUL, REG_A_B_C, ARG_NONE]],
+    "smul": [[OP_SMULI, REG_A_B, ARG_UNSIGNED],[OP_SMUL, REG_A_B_C, ARG_NONE]],
 
     
     "and": [[OP_ANDI, REG_A_B, ARG_UNSIGNED],[OP_AND, REG_A_B_C, ARG_NONE]],

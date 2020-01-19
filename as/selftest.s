@@ -243,7 +243,36 @@
     mov r0, 0x1c
     hlt
 
-    
+# Mult
+
+    mov r3, 10
+    mov r4, 20
+    mul r2, r3, r4
+    cmp r2, 200
+
+    jeq !12
+    mov r0, 0x1d
+    hlt
+
+# Multi
+
+    mov r3, 25    
+    mul r2, r3, 4
+    cmp r2, 100
+
+    jeq !12
+    mov r0, 0x1e
+    hlt
+
+
+
+    mov r1, 2
+    call func_r0_equals_r1_plus_2
+    cmp r0, 4
+
+    jeq !12
+    mov r0, 0x1e
+    hlt
 
 
 # OK!!    
@@ -251,6 +280,9 @@
     sub r0, r0, 1
     hlt
     
+:func_r0_equals_r1_plus_2
+    add r0, r1, 2
+    ret    
     
 :mem1
     .word 0x01
