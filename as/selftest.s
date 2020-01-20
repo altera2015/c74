@@ -1,5 +1,35 @@
 # C74 Self Check
     
+j main
+
+
+# Interupt table
+reti # irq0 button0
+reti # irq1 button1
+reti # irq2 button2
+reti # irq3 button3
+reti # irq4 button4
+reti # irq5 button5
+j irq_int6 # int6 (software interupt)
+reti # irq7 uart
+reti # irq8 keyboard
+reti # irq9 sdcard
+j irq_int10 # irq10 timer1 
+reti # irq11 timer2
+reti # irq12
+reti # irq13
+reti # irq14
+reti # irq15
+
+:irq_int6
+    mov r10, 100
+    reti
+    
+:irq_int10
+    add r13, r13, 1
+    reti
+    
+:main
 # Check MOVI & CMPI
     mov sp, 0x800
     cmp sp, 0x800    # Error 1 = MOVI check
@@ -44,7 +74,7 @@
     mov r1, 0
     sub r1, r1, 1
     in r1, PORT_STATUS_REG
-    tst r1, C_FLAG_BIT
+    tst r1, C_FLAG
     jeq !12
     mov r0, 6
     hlt
@@ -264,20 +294,100 @@
     mov r0, 0x1e
     hlt
 
+# SMul
 
-
-    mov r1, 2
-    call func_r0_equals_r1_plus_2
-    cmp r0, 4
+    not r0, 0
+    mov r1, 100
+    mov r2, r0
+    xor r2, r2, 99
+    smul r3, r0, r1
+    cmp r2, r3
 
     jeq !12
     mov r0, 0x1e
     hlt
 
 
+# Call
+    mov r1, 2
+    call func_r0_equals_r1_plus_2
+    cmp r0, 4
+
+    jeq !12
+    mov r0, 0x1f
+    hlt
+
+
+# Int 6
+
+    # Clear pending IRQ's on INT6
+    not r0, 0
+    out r0, PORT_IRQ_CLEAR
+    
+    # Set INT6 IRQ Mask
+    in r0, PORT_IRQ_MASK
+    or r0, r0, IRQ_INT6
+    out r0, PORT_IRQ_MASK
+    
+    # Enable Interupts
+    set I_FLAG
+    
+    # Trigger Interrupt
+    int 6    
+    # Check if interupt ran
+    cmp r10, 100
+    
+    clr I_FLAG
+    
+    jeq !12
+    mov r0, 0x20
+    hlt
+
+# Timer 1 test
+
+    mov r13, 0
+    mov r0, 10
+    out r0, PORT_TIMER1_TOP
+    
+    # Clear pending IRQ's on INT6
+    not r0, 0
+    out r0, PORT_IRQ_CLEAR
+    
+    # Set INT6 IRQ Mask
+    in r0, PORT_IRQ_MASK
+    or r0, r0, IRQ_TIMER1
+    out r0, PORT_IRQ_MASK
+    
+    # Enable Interupts
+    set I_FLAG
+    
+    mov r0, 1
+    out r0, PORT_TIMER1_ENABLED
+    
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    
+    nop
+    nop
+    nop
+    nop
+    nop
+    
+    mov r0, 0
+    out r0, PORT_TIMER1_ENABLED
+    clr I_FLAG
+    
+    cmp r13, 1
+    jeq !12
+    mov r0, 0x21
+    hlt
+    
 # OK!!    
-    mov r0, 0       # Error 0xffffffff = C74 OK!
-    sub r0, r0, 1
+    not r0, 0       # Error 0xffffffff = C74 OK!    
     hlt
     
 :func_r0_equals_r1_plus_2

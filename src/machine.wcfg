@@ -9,6 +9,7 @@
             <top_module name="bip_usecase_utils_pkg_v2_0" />
             <top_module name="bip_utils_pkg_v2_0" />
             <top_module name="c_addsub_pkg_v11_0" />
+            <top_module name="c_counter_binary_v11_0_pkg" />
             <top_module name="commonpckg" />
             <top_module name="glbl" />
             <top_module name="isa_defs" />
@@ -30,13 +31,16 @@
             <top_module name="vl_types" />
             <top_module name="vpkg" />
             <top_module name="xbip_addsub_v2_0_comp" />
+            <top_module name="xbip_counter_v2_0_comp" />
+            <top_module name="xbip_counter_v2_0_pkg" />
+            <top_module name="xbip_counter_v2_0_xst_comp" />
             <top_module name="xbip_dsp48_addsub_v2_0_comp" />
             <top_module name="xbip_pipe_v2_0_comp" />
             <top_module name="xbip_pipe_v2_0_xst_comp" />
          </top_modules>
       </db_ref>
    </db_ref_list>
-   <WVObjectSize size="19" />
+   <WVObjectSize size="20" />
    <wvobject fp_name="/machine_tb/machine0/control_logic0/clk" type="logic" db_ref_id="1">
       <obj_property name="ElementShortName">clk</obj_property>
       <obj_property name="ObjectShortName">clk</obj_property>
@@ -59,7 +63,7 @@
       <wvobject fp_name="/machine_tb/machine0/control_logic0/imm0" type="array" db_ref_id="1">
          <obj_property name="ElementShortName">imm0[31:0]</obj_property>
          <obj_property name="ObjectShortName">imm0[31:0]</obj_property>
-         <obj_property name="Radix">HEXRADIX</obj_property>
+         <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
       </wvobject>
       <wvobject fp_name="/machine_tb/machine0/control_logic0/imm1" type="array" db_ref_id="1">
          <obj_property name="ElementShortName">imm1[31:0]</obj_property>
@@ -672,25 +676,45 @@
    <wvobject fp_name="group143" type="group">
       <obj_property name="label">UMult</obj_property>
       <obj_property name="DisplayName">label</obj_property>
-      <wvobject fp_name="/machine_tb/machine0/control_logic0/multi_core0/clk" type="logic" db_ref_id="1">
-         <obj_property name="ElementShortName">clk</obj_property>
-         <obj_property name="ObjectShortName">clk</obj_property>
+   </wvobject>
+   <wvobject fp_name="group145" type="group">
+      <obj_property name="label">Timer1</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/timer1/cntr_reset" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">cntr_reset</obj_property>
+         <obj_property name="ObjectShortName">cntr_reset</obj_property>
       </wvobject>
-      <wvobject fp_name="/machine_tb/machine0/control_logic0/multi_core0/a" type="array" db_ref_id="1">
-         <obj_property name="ElementShortName">a[31:0]</obj_property>
-         <obj_property name="ObjectShortName">a[31:0]</obj_property>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/timer1/cntr_reset_master" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">cntr_reset_master</obj_property>
+         <obj_property name="ObjectShortName">cntr_reset_master</obj_property>
       </wvobject>
-      <wvobject fp_name="/machine_tb/machine0/control_logic0/multi_core0/b" type="array" db_ref_id="1">
-         <obj_property name="ElementShortName">b[31:0]</obj_property>
-         <obj_property name="ObjectShortName">b[31:0]</obj_property>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/timer1/cntr_enable" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">cntr_enable</obj_property>
+         <obj_property name="ObjectShortName">cntr_enable</obj_property>
       </wvobject>
-      <wvobject fp_name="/machine_tb/machine0/control_logic0/multi_core0/ce" type="logic" db_ref_id="1">
-         <obj_property name="ElementShortName">ce</obj_property>
-         <obj_property name="ObjectShortName">ce</obj_property>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/timer1/prescaler" type="other" db_ref_id="1">
+         <obj_property name="ElementShortName">prescaler</obj_property>
+         <obj_property name="ObjectShortName">prescaler</obj_property>
       </wvobject>
-      <wvobject fp_name="/machine_tb/machine0/control_logic0/multi_core0/p" type="array" db_ref_id="1">
-         <obj_property name="ElementShortName">p[31:0]</obj_property>
-         <obj_property name="ObjectShortName">p[31:0]</obj_property>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/timer1/top" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">top[31:0]</obj_property>
+         <obj_property name="ObjectShortName">top[31:0]</obj_property>
+      </wvobject>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/timer1/clr" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">clr</obj_property>
+         <obj_property name="ObjectShortName">clr</obj_property>
+      </wvobject>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/timer1/en" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">en</obj_property>
+         <obj_property name="ObjectShortName">en</obj_property>
+      </wvobject>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/timer1/q" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">q[31:0]</obj_property>
+         <obj_property name="ObjectShortName">q[31:0]</obj_property>
+      </wvobject>
+      <wvobject fp_name="/machine_tb/machine0/control_logic0/timer1/irq" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">irq</obj_property>
+         <obj_property name="ObjectShortName">irq</obj_property>
       </wvobject>
    </wvobject>
 </wave_config>

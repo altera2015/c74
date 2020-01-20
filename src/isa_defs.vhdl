@@ -73,7 +73,7 @@ package isa_defs is
 	constant OP_SET   : std_logic_vector(7 downto 0) := "10100000"; -- 0xA0
 	constant OP_CLR   : std_logic_vector(7 downto 0) := "10100010"; -- 0xA2
 	constant OP_HLT   : std_logic_vector(7 downto 0) := "10100100"; -- 0xA4
-	constant OP_INT   : std_logic_vector(7 downto 0) := "10100110"; -- 0xA6
+	constant OP_INT   : std_logic_vector(7 downto 0) := "10100111"; -- 0xA7
 	constant OP_TST   : std_logic_vector(7 downto 0) := "10101001"; -- 0xA9
 	constant OP_MOV   : std_logic_vector(7 downto 0) := "10101010"; -- 0xAA
 	constant OP_MOVI  : std_logic_vector(7 downto 0) := "10101011"; -- 0xAB
@@ -210,10 +210,12 @@ package isa_defs is
 	constant IRQ_BUTTON3 : integer := 8;
 	constant IRQ_BUTTON4 : integer := 16;
 	constant IRQ_BUTTON5 : integer := 32;
-	constant IRQ_VBLANK : integer := 64;
+	constant IRQ_INT6 : integer := 64;
 	constant IRQ_UART_RX : integer := 128;
 	constant IRQ_KEYBOARD : integer := 256;
 	constant IRQ_SD_CARD : integer := 512;
+	constant IRQ_TIMER1 : integer := 1024;
+	constant IRQ_TIMER2 : integer := 2048;
 
 	-- Port Definitions
 	constant PORT_STATUS_REG      : integer := 0;
@@ -234,6 +236,14 @@ package isa_defs is
 	constant PORT_PS2_FLAGS       : integer := 30;
 	constant PORT_PS2_RX_DATA     : integer := 31;
 	constant PORT_PS2_TX_DATA     : integer := 32;
+	constant PORT_TIMER1_TOP      : integer := 40;
+	constant PORT_TIMER1_VALUE    : integer := 41;
+	constant PORT_TIMER1_RESTART  : integer := 42;
+	constant PORT_TIMER1_ENABLED  : integer := 43;
+	constant PORT_TIMER2_TOP      : integer := 50;
+	constant PORT_TIMER2_VALUE    : integer := 51;
+	constant PORT_TIMER2_RESTART  : integer := 52;
+	constant PORT_TIMER2_ENABLED  : integer := 53;
 
 	-- Debug Port Definitions
 	constant DBG_HALTED               : std_logic_vector(6 downto 0) := "0010000"; -- 0x10

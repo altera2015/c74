@@ -70,7 +70,7 @@
 #define OP_SET   		 0xA0
 #define OP_CLR   		 0xA2
 #define OP_HLT   		 0xA4
-#define OP_INT   		 0xA6
+#define OP_INT   		 0xA7
 #define OP_TST   		 0xA9
 #define OP_MOV   		 0xAA
 #define OP_MOVI  		 0xAB
@@ -207,10 +207,12 @@
 #define IRQ_BUTTON3          8
 #define IRQ_BUTTON4          16
 #define IRQ_BUTTON5          32
-#define IRQ_VBLANK           64
+#define IRQ_INT6             64
 #define IRQ_UART_RX          128
 #define IRQ_KEYBOARD         256
 #define IRQ_SD_CARD          512
+#define IRQ_TIMER1           1024
+#define IRQ_TIMER2           2048
 
 // Port Definitions
 #define PORT_STATUS_REG      0
@@ -231,6 +233,14 @@
 #define PORT_PS2_FLAGS       30
 #define PORT_PS2_RX_DATA     31
 #define PORT_PS2_TX_DATA     32
+#define PORT_TIMER1_TOP      40
+#define PORT_TIMER1_VALUE    41
+#define PORT_TIMER1_RESTART  42
+#define PORT_TIMER1_ENABLED  43
+#define PORT_TIMER2_TOP      50
+#define PORT_TIMER2_VALUE    51
+#define PORT_TIMER2_RESTART  52
+#define PORT_TIMER2_ENABLED  53
 
 // Debug Port Definitions
 #define DBG_HALTED               0x10

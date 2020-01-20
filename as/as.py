@@ -8,6 +8,7 @@ from isa_defs import *
 import shlex
 import math
 import struct
+import operator
 
 labels = {}
 constants = {}
@@ -235,6 +236,13 @@ def encode_32(value):
     return "{0:08X}".format(value)
 
 
+ops_used = {}
+op_to_mnemonic = {}
+
+for key in op_table:
+    ops_used[key] = 0
+    op_to_mnemonic[ op_table[key] ] = key
+
 
 def encode_op( rec, op, reg, arg, pcrelative = False):
     
@@ -271,6 +279,13 @@ def encode_op( rec, op, reg, arg, pcrelative = False):
     if op > OP_LITERAL:
         cmd = "{0:02X}".format(op)
         bits = 24
+        # a = args[0].upper()
+        a = op_to_mnemonic[op]
+        if not a in ops_used:
+            ops_used[a] = 1
+        else:
+            ops_used[a] += 1
+            
     else:
         cmd = ""
         bits = 32
@@ -671,6 +686,7 @@ parser.add_argument('-c', metavar="coe_file", help='COE output file')
 parser.add_argument('-m', metavar="mif_file", help='.mif output file')
 parser.add_argument('-b', metavar="bin_file", help="Save Binary File")
 parser.add_argument('--details',action='store_true', help="dump details")
+parser.add_argument('--isacoverage',action='store_true', help="dump isa coverage")
 
 args = parser.parse_args()
 
@@ -722,5 +738,11 @@ if args.b:
     except:
         print("Failed to write {}".format(args.b))
         exit(-1)
-    
-    
+
+if args.isacoverage:    
+    cnt = 0
+    for port in sorted(ops_used.items(), key=operator.itemgetter(1)):        
+        print("{0} = {1}".format(port[0], port[1]))
+        if port[1] > 0:
+            cnt+=1
+    print("total opcodes = {}, used op codes = {}, coverage = {}".format(len(ops_used), cnt, cnt / len(ops_used)))

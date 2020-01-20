@@ -344,7 +344,30 @@ architecture behavioral of control_logic is
         p : OUT STD_LOGIC_VECTOR(31 DOWNTO 0)
       );
     END COMPONENT;    
+    
+    COMPONENT smult_core
+      PORT (
+        clk : IN STD_LOGIC;
+        a : IN STD_LOGIC_VECTOR(31 DOWNTO 0);
+        b : IN STD_LOGIC_VECTOR(31 DOWNTO 0);
+        ce : IN STD_LOGIC;
+        p : OUT STD_LOGIC_VECTOR(31 DOWNTO 0)
+      );
+    END COMPONENT;
         
+
+	COMPONENT timer
+	PORT(
+		clk : IN std_logic;
+		reset : IN std_logic;
+		top : IN std_logic_vector(31 downto 0);
+		clr : IN std_logic;
+        en  : in std_logic;        
+		q : OUT std_logic_vector(31 downto 0);
+		irq : OUT std_logic
+		);
+	END COMPONENT;
+
 
     -- Assembler
     --
@@ -432,6 +455,7 @@ architecture behavioral of control_logic is
     signal irq_ready : std_logic_vector(15 downto 0);
     signal irq_active_line : std_logic_vector (15 downto 0);
     signal irq_mask : std_logic_vector (15 downto 0);
+    signal irq_int6 : std_logic;
     
     -- UART
     signal tx_enable : std_logic;
@@ -549,6 +573,27 @@ architecture behavioral of control_logic is
     signal umult_p : std_logic_vector(31 downto 0);
     signal umult_ce : std_logic;
 
+    -- signed mult
+    signal smult_a : std_logic_vector(31 downto 0);
+    signal smult_b : std_logic_vector(31 downto 0);
+    signal smult_p : std_logic_vector(31 downto 0);
+    signal smult_ce : std_logic;
+
+        
+    -- Timer 1
+    signal timer1_top : std_logic_vector(31 downto 0);
+    signal timer1_q : std_logic_vector(31 downto 0);
+    signal timer1_en : std_logic;
+    signal timer1_clr : std_logic;
+    signal timer1_irq : std_logic;
+    
+    -- Timer 2
+    signal timer2_top : std_logic_vector(31 downto 0);
+    signal timer2_q : std_logic_vector(31 downto 0);
+    signal timer2_en : std_logic;
+    signal timer2_clr : std_logic;
+    signal timer2_irq : std_logic;
+
     -- PS/2
     signal ps2_code : std_logic_vector(7 downto 0);
     signal ps2_code_new : std_logic;
@@ -599,6 +644,7 @@ begin
         variable byte_access_remainder : std_logic_vector(1 downto 0);    
         variable imm_flag : std_logic;
         variable umult_pipeline : integer range 0 to 2;
+        variable smult_pipeline : integer range 0 to 2;
 
     begin
     
@@ -642,6 +688,13 @@ begin
                 
                 halt <= '0';
                 umult_ce <= '0';
+                irq_int6 <= '0';
+                
+                timer1_top <= (others =>'1');
+                timer2_top <= (others =>'1');
+                timer1_en <= '0';
+                timer2_en <= '0';
+                                
             else
             
                 data_address_adder_bypass <= '0';
@@ -671,8 +724,7 @@ begin
                 a_RE <= '0';
                 a_WE <= "0000";
                 b_RE <= '0';
-                b_WE <= "0000";
-                imm_flag := '0';
+                b_WE <= "0000";                
                 
                 if sd_dout_taken = '1' then
                     if sd_dout_avail = '0' then
@@ -689,6 +741,10 @@ begin
                 tx_enable <= '0';
                 rx_enable <= '0';
                 irq_clear <= (others=>'0');
+                irq_int6 <= '0';
+                
+                timer1_clr <= '0';
+                timer2_clr <= '0';
 
                 case stage is
                     
@@ -781,6 +837,18 @@ begin
                             when GRP_MISC =>
                             
                                 case short_code is
+                                
+                                when SC_SMUL =>
+                                
+                                    smult_a <= reg_Qs(vb_reg_idx);
+                                    smult_ce <= '1';
+                                    if imm_flag = '0' then                                    
+                                        smult_b <= reg_Qs(vc_reg_idx);                                    
+                                    else
+                                        smult_b <= vimm2;
+                                    end if;
+                                    smult_pipeline := 0;
+                                
                                 when SC_MUL =>
                                     
                                     umult_a <= reg_Qs(vb_reg_idx);
@@ -895,24 +963,19 @@ begin
                                     data_address_adder_op1 <= reg_Qs(va_reg_idx);
                                     data_address_adder_op2 <= (others=>'0');                                    
                                 end if;                                   
---                            
---                                alu_f <= "10";
---                                case imm_flag is
---                                when '1' =>
---                                    alu_op1 <= reg_Qs(REG_PC);
---                                    alu_op2 <= std_logic_vector(unsigned(vsigned_val0));
---                                when '0' =>
---                                    alu_op1 <= reg_Qs(va_reg_idx);
---                                    alu_op2 <= "00000000000000000000000000000000";
---                                when others =>
---                                    -- nothing.
---                                end case;
                                 
                             -- FLAGS
                             when GRP_FLGS =>
                             
                                 case short_code is
                                 
+                                    when SC_INT =>
+                                        if vimm0 = "00000000000000000000000000000110" then
+                                            irq_int6 <= '1';
+                                            -- can't go to stage 0 now, we need to 
+                                            -- wait so that IRQ can propagate.
+                                        end if;
+                                        
                                     when SC_MOV =>
                                         -- alu_f <= "10";
                                         if imm_flag = '1' then
@@ -934,40 +997,7 @@ begin
                                 end case;
                                 
                                 
-                            -- BLU
-                            when GRP_BOOL =>
-                                blu_f <= short_code; --a_Q(27 downto 25);                                
-                                
-                                case short_code is
-                                when SC_AND | SC_OR | SC_XOR =>
-                                    if imm_flag = '1' then
-                                    
-                                        blu_op1 <= reg_Qs(vb_reg_idx);
-                                        blu_op2 <= vimm2;
-                                        blu_repeats_in <= vimm2(4 downto 0);
-                                    
-                                    else
-                                    
-                                        blu_op1 <= reg_Qs(vb_reg_idx);
-                                        blu_op2 <= reg_Qs(vc_reg_idx);
-                                        blu_repeats_in <= reg_Qs(vc_reg_idx)(4 downto 0);                                    
-                                    
-                                    end if;
-                                when others =>
-                                    
-                                    if imm_flag = '1' then
-                                        blu_op1 <= vimm1;
-                                        blu_op2 <= "00000000000000000000000000000000";
-                                        blu_repeats_in <= "00001";                                                                        
-                                    else
-                                    
-                                        blu_op1 <= reg_Qs(vb_reg_idx);
-                                        blu_op2 <= vimm2;
-                                        blu_repeats_in <= vimm2(4 downto 0);
-                                    
-                                    end if;
-                                
-                                end case;
+
                                 
                             when others =>
                              -- nothing.                                
@@ -1049,6 +1079,19 @@ begin
                                         reg_value <= "000000000000000000000000" & sd_dout;
                                         sd_dout_taken <= '1';
                                         
+                                    when PORT_TIMER1_TOP =>
+                                        reg_value <= timer1_top;
+                                    when PORT_TIMER2_TOP =>
+                                        reg_value <= timer2_top;
+                                    when PORT_TIMER1_VALUE =>
+                                        reg_value <= timer1_q;
+                                    when PORT_TIMER2_VALUE =>
+                                        reg_value <= timer2_q;
+                                    when PORT_TIMER1_ENABLED =>
+                                        reg_value <= "0000000000000000000000000000000" & timer1_en;
+                                    when PORT_TIMER2_ENABLED =>
+                                        reg_value <= "0000000000000000000000000000000" & timer2_en; 
+                                        
                                     when others =>
                                         --
                                     end case;
@@ -1080,6 +1123,19 @@ begin
                                         --when others =>
                                             -- do nothing.
                                         --end case;
+                                    when PORT_TIMER1_TOP =>
+                                        timer1_top <= reg_Qs(va_reg_idx);
+                                    when PORT_TIMER2_TOP =>
+                                        timer2_top <= reg_Qs(va_reg_idx);
+                                    when PORT_TIMER1_RESTART =>
+                                        timer1_clr <= '1';
+                                    when PORT_TIMER2_RESTART =>
+                                        timer2_clr <= '1';                                        
+                                    when PORT_TIMER1_ENABLED =>
+                                        timer1_en <= reg_Qs(va_reg_idx)(0);
+                                    when PORT_TIMER2_ENABLED =>
+                                        timer2_en <= reg_Qs(va_reg_idx)(0);
+                                        
                                     when others =>
                                         --
                                     end case;
@@ -1099,17 +1155,19 @@ begin
                         when GRP_FLGS =>
                             stage <= 0;
                             case short_code is
+                                when SC_INT =>
+                                    stage <= 3; -- wait just a bit longer.
                                 when SC_MOV =>
                                     reg_load(va_reg_idx) <= '1';                                    
                                 when SC_SET =>
-                                    status_register( to_integer(unsigned(imm0(4 downto 0))) ) <= '1';
+                                    status_register( to_integer(unsigned(vimm0(4 downto 0))) ) <= '1';
                                 when SC_CLR =>
-                                    status_register( to_integer(unsigned(imm0(4 downto 0))) ) <= '0';                                
+                                    status_register( to_integer(unsigned(vimm0(4 downto 0))) ) <= '0';                                
                                 when others =>
                                     -- nothing.
                             end case;
-                             
-                             
+                               
+                               
                         -- Jump
                         when GRP_JMP =>
                             stage <= 3;
@@ -1147,8 +1205,43 @@ begin
                                 when others =>
                             end case; 
 
-                        when GRP_BOOL => 
-                            -- wait wait...     
+                            -- BLU
+                            when GRP_BOOL =>
+                                blu_f <= short_code; --a_Q(27 downto 25);                                
+                                
+                                case short_code is
+                                when SC_AND | SC_OR | SC_XOR =>
+                                
+                                    if imm_flag = '1' then
+                                    
+                                        blu_op1 <= reg_Qs(vb_reg_idx);
+                                        blu_op2 <= vimm2;
+                                        blu_repeats_in <= imm2(4 downto 0);
+                                    
+                                    else
+                                    
+                                        blu_op1 <= reg_Qs(vb_reg_idx);
+                                        blu_op2 <= reg_Qs(vc_reg_idx);
+                                        blu_repeats_in <= reg_Qs(vc_reg_idx)(4 downto 0);                                    
+                                    
+                                    end if;
+                                    
+                                when others =>
+                                    
+                                    if imm_flag = '1' then
+                                        blu_op1 <= vimm1;
+                                        blu_op2 <= "00000000000000000000000000000000";
+                                        blu_repeats_in <= "00001";                                                                        
+                                    else
+                                    
+                                        blu_op1 <= reg_Qs(vb_reg_idx);
+                                        blu_op2 <= vimm2;
+                                        blu_repeats_in <= vimm2(4 downto 0);
+                                    
+                                    end if;
+                                
+                                end case;
+
                         
                         when others =>
                             -- nothing.
@@ -1195,7 +1288,7 @@ begin
                         
                         when GRP_MISC =>                            
                             case short_code is
-                                when SC_MUL =>                                
+                                when SC_MUL | SC_SMUL =>                                
                                     stage <= 4;
                                 when SC_POP =>
                                 
@@ -1356,7 +1449,27 @@ begin
                                 when others =>
                                     -- do nothing.
                             end case;
+                            
+                        when GRP_BOOL => 
+                            stage <= 4; 
+                            -- wait wait...     
 
+                        
+                        
+                        when others =>
+                            -- nothing
+                        end case;
+                        
+                        
+                        
+                    -- ***********************************************************************
+                    -- STAGE 4
+                    -- ***********************************************************************                    
+                    when 4 =>
+                    
+                        stage <= 0;
+                        case opgroup is
+                        
                         when GRP_BOOL =>
                         
                             -- reg_value_mux<='1';
@@ -1373,30 +1486,18 @@ begin
                                     -- once go, back up and redo.
                                     blu_repeats_in <= blu_repeats_out;
                                     blu_op1 <= blu_r;
-                                    stage <= 2;
+                                    stage <= 4;
                                 end if;
                                 
                             when others =>
                                 stage <= 0;
                             end case;
                             
+                                                
                         
-                        
-                        when others =>
-                            -- nothing
-                        end case;
-                        
-                        
-                    -- ***********************************************************************
-                    -- STAGE 4
-                    -- ***********************************************************************                    
-                    when 4 =>
-                    
-                        stage <= 0;
-                        case opgroup is
                         when GRP_MISC =>
                             case short_code is
-                                when SC_MUL =>
+                                when SC_MUL | SC_SMUL =>
                                     stage <= 5;
                                 when others =>
                                     stage <= 0;
@@ -1440,6 +1541,22 @@ begin
                                         umult_pipeline := umult_pipeline + 1;
                                         stage <= 5;
                                     end if;
+                                    
+                                when SC_SMUL =>
+                                    -- at 3 clk deep pipeline the
+                                    -- mult core just keeps up with 100MHz clock
+                                    -- let's give it a bit more time by increasing the
+                                    -- pipelining to 5.
+                                    if smult_pipeline = 2 then
+                                        reg_load(va_reg_idx) <= '1';
+                                        --reg_value_mux<='1';
+                                        reg_value <= smult_p;
+                                        smult_ce <= '0';
+                                    else
+                                        smult_pipeline := smult_pipeline + 1;
+                                        stage <= 5;
+                                    end if;                                    
+                                    
                                 when others =>
                                     stage <= 0;
                             end case;
@@ -1638,12 +1755,12 @@ begin
 
     
     irq_lines(5) <= '0';
-    irq_lines(6) <= '0';
+    irq_lines(6) <= irq_int6;
     irq_lines(7) <= not rx_empty;
     irq_lines(8) <= ps2_code_new;
     irq_lines(9) <= sd_dout_avail;
-    irq_lines(10) <= '0';
-    irq_lines(11) <= '0';
+    irq_lines(10) <= timer1_irq;
+    irq_lines(11) <= timer2_irq;
     irq_lines(12) <= '0';
     irq_lines(13) <= '0';
     irq_lines(14) <= '0';
@@ -1760,14 +1877,42 @@ begin
         dout => dbg_dout
 	);
          
-    multi_core0 : mult_core
-    PORT MAP (
+    mult_core0 : mult_core PORT MAP (
         clk => clk,
         a => umult_a,
         b => umult_b,
         ce => umult_ce,
         p => umult_p
     );    
+
+    smult_core0 : smult_core PORT MAP (
+        clk => clk,
+        a => smult_a,
+        b => smult_b,
+        ce => smult_ce,
+        p => smult_p
+    );    
+ 
+	timer1: timer PORT MAP(
+		clk => clk,
+		reset => reset,
+		top => timer1_top,
+		clr => timer1_clr,
+        en => timer1_en,
+		q => timer1_q,
+		irq => timer1_irq
+	);
+    
+    timer2: timer PORT MAP(
+		clk => clk,
+		reset => reset,
+		top => timer2_top,
+		clr => timer2_clr,
+        en => timer2_en,
+		q => timer2_q,
+		irq => timer2_irq
+	);
+ 
  
 end Behavioral;
 

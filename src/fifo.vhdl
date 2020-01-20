@@ -28,7 +28,7 @@ use ieee.numeric_std.all;
 entity module_fifo_regs_no_flags is
   generic (
     g_WIDTH : natural := 8;
-    g_DEPTH : integer := 8
+    g_DEPTH : integer := 3
     );
   port (
     i_rst_sync : in std_logic;

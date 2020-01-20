@@ -49,10 +49,12 @@ IRQ_PORTS = {
     "IRQ_BUTTON3": 8,   #3
     "IRQ_BUTTON4": 16,  #4
     "IRQ_BUTTON5": 32,  #5
-    "IRQ_VBLANK": 64,   #6
+    "IRQ_INT6": 64,     #6
     "IRQ_UART_RX": 128, #7
     "IRQ_KEYBOARD": 256,#8
-    "IRQ_SD_CARD": 512  #9
+    "IRQ_SD_CARD": 512,  #9,
+    "IRQ_TIMER1": 1024, #10
+    "IRQ_TIMER2": 2048
 }
 
 PORT_DEFINITIONS = {
@@ -77,8 +79,17 @@ PORT_DEFINITIONS = {
     
     "PORT_PS2_FLAGS": 30,
     "PORT_PS2_RX_DATA": 31,
-    "PORT_PS2_TX_DATA": 32
+    "PORT_PS2_TX_DATA": 32,
     
+    "PORT_TIMER1_TOP": 40,
+    "PORT_TIMER1_VALUE": 41,
+    "PORT_TIMER1_RESTART": 42,
+    "PORT_TIMER1_ENABLED": 43,
+    
+    "PORT_TIMER2_TOP": 50,
+    "PORT_TIMER2_VALUE": 51,
+    "PORT_TIMER2_RESTART": 52,
+    "PORT_TIMER2_ENABLED": 53,
 }
 
 
@@ -259,7 +270,7 @@ flag_codes = [
     [ "SET", 0, 0 ],
     [ "CLR", 0, 1 ],
     [ "HLT", 0, 2 ],
-    [ "INT", 0, 3 ],
+    [ "INT", 1, 3 ],
     [ "TST", 1, 4 ],
     [ "MOV", 0, 5 ],
     [ "MOVI", 1, 5 ]
@@ -491,11 +502,11 @@ def write_python(fn):
         
     f.write("\n")
     f.write("predef_constants = {\n")
-    for flag in STATUS_FLAGS:
-        f.write("\t\"{0}_BIT\": {1},\n".format(flag, STATUS_FLAGS[flag]))    
+    #for flag in STATUS_FLAGS:
+    #    f.write("\t\"{0}_BIT\": {1},\n".format(flag, STATUS_FLAGS[flag]))    
         
     for flag in STATUS_FLAGS:
-        f.write("\t\"{0}\": {1},\n".format(flag, 1<<STATUS_FLAGS[flag]))         
+        f.write("\t\"{0}\": {1},\n".format(flag, STATUS_FLAGS[flag]))         
     
     f.write("\n");
     for flag in IRQ_PORTS:
@@ -506,8 +517,15 @@ def write_python(fn):
         
     for port in PORT_DEFINITIONS:
         f.write("\t\"{0}\" : {1},\n".format(port, PORT_DEFINITIONS[port]))    
+    
 
-    f.write("}")    
+    f.write("}\n\n")   
+    
+    f.write("op_table={\n");
+    for op_code in sorted(mnemonic_by_op_code.keys()):
+        mnemonic = mnemonic_by_op_code[op_code]
+        f.write("\t\"{0}\": {1},\n".format(mnemonic, op_code))     
+    f.write("}\n");
     f.close()       
 
 
