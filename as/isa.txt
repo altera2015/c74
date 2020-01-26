@@ -12,11 +12,10 @@ Generic Form
 3322 2222 2222 1111 1111 1100 0000 0000
 1098 7654 3210 9876 5432 1098 7654 3210
 
-GGGO OOOO OOOI #### #### #### #### ####
-GGGO OOOO OOOI AAAA #### #### #### ####
-GGGO OOOO OOOI AAAA BBBB #### #### ####
-GGGO OOOO OOOI AAAA BBBB CCCC #### ####
-
+GGGO OOOI #### #### #### #### #### ####
+GGGO OOOI AAAA #### #### #### #### ####
+GGGO OOOI AAAA BBBB #### #### #### ####
+GGGO OOOI AAAA BBBB CCCC #### #### ####
 
 
 Opcode forms

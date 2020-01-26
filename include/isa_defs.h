@@ -101,7 +101,6 @@
 #define OP_ASR   		 0xEC
 #define OP_ASRI  		 0xED
 #define OP_NOT   		 0xEE
-#define OP_NOTI  		 0xEF
 
 // Short Codes
 #define SC_NOP   		 0x00
@@ -191,7 +190,6 @@
 #define SC_ASR   		 0x06
 #define SC_ASRI  		 0x06
 #define SC_NOT   		 0x07
-#define SC_NOTI  		 0x07
 
 // Status Register Flags
 #define Z_FLAG_POS 		 0

@@ -33,6 +33,7 @@ generate_group_defs()
 
 op_codes = {}
 
+instruction_defs = []
 
 STATUS_FLAGS = {
     "Z_FLAG" : 0,
@@ -141,6 +142,18 @@ DEBUG_CONSTANTS = {
 }
 
 
+
+
+def add_id( mnemonic, cls ):
+    
+    id = {
+        "mnemonic": mnemonic,
+        "class": cls,
+        "opcode": op_codes[ mnemonic ]         
+    }            
+    instruction_defs.append(id)    
+
+
 def generate_op( grp, op, immediate ):
     b = "{0}{1:04b}{2:01b}".format(grp, op, immediate)
     return int(b,2)
@@ -150,29 +163,31 @@ def generate_op( grp, op, immediate ):
 # Misc
 ################################################
 
+# IMM, OP, REG COUNT
 misc_codes = [
-    [ "NOP", 0, 0 ],    
-    [ "OUT", 1, 1 ],
-    [ "IN",  1, 2 ],
-    [ "CALL", 0, 3 ],
-    [ "CALLI", 1, 3 ],
-    [ "RET", 0, 4],
-    [ "RETI", 0, 5],
-    [ "PUSH", 0, 6],
+    [ "NOP", 0, 0,   "NoOperand" ],    
+    [ "OUT", 1, 1,   "InputRegImm" ],
+    [ "IN",  1, 2,   "OutputRegInputImm" ],
+    [ "CALL", 0, 3,  "InputReg" ],
+    [ "CALLI", 1, 3, "InputImm" ],
+    [ "RET", 0, 4,   "NoOperand"],
+    [ "RETI", 0, 5,  "NoOperand" ],
+    [ "PUSH", 0, 6,  "InputReg" ],
     
-    [ "POP", 0, 7],
-    
-    [ "MUL", 0, 8],
-    [ "MULI", 1, 8],
-    [ "SMUL", 0, 9],
-    [ "SMULI", 1, 9]    
+    [ "POP", 0, 7,   "OutputReg"],
+            
+    [ "MUL", 0, 8,   "ALU_rr"],
+    [ "MULI", 1, 8,  "ALU_ri"],
+    [ "SMUL", 0, 9,  "ALU_rr"],
+    [ "SMULI", 1, 9, "ALU_ri"]    
     
 ]
 
 def generate_misc_opcodes():
 
     for code in misc_codes:        
-        op_codes[ code[0] ] = generate_op( MISC, code[2], code[1] )
+        op_codes[ code[0] ] = generate_op( MISC, code[2], code[1] )        
+        add_id( code[0], code[3])
         
 
 ################################################
@@ -198,27 +213,38 @@ alu_codes = [
 # f => 01 = Add
 # f => 00 = SUB
 
-def generate_alu( immediate, f, carry, dont_store_result ):
+def generate_alu( immediate, f, carry, dont_store_result, mnemonic, cls ):
     
     # GRP      | Short Code          | I-flag    
     # Group    | SR| FFFFFF  | Carry | I 
     # 31 30 29 | 28| 27 | 26 | 25    | 24
     op = int("{0:01b}{1:02b}{2:01b}".format(dont_store_result, f, carry),2)
+
+
+    id = {
+        "mnemonic": mnemonic,
+        "class": cls,
+        "opcode": op        
+    }
+        
+    instruction_defs.append(id)
+        
+
     return generate_op( ALU, op, immediate)
 
 
 def generate_alu_opcodes():
     
 
-    op_codes[ "CMP" ] = generate_alu( 0, 0, 0, 1 )
-    op_codes[ "CMPI" ] = generate_alu( 1, 0, 0, 1 )
+    op_codes[ "CMP" ] = generate_alu( 0, 0, 0, 1, "CMP", "CMP_rr" )
+    op_codes[ "CMPI" ] = generate_alu( 1, 0, 0, 1, "CMPI", "CMP_ri" )
 
     
     for code in alu_codes:
-        op_codes[ code[0] ] = generate_alu( 0, code[1], 0, 0 )
-        op_codes[ code[0] + "C" ] = generate_alu( 0, code[1], 1, 0 )
-        op_codes[ code[0] + "I" ] = generate_alu( 1, code[1], 0, 0 )
-        op_codes[ code[0] + "CI" ] = generate_alu( 1, code[1], 1, 0 )
+        op_codes[ code[0] ] = generate_alu( 0, code[1], 0, 0, code[0], "ALU_rr" )
+        op_codes[ code[0] + "C" ] = generate_alu( 0, code[1], 1, 0, code[0] + "C", "ALU_rr" )
+        op_codes[ code[0] + "I" ] = generate_alu( 1, code[1], 0, 0, code[0] + "I", "ALU_ri" )
+        op_codes[ code[0] + "CI" ] = generate_alu( 1, code[1], 1, 0, code[0] + "CI", "ALU_ri" )
         
     
 
@@ -267,21 +293,23 @@ def generate_alu_opcodes():
 ################################################
 
 flag_codes = [
-    [ "SET", 0, 0 ],
-    [ "CLR", 0, 1 ],
-    [ "HLT", 0, 2 ],
-    [ "INT", 1, 3 ],
-    [ "TST", 1, 4 ],
-    [ "MOV", 0, 5 ],
-    [ "MOVI", 1, 5 ]
+    [ "SET", 0, 0, "InputImm" ],
+    [ "CLR", 0, 1, "InputImm" ],
+    [ "HLT", 0, 2, "NoOperand" ],
+    [ "INT", 1, 3, "InputImm" ],
+    [ "TST", 1, 4, "InputRegImm" ],
+    [ "MOV", 0, 5, "MOV_rr" ],
+    [ "MOVI", 1, 5, "MOV_ri" ]
     
 ]
 
 # 101 group 101X XXRR
 def generate_flag_opcodes():
        
-    for code in flag_codes:        
+    for code in flag_codes:
+        
         op_codes[ code[0] ] = generate_op( FLGS, code[2], code[1] )
+        add_id( code[0], code[3])
 
         
 
@@ -321,14 +349,28 @@ jump_codes = [
 ]
 #mnemonic
 
-def generate_jump( immediate, invert, condition ):    
-    op = int("{0:01b}{1:03b}".format(invert, condition),2)
+
+
+
+def generate_jump( immediate, invert, condition, mnemonic ):    
+    op = int("{0:01b}{1:03b}".format(invert, condition),2)       
+
+    id = {
+        "mnemonic": mnemonic,
+        "class": "J_reg",
+        "opcode": op        
+    }
+    if immediate == 1:
+        id["class"] = "J_imm";
+        
+    instruction_defs.append(id)
+        
     return generate_op(JMP, op, immediate)
 
 def generate_jump_opcodes():
     for code in jump_codes:        
-        op_codes[ code[0] + "I" ] = generate_jump( 1, code[1], code[2] )
-        op_codes[ code[0] ]       = generate_jump( 0, code[1], code[2] )
+        op_codes[ code[0] + "I" ] = generate_jump( 1, code[1], code[2], code[0] + "I" )
+        op_codes[ code[0] ]       = generate_jump( 0, code[1], code[2], code[0] )
         
     
 ###############################################
@@ -337,29 +379,42 @@ def generate_jump_opcodes():
 
 boolean_codes_binary = [
     
-    [ "AND", 0 ],    
-    [ "OR",  1 ],
-    [ "XOR", 2 ],
+    [ "AND", 0, "ALU_r" ],    
+    [ "OR",  1, "ALU_r" ],
+    [ "XOR", 2, "ALU_r" ],
     
-    [ "LSL", 3 ],
-    [ "LSR", 4 ],
-    [ "ASL", 5 ],    
-    [ "ASR", 6 ],
-    [ "NOT", 7 ]
+    [ "LSL", 3, "ALU_r" ],
+    [ "LSR", 4, "ALU_r" ],
+    [ "ASL", 5, "ALU_r" ],    
+    [ "ASR", 6, "ALU_r" ]   
 ]
+boolean_codes_binary2 = [ 
+    [ "NOT", 7, "MOV_rr" ]
+]
+
+
 
 # 101 group 101X XXRR
 def generate_boolean_opcodes():       
     for code in boolean_codes_binary:        
-        op_codes[ code[0] ] = generate_op( BOOL, code[1], 0 )
-        op_codes[ code[0] + "I" ] = generate_op(BOOL, code[1], 1 )
+        mnemonic = code[0] 
+        op_codes[ mnemonic ] = generate_op( BOOL, code[1], 0 )
+        add_id(mnemonic, code[2]+'r')
+        
+        mnemonic = code[0] + "I"
+        op_codes[ mnemonic ] = generate_op(BOOL, code[1], 1 )        
+        add_id(mnemonic, code[2]+'i')
+                
+
+    for code in boolean_codes_binary2:        
+        mnemonic = code[0] 
+        op_codes[ mnemonic ] = generate_op( BOOL, code[1], 0 )
+        add_id(mnemonic, code[2])
 
 
 ###############################################
 # Memory Codes
 ###############################################
-# MOVI R1, 234
-# MOV R1, R2
 # LDR R1, 234
 # LDR R1, R2, 4
 # STR R1, 234
@@ -368,17 +423,17 @@ def generate_boolean_opcodes():
 # STA R1, R2, 4
 
 memory_codes_I = [    
-    [ "LDR", 0 ],
-    [ "STR", 1 ],
-    [ "LDRB", 2 ],
-    [ "STRB", 3 ]    
+    [ "LDR", 0, "MEM_r" ],
+    [ "STR", 1, "MEM_r" ],
+    [ "LDRB", 2, "MEM_r" ],
+    [ "STRB", 3, "MEM_r" ]    
 ]
 
 memory_codes = [    
-    [ "LDA", 4 ],
-    [ "STA", 5 ],
-    [ "LDAB", 6 ],
-    [ "STAB", 7 ]
+    [ "LDA", 4, "MEM_rri" ],
+    [ "STA", 5, "MEM_rri" ],
+    [ "LDAB", 6, "MEM_rri" ],
+    [ "STAB", 7, "MEM_rri" ]
 ]
 
 # 101 group 101X XXRR
@@ -386,10 +441,14 @@ def generate_memory_opcodes():
        
     for code in memory_codes_I:        
         op_codes[ code[0] ] = generate_op( MEM, code[1], 0 )
+        add_id( code[0], code[2] + "ri")
+        
         op_codes[ code[0] + "I" ] = generate_op( MEM, code[1], 1 )
+        add_id( code[0] + "I", code[2] + "i")
         
     for code in memory_codes:        
         op_codes[ code[0] ] = generate_op( MEM, code[1], 0 )
+        add_id( code[0], code[2])
 
 
 generate_flag_opcodes()    
@@ -583,10 +642,105 @@ def write_c(fn):
     f.write("\n#endif\n");
     f.close()    
     
+
+def write_opc_codes(fout):
+    #def OPC_LOAD      : C74Opcode<0b0000011>;    
     
+    for op_code in sorted(mnemonic_by_op_code.keys()):
+        mnemonic = mnemonic_by_op_code[op_code]
+        fout.write("def OPC_{0:<5} : C74Opcode<0b{1:08b}>;\n".format(mnemonic, op_code))
+        
+        
+
+def write_llvm_InstrFormats(targetDir):
+
+    fout = False
+    fin = False
+    
+    target = targetDir + "C74InstrFormats.td"
+    source = targetDir + "C74InstrFormats.td.in"
+    try:    
+        fout = open(target, "w")
+    except Exception as e:
+        print(e)
+        print("Failed to open output file {}".format(target));
+        exit(-1)
+        
+        
+    try:
+        fin = open(source, "r")        
+    except:
+        print("Unable to find {}".format(source));
+        exit(-1)
+
+    line = fin.readline()
+    while line:
+        if line.find("{{OPC_CODES}}") != -1:
+            write_opc_codes(fout)
+        else:
+            fout.write(line)
+            
+        line = fin.readline()
+            
+    fin.close()        
+    fout.close()
+    
+    
+    
+def write_instruction_defs(fout):
+    #def ADDI  : ALU_ri<0b000, "addi">;
+    
+    for id in instruction_defs:
+        
+        fout.write("def {0:<5} : {1}<OPC_{0}, \"{3}\">;\n".format(id["mnemonic"], id["class"], id["opcode"], id["mnemonic"].lower()))
+            
+    
+        
+    
+def write_llvm_InstrInfo(targetDir):
+
+    fout = False
+    fin = False
+    
+    target = targetDir + "C74InstrInfo.td"
+    source = targetDir + "C74InstrInfo.td.in"
+    try:    
+        fout = open(target, "w")
+    except Exception as e:
+        print(e)
+        print("Failed to open output file {}".format(target));
+        exit(-1)
+        
+        
+    try:
+        fin = open(source, "r")        
+    except:
+        print("Unable to find {}".format(source));
+        exit(-1)
+
+    line = fin.readline()
+    while line:
+        if line.find("{{INSTRUCTION_DEFS}}") != -1:
+            write_instruction_defs(fout)
+        else:
+            fout.write(line)
+            
+        line = fin.readline()
+            
+    fin.close()        
+    fout.close()
+    
+    
+    
+
+
 write_vhdl("../src/isa_defs.vhdl")
 write_python("isa_defs.py")
 write_c("../include/isa_defs.h")
+
+td = "/home/ise/devel/llvm/ise/llvm/lib/Target/C74/"
+write_llvm_InstrFormats(td)
+write_llvm_InstrInfo(td)
 
 #generate_alu_doc(".");
 

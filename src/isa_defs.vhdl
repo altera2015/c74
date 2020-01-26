@@ -104,7 +104,6 @@ package isa_defs is
 	constant OP_ASR   : std_logic_vector(7 downto 0) := "11101100"; -- 0xEC
 	constant OP_ASRI  : std_logic_vector(7 downto 0) := "11101101"; -- 0xED
 	constant OP_NOT   : std_logic_vector(7 downto 0) := "11101110"; -- 0xEE
-	constant OP_NOTI  : std_logic_vector(7 downto 0) := "11101111"; -- 0xEF
 
 	-- Short Codes
 	constant SC_NOP   : std_logic_vector(3 downto 0) := "0000"; -- 0x00
@@ -194,7 +193,6 @@ package isa_defs is
 	constant SC_ASR   : std_logic_vector(3 downto 0) := "0110"; -- 0x06
 	constant SC_ASRI  : std_logic_vector(3 downto 0) := "0110"; -- 0x06
 	constant SC_NOT   : std_logic_vector(3 downto 0) := "0111"; -- 0x07
-	constant SC_NOTI  : std_logic_vector(3 downto 0) := "0111"; -- 0x07
 
 	-- Status Register Flags
 	constant Z_FLAG_POS : integer := 0;
